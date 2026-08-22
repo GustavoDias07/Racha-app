@@ -7,6 +7,7 @@ import '../../models/enums.dart';
 import '../../models/participante_model.dart';
 import '../../providers/auth_controller.dart';
 import '../../providers/firebase_providers.dart';
+import '../../providers/racha_controller.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -139,7 +140,7 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _mostrarOpcoesCriarRacha(context),
+        onPressed: () => _mostrarOpcoesCriarRacha(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('Criar racha'),
       ),
@@ -184,7 +185,7 @@ void _mostrarConvitesPendentes(
 /// da semana fixo) são bem diferentes, ficam em telas separadas
 /// (`CriarRachaScreen` x `CriarGrupoScreen`) e essa folha só decide qual
 /// abrir.
-void _mostrarOpcoesCriarRacha(BuildContext context) {
+void _mostrarOpcoesCriarRacha(BuildContext context, WidgetRef ref) {
   showModalBottomSheet<void>(
     context: context,
     builder: (context) => SafeArea(
@@ -209,9 +210,99 @@ void _mostrarOpcoesCriarRacha(BuildContext context) {
               context.push('/grupos/criar');
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.qr_code),
+            title: const Text('Entrar com código'),
+            subtitle: const Text('Alguém já criou o racha e te passou o código'),
+            onTap: () {
+              Navigator.of(context).pop();
+              _mostrarDialogoEntrarComCodigo(context, ref);
+            },
+          ),
           const SizedBox(height: 8),
         ],
       ),
+    ),
+  );
+}
+
+/// Item 6 do plano de melhorias: entrar num racha só sabendo o código
+/// (que é o próprio id do documento — ver `RachaController.entrarComCodigo`),
+/// sem precisar que o admin te encontre por nome/email.
+void _mostrarDialogoEntrarComCodigo(BuildContext context, WidgetRef ref) {
+  final codigoController = TextEditingController();
+  // Fora do builder do StatefulBuilder de propósito — ver o comentário em
+  // `_mostrarDialogoAdicionarMembro` (grupo_detalhe_screen.dart).
+  var carregando = false;
+  String? erro;
+
+  showDialog<void>(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) {
+        Future<void> entrar() async {
+          final codigo = codigoController.text.trim();
+          if (codigo.isEmpty) return;
+          setState(() {
+            carregando = true;
+            erro = null;
+          });
+          try {
+            final rachaId =
+                await ref.read(rachaControllerProvider.notifier).entrarComCodigo(codigo);
+            if (!context.mounted) return;
+            if (rachaId == null) {
+              setState(() {
+                carregando = false;
+                erro = 'Código inválido — nenhum racha encontrado.';
+              });
+              return;
+            }
+            Navigator.of(context).pop();
+            context.push('/rachas/$rachaId');
+          } catch (e) {
+            setState(() {
+              carregando = false;
+              erro = 'Código inválido — nenhum racha encontrado.';
+            });
+          }
+        }
+
+        return AlertDialog(
+          title: const Text('Entrar com código'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: codigoController,
+                decoration: const InputDecoration(labelText: 'Código do racha'),
+                onSubmitted: (_) => entrar(),
+              ),
+              if (erro != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(erro!, style: const TextStyle(color: Colors.red)),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: carregando ? null : entrar,
+              child: carregando
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Entrar'),
+            ),
+          ],
+        );
+      },
     ),
   );
 }

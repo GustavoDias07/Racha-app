@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/alvo_avaliacao.dart';
@@ -22,6 +23,7 @@ import '../repositories/racha_repository.dart';
 import '../repositories/ranking_repository.dart';
 import '../repositories/user_repository.dart';
 import '../services/auth_service.dart';
+import '../services/local_notification_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 
@@ -43,6 +45,10 @@ final firebaseMessagingProvider =
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService(ref.watch(firebaseMessagingProvider));
+});
+
+final localNotificationServiceProvider = Provider<LocalNotificationService>((ref) {
+  return LocalNotificationService(FlutterLocalNotificationsPlugin());
 });
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
@@ -165,6 +171,18 @@ final currentUserModelProvider = StreamProvider((ref) {
 final rankingPorUserIdProvider =
     FutureProvider.family<RankingModel?, String>((ref, userId) {
   return ref.watch(rankingRepositoryProvider).buscarPorUserId(userId);
+});
+
+/// Rodadas já finalizadas de um Grupo, mais recente primeiro — a tela de
+/// detalhe do grupo só mostra a rodada aberta atual (`rachaAtualDoGrupoProvider`),
+/// então sem isso as rodadas passadas ficavam inacessíveis assim que o
+/// Fluxo 5 (finalizar → próxima rodada) tirava elas de cena.
+final historicoDoGrupoProvider =
+    FutureProvider.family<List<RachaModel>, String>((ref, grupoId) async {
+  final todos = await ref.watch(rachaRepositoryProvider).buscarTodosPorGrupo(grupoId);
+  final finalizados = todos.where((r) => r.status == RachaStatus.finalizado).toList()
+    ..sort((a, b) => b.dataHora.compareTo(a.dataHora));
+  return finalizados;
 });
 
 /// Contexto necessário pra tela de Avaliação Pós-Jogo: quem o usuário

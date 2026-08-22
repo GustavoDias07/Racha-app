@@ -113,7 +113,7 @@ class _ConvidarJogadorScreenState extends ConsumerState<ConvidarJogadorScreen> {
                 Expanded(
                   child: TextField(
                     controller: _buscaController,
-                    decoration: const InputDecoration(labelText: 'Email do jogador'),
+                    decoration: const InputDecoration(labelText: 'Nome ou email'),
                     onSubmitted: (_) => _buscar(),
                   ),
                 ),

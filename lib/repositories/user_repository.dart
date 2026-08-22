@@ -32,25 +32,45 @@ class UserRepository {
     return _collection.doc(user.id).update(user.toMap());
   }
 
-  /// Grava o token do FCM do dispositivo atual — update parcial, separado
-  /// de `atualizar`, porque roda a cada login/refresh de token, sem
-  /// relação nenhuma com a tela de editar perfil (ver
-  /// `NotificationService`/`notificationSyncProvider`).
+  /// Grava o token do FCM do dispositivo atual - update parcial, separado
+  /// de atualizar(), porque roda a cada login/refresh de token, sem
+  /// relacao nenhuma com a tela de editar perfil (ver
+  /// NotificationService/notificationSyncProvider).
   Future<void> atualizarFcmToken(String userId, String token) {
     return _collection.doc(userId).update({'fcmToken': token});
   }
 
+  /// Busca por email exato OU por prefixo do nome (campo nomeBusca) - as
+  /// duas ao mesmo tempo, ja que nao da pra saber de antemao o que a
+  /// pessoa digitou. O limite superior do range usa o maior codepoint
+  /// Unicode (0xF8FF) - truque padrao do Firestore pra simular um
+  /// "startsWith", ja que ele nao tem contains/startsWith nativo. Contas
+  /// criadas/editadas antes do campo nomeBusca existir so aparecem pela
+  /// busca de email ate serem salvas de novo uma vez (editar perfil ja
+  /// resolve isso).
   Future<List<UserModel>> buscarPorNomeOuEmail(String termo) async {
     final termoBusca = termo.trim().toLowerCase();
     if (termoBusca.isEmpty) return [];
 
-    final porEmail = await _collection
-        .where('email', isEqualTo: termoBusca)
-        .limit(10)
-        .get();
+    final limiteSuperior = termoBusca + String.fromCharCode(0xF8FF);
+    final resultados = await Future.wait([
+      _collection.where('email', isEqualTo: termoBusca).limit(10).get(),
+      _collection
+          .where('nomeBusca', isGreaterThanOrEqualTo: termoBusca)
+          .where('nomeBusca', isLessThan: limiteSuperior)
+          .limit(10)
+          .get(),
+    ]);
 
-    return porEmail.docs
-        .map((doc) => UserModel.fromMap(doc.id, doc.data()))
-        .toList();
+    final vistos = <String>{};
+    final usuarios = <UserModel>[];
+    for (final snap in resultados) {
+      for (final doc in snap.docs) {
+        if (vistos.add(doc.id)) {
+          usuarios.add(UserModel.fromMap(doc.id, doc.data()));
+        }
+      }
+    }
+    return usuarios;
   }
 }

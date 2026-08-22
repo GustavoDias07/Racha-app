@@ -50,3 +50,13 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Só lib/, web/, android/ e os arquivos soltos da raiz ficam no controle de
+# versão (seguindo o padrão do repo de referência do professor) — o resto
+# do projeto (docs, config do Firebase, testes) fica só local.
+/docs/
+/test/
+/firebase.json
+/firestore.rules
+/firestore.indexes.json
+/storage.rules

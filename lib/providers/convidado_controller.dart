@@ -49,6 +49,15 @@ class ConvidadoController extends AsyncNotifier<void> {
     });
   }
 
+  Future<void> remover({required String rachaId, required String convidadoId}) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() {
+      return ref
+          .read(convidadoRepositoryProvider)
+          .remover(rachaId: rachaId, convidadoId: convidadoId);
+    });
+  }
+
   /// Fluxo 3.1 (docs/estrutura.md): o convidado já criou a própria conta
   /// (User, pelo Cadastro normal) e o admin vincula esse `userId` ao
   /// histórico que ele acumulou como convidado — migra avaliações e

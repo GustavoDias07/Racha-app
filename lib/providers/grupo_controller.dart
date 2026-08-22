@@ -78,6 +78,31 @@ class GrupoController extends AsyncNotifier<void> {
     });
   }
 
+  /// Edita a configuração padrão do grupo (nome, local, dia/horário, tipo
+  /// de campo). Só afeta rodadas futuras — a atual não muda sozinha.
+  Future<void> atualizar({
+    required String grupoId,
+    required String nome,
+    required String localPadrao,
+    required DiaSemana diaSemana,
+    required String horario,
+    required TipoCampo tipoCampoPadrao,
+    required int qtdJogadoresLinhaPadrao,
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() {
+      return ref.read(grupoRepositoryProvider).atualizar(
+            grupoId: grupoId,
+            nome: nome,
+            localPadrao: localPadrao,
+            diaSemana: diaSemana,
+            horario: horario,
+            tipoCampoPadrao: tipoCampoPadrao,
+            qtdJogadoresLinhaPadrao: qtdJogadoresLinhaPadrao,
+          );
+    });
+  }
+
   /// Apaga o grupo (racha recorrente) — só o admin dono chega a essa tela,
   /// e a regra do Firestore também exige isso. As rodadas já geradas não
   /// somem junto (ver `GrupoRepository.remover`).

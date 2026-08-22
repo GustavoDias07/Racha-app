@@ -9,8 +9,10 @@ import '../../providers/firebase_providers.dart';
 import '../../screens/auth/cadastro_screen.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/grupo/criar_grupo_screen.dart';
+import '../../screens/grupo/editar_grupo_screen.dart';
 import '../../screens/grupo/grupo_detalhe_screen.dart';
 import '../../screens/grupo/grupo_ranking_screen.dart';
+import '../../screens/grupo/historico_grupo_screen.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/perfil/editar_perfil_screen.dart';
 import '../../screens/perfil/perfil_screen.dart';
@@ -65,6 +67,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           final grupo = state.extra as GrupoModel;
           return GrupoRankingScreen(grupoId: grupo.id, grupoNome: grupo.nome);
         },
+      ),
+      GoRoute(
+        path: '/grupos/:id/historico',
+        builder: (context, state) {
+          final grupo = state.extra as GrupoModel;
+          return HistoricoGrupoScreen(grupoId: grupo.id, grupoNome: grupo.nome);
+        },
+      ),
+      GoRoute(
+        path: '/grupos/:id/editar',
+        builder: (context, state) =>
+            EditarGrupoScreen(grupo: state.extra as GrupoModel),
       ),
       GoRoute(
         path: '/rachas/:id',

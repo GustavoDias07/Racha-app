@@ -31,6 +31,15 @@ class ParticipanteController extends AsyncNotifier<void> {
     });
   }
 
+  Future<void> remover({required String rachaId, required String participanteId}) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() {
+      return ref
+          .read(participanteRepositoryProvider)
+          .remover(rachaId: rachaId, participanteId: participanteId);
+    });
+  }
+
   Future<void> definirPosicoes({
     required String rachaId,
     required String participanteId,

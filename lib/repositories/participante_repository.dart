@@ -83,6 +83,12 @@ class ParticipanteRepository {
     batch.set(_collection(rachaId).doc(), participante.toMap());
   }
 
+  /// Tira o participante do racha (admin) — diferente de "recusar
+  /// presença", que é o próprio participante mudando o próprio status.
+  Future<void> remover({required String rachaId, required String participanteId}) {
+    return _collection(rachaId).doc(participanteId).delete();
+  }
+
   Future<void> atualizarStatus({
     required String rachaId,
     required String participanteId,

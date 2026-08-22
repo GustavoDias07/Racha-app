@@ -46,9 +46,17 @@ class UserModel {
     );
   }
 
+  /// Derivado de `nome`, nunca guardado à parte — é só pra dar pro
+  /// Firestore indexar e permitir busca por prefixo (`UserRepository.
+  /// buscarPorNomeOuEmail`), já que ele não tem "contains" nativo.
+  /// Ficando sempre em `toMap()`, não tem como esquecer de atualizar num
+  /// update e o campo "desalinhar" do nome de verdade.
+  String get nomeBusca => nome.toLowerCase();
+
   Map<String, dynamic> toMap() {
     return {
       'nome': nome,
+      'nomeBusca': nomeBusca,
       'email': email,
       'fotoPerfilBase64': fotoPerfilBase64,
       'idade': idade,

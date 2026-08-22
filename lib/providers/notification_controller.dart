@@ -14,6 +14,8 @@ import 'firebase_providers.dart';
 /// widgets (`RachaApp`), sem consumir o valor — ele só existe pelo efeito
 /// colateral dos listeners registrados aqui.
 final notificationSyncProvider = Provider<void>((ref) {
+  ref.read(localNotificationServiceProvider).inicializar();
+
   Future<void> registrarToken(String uid) async {
     try {
       final token = await ref.read(notificationServiceProvider).registrar();

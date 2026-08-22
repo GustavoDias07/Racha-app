@@ -118,6 +118,43 @@ class RachaController extends AsyncNotifier<void> {
       return ref.read(rachaRepositoryProvider).remover(rachaId);
     });
   }
+
+  /// Entra num racha só sabendo o código — que é o próprio id do
+  /// documento, igual um link compartilhável (não existe um campo "código"
+  /// separado guardado em lugar nenhum). Quem entra assim já fica
+  /// confirmado direto, sem passar por "pendente": foi a própria pessoa
+  /// que decidiu entrar, diferente de ser convidada por alguém. Devolve o
+  /// id do racha pra tela poder navegar pra ele.
+  Future<String?> entrarComCodigo(String codigo) async {
+    state = const AsyncLoading();
+    String? rachaId;
+    state = await AsyncValue.guard(() async {
+      final codigoLimpo = codigo.trim();
+      final racha = await ref.read(rachaRepositoryProvider).observar(codigoLimpo).first;
+      if (racha == null) {
+        throw Exception('Código inválido — nenhum racha encontrado.');
+      }
+
+      final uid = ref.read(firebaseAuthProvider).currentUser!.uid;
+      final participanteRepo = ref.read(participanteRepositoryProvider);
+      final existente = await participanteRepo.buscarPorUserId(racha.id, uid);
+      if (existente == null) {
+        await participanteRepo.convidar(
+          rachaId: racha.id,
+          userId: uid,
+          status: StatusConfirmacao.confirmado,
+        );
+      } else if (existente.statusConfirmacao != StatusConfirmacao.confirmado) {
+        await participanteRepo.atualizarStatus(
+          rachaId: racha.id,
+          participanteId: existente.id,
+          status: StatusConfirmacao.confirmado,
+        );
+      }
+      rachaId = racha.id;
+    });
+    return rachaId;
+  }
 }
 
 final rachaControllerProvider =

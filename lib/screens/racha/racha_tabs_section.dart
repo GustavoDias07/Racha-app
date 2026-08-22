@@ -69,6 +69,7 @@ class _ParticipantesTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = ref.watch(firebaseAuthProvider).currentUser?.uid;
+    final isAdmin = racha.adminId == uid;
     final participantes = ref.watch(participantesDoRachaProvider(racha.id));
 
     return ListView(
@@ -91,11 +92,49 @@ class _ParticipantesTab extends ConsumerWidget {
                 child: Text('Ninguém convidado ainda.'),
               );
             }
+
+            // Agrupado por status (confirmado/pendente/recusado), não uma
+            // lista só — senão fica fácil perder de vista quem ainda não
+            // respondeu no meio de quem já confirmou.
+            final confirmados = lista
+                .where((p) => p.statusConfirmacao == StatusConfirmacao.confirmado)
+                .toList();
+            final pendentes = lista
+                .where((p) => p.statusConfirmacao == StatusConfirmacao.pendente)
+                .toList();
+            final recusados = lista
+                .where((p) => p.statusConfirmacao == StatusConfirmacao.recusado)
+                .toList();
+
+            Widget grupo(String titulo, List<ParticipanteModel> pessoas) {
+              if (pessoas.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16, bottom: 4),
+                    child: Text(
+                      '$titulo (${pessoas.length})',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  ...pessoas.map((p) => _ParticipanteTile(
+                        racha: racha,
+                        participante: p,
+                        meuUid: uid,
+                        isAdmin: isAdmin,
+                      )),
+                ],
+              );
+            }
+
             return Column(
-              children: lista
-                  .map((p) =>
-                      _ParticipanteTile(rachaId: racha.id, participante: p, meuUid: uid))
-                  .toList(),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                grupo('Confirmados', confirmados),
+                grupo('Pendentes', pendentes),
+                grupo('Recusados', recusados),
+              ],
             );
           },
           loading: () => const Padding(
@@ -154,8 +193,10 @@ class _ConvidadosTab extends ConsumerWidget {
 
 /// Botão "Gerar times" (admin) + visualização dos dois times montados pelo
 /// `BalanceadorTimes`. O mínimo de confirmados pra habilitar o botão é
-/// `racha.totalVagas` (formação de um time só — ver docs/estrutura.md,
-/// Fluxo 2, exemplo "7 no society padrão").
+/// `racha.totalVagas * 2` — dois times completos, não só um. Gerar times
+/// com menos que isso sempre deixa um lado capenga (ex: 3x2 num Futsal que
+/// pede 5x5), o que não é "vagas livres" (docs/estrutura.md), é time
+/// incompleto.
 class _TimesTab extends ConsumerWidget {
   const _TimesTab({required this.racha});
 
@@ -176,7 +217,7 @@ class _TimesTab extends ConsumerWidget {
           final confirmados = participantes.where((p) => p.confirmado).toList();
           final aprovados = convidados.where((c) => c.aprovado).toList();
           final totalElegiveis = confirmados.length + aprovados.length;
-          final minimo = racha.totalVagas;
+          final minimo = racha.totalVagas * 2;
           final suficiente = totalElegiveis >= minimo;
 
           int porPosicao(Posicao? p) => p == Posicao.goleiro ? 0 : 1;
@@ -203,7 +244,7 @@ class _TimesTab extends ConsumerWidget {
                   suficiente
                       ? '$totalElegiveis confirmado(s) — pronto pra gerar os times.'
                       : 'Faltam confirmados: $totalElegiveis de $minimo necessários '
-                          '(formação ${racha.tipoCampo.label}).',
+                          'pra fechar os dois times (formação ${racha.tipoCampo.label}).',
                   style: TextStyle(
                     color: suficiente ? Colors.black87 : Colors.orange[800],
                     fontWeight: FontWeight.w500,
@@ -746,14 +787,23 @@ class _ProximoRachaTab extends ConsumerWidget {
         ),
         if (isAdmin) ...[
           const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: OutlinedButton.icon(
-              onPressed: () =>
-                  context.push('/rachas/${racha.id}/editar', extra: racha),
-              icon: const Icon(Icons.edit_outlined),
-              label: const Text('Editar racha'),
-            ),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _mostrarDialogoCodigo(context, racha),
+                icon: const Icon(Icons.qr_code),
+                label: const Text('Compartilhar código'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () =>
+                    context.push('/rachas/${racha.id}/editar', extra: racha),
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Editar racha'),
+              ),
+            ],
           ),
         ],
         const SizedBox(height: 16),
@@ -783,24 +833,36 @@ class _ProximoRachaTab extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: FilledButton(
-                            onPressed: () =>
-                                ref.read(participanteControllerProvider.notifier).atualizarStatus(
-                                      rachaId: racha.id,
-                                      participanteId: participanteId,
-                                      status: StatusConfirmacao.confirmado,
-                                    ),
+                            onPressed: () async {
+                              await ref
+                                  .read(participanteControllerProvider.notifier)
+                                  .atualizarStatus(
+                                    rachaId: racha.id,
+                                    participanteId: participanteId,
+                                    status: StatusConfirmacao.confirmado,
+                                  );
+                              await ref
+                                  .read(localNotificationServiceProvider)
+                                  .agendarLembrete(racha);
+                            },
                             child: const Text('Confirmar presença'),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () =>
-                                ref.read(participanteControllerProvider.notifier).atualizarStatus(
-                                      rachaId: racha.id,
-                                      participanteId: participanteId,
-                                      status: StatusConfirmacao.recusado,
-                                    ),
+                            onPressed: () async {
+                              await ref
+                                  .read(participanteControllerProvider.notifier)
+                                  .atualizarStatus(
+                                    rachaId: racha.id,
+                                    participanteId: participanteId,
+                                    status: StatusConfirmacao.recusado,
+                                  );
+                              await ref
+                                  .read(localNotificationServiceProvider)
+                                  .cancelarLembrete(racha.id);
+                            },
                             child: const Text('Recusar'),
                           ),
                         ),
@@ -818,19 +880,67 @@ class _ProximoRachaTab extends ConsumerWidget {
   }
 }
 
-class _ParticipanteTile extends ConsumerWidget {
-  const _ParticipanteTile({required this.rachaId, required this.participante, required this.meuUid});
+/// Mostra o código pra convidar gente por fora do fluxo de busca por
+/// nome/email — o código é o próprio id do racha (ver
+/// `RachaController.entrarComCodigo`), sem nada extra pra gerar/guardar.
+void _mostrarDialogoCodigo(BuildContext context, RachaModel racha) {
+  showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Código do racha'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Compartilhe esse código — quem entrar com ele na Home '
+              'já fica confirmado direto:'),
+          const SizedBox(height: 12),
+          SelectableText(
+            racha.id,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Fechar'),
+        ),
+        FilledButton.icon(
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: racha.id));
+            ScaffoldMessenger.of(context)
+                .showSnackBar(const SnackBar(content: Text('Código copiado!')));
+          },
+          icon: const Icon(Icons.copy, size: 18),
+          label: const Text('Copiar'),
+        ),
+      ],
+    ),
+  );
+}
 
-  final String rachaId;
+class _ParticipanteTile extends ConsumerWidget {
+  const _ParticipanteTile({
+    required this.racha,
+    required this.participante,
+    required this.meuUid,
+    required this.isAdmin,
+  });
+
+  final RachaModel racha;
   final ParticipanteModel participante;
   final String? meuUid;
+  final bool isAdmin;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final rachaId = racha.id;
     final userAsync = ref.watch(userPorIdProvider(participante.userId));
     final souEu = participante.userId == meuUid;
     final pendente = participante.statusConfirmacao == StatusConfirmacao.pendente;
     final confirmado = participante.confirmado;
+    final mostrarTrailing = (souEu && (pendente || confirmado)) || isAdmin;
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -845,11 +955,11 @@ class _ParticipanteTile extends ConsumerWidget {
           ],
         ],
       ),
-      trailing: (souEu && (pendente || confirmado))
+      trailing: mostrarTrailing
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (confirmado)
+                if (souEu && confirmado)
                   IconButton(
                     icon: const Icon(Icons.edit_note),
                     tooltip: participante.posicaoMain == null
@@ -858,35 +968,84 @@ class _ParticipanteTile extends ConsumerWidget {
                     onPressed: () =>
                         _mostrarDialogoPosicao(context, ref, rachaId, participante),
                   ),
-                if (pendente) ...[
+                if (souEu && pendente) ...[
                   IconButton(
                     icon: const Icon(Icons.check_circle, color: Colors.green),
                     tooltip: 'Confirmar presença',
-                    onPressed: () => ref
-                        .read(participanteControllerProvider.notifier)
-                        .atualizarStatus(
-                          rachaId: rachaId,
-                          participanteId: participante.id,
-                          status: StatusConfirmacao.confirmado,
-                        ),
+                    onPressed: () async {
+                      await ref
+                          .read(participanteControllerProvider.notifier)
+                          .atualizarStatus(
+                            rachaId: rachaId,
+                            participanteId: participante.id,
+                            status: StatusConfirmacao.confirmado,
+                          );
+                      await ref.read(localNotificationServiceProvider).agendarLembrete(racha);
+                    },
                   ),
                   IconButton(
                     icon: const Icon(Icons.cancel, color: Colors.red),
                     tooltip: 'Recusar',
-                    onPressed: () => ref
-                        .read(participanteControllerProvider.notifier)
-                        .atualizarStatus(
-                          rachaId: rachaId,
-                          participanteId: participante.id,
-                          status: StatusConfirmacao.recusado,
-                        ),
+                    onPressed: () async {
+                      await ref
+                          .read(participanteControllerProvider.notifier)
+                          .atualizarStatus(
+                            rachaId: rachaId,
+                            participanteId: participante.id,
+                            status: StatusConfirmacao.recusado,
+                          );
+                      await ref.read(localNotificationServiceProvider).cancelarLembrete(rachaId);
+                    },
                   ),
                 ],
+                if (isAdmin && !souEu)
+                  IconButton(
+                    icon: const Icon(Icons.person_remove_outlined),
+                    tooltip: 'Remover do racha',
+                    onPressed: () => _confirmarERemoverParticipante(
+                      context,
+                      ref,
+                      rachaId,
+                      participante,
+                      userAsync.valueOrNull?.nome ?? 'esse jogador',
+                    ),
+                  ),
               ],
             )
           : null,
     );
   }
+}
+
+Future<void> _confirmarERemoverParticipante(
+  BuildContext context,
+  WidgetRef ref,
+  String rachaId,
+  ParticipanteModel participante,
+  String nome,
+) async {
+  final confirmar = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Remover jogador'),
+      content: Text('Tirar $nome desse racha?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Remover'),
+        ),
+      ],
+    ),
+  );
+  if (confirmar != true) return;
+
+  await ref
+      .read(participanteControllerProvider.notifier)
+      .remover(rachaId: rachaId, participanteId: participante.id);
 }
 
 /// Diálogo pra o próprio participante escolher posição main/usual — usadas
@@ -1009,11 +1168,47 @@ class _ConvidadoTile extends ConsumerWidget {
                     onPressed: () =>
                         _mostrarDialogoOficializar(context, ref, rachaId, convidado),
                   ),
+                IconButton(
+                  icon: const Icon(Icons.person_remove_outlined),
+                  tooltip: 'Remover do racha',
+                  onPressed: () =>
+                      _confirmarERemoverConvidado(context, ref, rachaId, convidado),
+                ),
               ],
             )
           : null,
     );
   }
+}
+
+Future<void> _confirmarERemoverConvidado(
+  BuildContext context,
+  WidgetRef ref,
+  String rachaId,
+  ConvidadoModel convidado,
+) async {
+  final confirmar = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Remover convidado'),
+      content: Text('Tirar ${convidado.nome} desse racha?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Remover'),
+        ),
+      ],
+    ),
+  );
+  if (confirmar != true) return;
+
+  await ref
+      .read(convidadoControllerProvider.notifier)
+      .remover(rachaId: rachaId, convidadoId: convidado.id);
 }
 
 /// Fluxo 3.1 (docs/estrutura.md): o convidado já criou a própria conta em
@@ -1067,7 +1262,7 @@ Future<void> _mostrarDialogoOficializar(
                     Expanded(
                       child: TextField(
                         controller: buscaController,
-                        decoration: const InputDecoration(labelText: 'Email do jogador'),
+                        decoration: const InputDecoration(labelText: 'Nome ou email'),
                         onSubmitted: (_) => buscar(),
                       ),
                     ),

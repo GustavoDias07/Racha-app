@@ -10,6 +10,8 @@ import '../../providers/firebase_providers.dart';
 import '../../providers/grupo_controller.dart';
 import '../racha/racha_tabs_section.dart';
 
+enum _AcaoGrupo { editar, apagar }
+
 /// Tela do racha (grupo recorrente): configuração fixa do grupo num cabeçalho
 /// fixo + abas com o conteúdo da rodada aberta atual (participantes,
 /// convidados, estatísticas, confirmação).
@@ -22,8 +24,6 @@ class GrupoDetalheScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final rachaAsync = ref.watch(rachaAtualDoGrupoProvider(grupo.id));
 
-    final state = ref.watch(grupoControllerProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(grupo.nome),
@@ -34,11 +34,37 @@ class GrupoDetalheScreen extends ConsumerWidget {
             onPressed: () => context.push('/grupos/${grupo.id}/ranking', extra: grupo),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'Apagar grupo',
-            onPressed: state.isLoading
-                ? null
-                : () => _confirmarERemoverGrupo(context, ref, grupo),
+            icon: const Icon(Icons.history),
+            tooltip: 'Histórico de rodadas',
+            onPressed: () => context.push('/grupos/${grupo.id}/historico', extra: grupo),
+          ),
+          PopupMenuButton<_AcaoGrupo>(
+            onSelected: (acao) {
+              switch (acao) {
+                case _AcaoGrupo.editar:
+                  context.push('/grupos/${grupo.id}/editar', extra: grupo);
+                case _AcaoGrupo.apagar:
+                  _confirmarERemoverGrupo(context, ref, grupo);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _AcaoGrupo.editar,
+                child: ListTile(
+                  leading: Icon(Icons.edit_outlined),
+                  title: Text('Editar grupo'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _AcaoGrupo.apagar,
+                child: ListTile(
+                  leading: Icon(Icons.delete_outline),
+                  title: Text('Apagar grupo'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -241,7 +267,7 @@ Future<void> _mostrarDialogoAdicionarMembro(
                     Expanded(
                       child: TextField(
                         controller: buscaController,
-                        decoration: const InputDecoration(labelText: 'Email do jogador'),
+                        decoration: const InputDecoration(labelText: 'Nome ou email'),
                         onSubmitted: (_) => buscar(),
                       ),
                     ),

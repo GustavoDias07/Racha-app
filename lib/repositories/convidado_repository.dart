@@ -58,6 +58,11 @@ class ConvidadoRepository {
         .update({'oficializadoComoUserId': userId});
   }
 
+  /// Tira o convidado do racha (admin).
+  Future<void> remover({required String rachaId, required String convidadoId}) {
+    return _collection(rachaId).doc(convidadoId).delete();
+  }
+
   /// Mesma coisa que `definirTime`, mas adiciona a um `WriteBatch`
   /// compartilhado — ver `ParticipanteRepository.definirTimeEmLote`.
   void definirTimeEmLote(
