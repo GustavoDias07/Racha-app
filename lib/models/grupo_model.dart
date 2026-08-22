@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'enums.dart';
 
 /// Racha recorrente: guarda a configuração padrão usada para gerar
@@ -12,6 +14,13 @@ class GrupoModel {
   final String horario; // formato "HH:mm"
   final String adminId;
   final List<String> membrosFixos; // ids de User
+  // Coordenadas capturadas pelo admin ao criar/editar o grupo — nulo pra
+  // grupos criados antes dessa feature, que por isso nunca aparecem na aba
+  // "Rachas Próximos" (não tem como calcular distância sem elas).
+  final GeoPoint? localizacao;
+  // Controla se o grupo aparece na busca por proximidade pra qualquer
+  // jogador logado, que pode então solicitar entrada (ver SolicitacaoModel).
+  final bool abertoParaNovosMembros;
 
   const GrupoModel({
     required this.id,
@@ -23,6 +32,8 @@ class GrupoModel {
     required this.horario,
     required this.adminId,
     this.membrosFixos = const [],
+    this.localizacao,
+    this.abertoParaNovosMembros = false,
   });
 
   factory GrupoModel.fromMap(String id, Map<String, dynamic> map) {
@@ -36,6 +47,8 @@ class GrupoModel {
       horario: map['horario'] as String,
       adminId: map['adminId'] as String,
       membrosFixos: List<String>.from(map['membrosFixos'] as List? ?? const []),
+      localizacao: map['localizacao'] as GeoPoint?,
+      abertoParaNovosMembros: map['abertoParaNovosMembros'] as bool? ?? false,
     );
   }
 
@@ -49,6 +62,8 @@ class GrupoModel {
       'horario': horario,
       'adminId': adminId,
       'membrosFixos': membrosFixos,
+      'localizacao': localizacao,
+      'abertoParaNovosMembros': abertoParaNovosMembros,
     };
   }
 
@@ -60,6 +75,8 @@ class GrupoModel {
     DiaSemana? diaSemana,
     String? horario,
     List<String>? membrosFixos,
+    GeoPoint? localizacao,
+    bool? abertoParaNovosMembros,
   }) {
     return GrupoModel(
       id: id,
@@ -72,6 +89,8 @@ class GrupoModel {
       horario: horario ?? this.horario,
       adminId: adminId,
       membrosFixos: membrosFixos ?? this.membrosFixos,
+      localizacao: localizacao ?? this.localizacao,
+      abertoParaNovosMembros: abertoParaNovosMembros ?? this.abertoParaNovosMembros,
     );
   }
 }

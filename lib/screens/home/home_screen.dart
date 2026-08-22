@@ -30,6 +30,11 @@ class HomeScreen extends ConsumerWidget {
         title: const Text('Meus rachas'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.travel_explore_outlined),
+            tooltip: 'Rachas próximos',
+            onPressed: () => context.push('/proximos'),
+          ),
+          IconButton(
             icon: Badge(
               label: Text('$pendentes'),
               isLabelVisible: pendentes > 0,

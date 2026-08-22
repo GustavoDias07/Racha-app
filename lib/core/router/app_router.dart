@@ -8,6 +8,7 @@ import '../../models/user_model.dart';
 import '../../providers/firebase_providers.dart';
 import '../../screens/auth/cadastro_screen.dart';
 import '../../screens/auth/login_screen.dart';
+import '../../screens/descoberta/rachas_proximos_screen.dart';
 import '../../screens/grupo/criar_grupo_screen.dart';
 import '../../screens/grupo/editar_grupo_screen.dart';
 import '../../screens/grupo/grupo_detalhe_screen.dart';
@@ -43,6 +44,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/cadastro', builder: (context, state) => const CadastroScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/perfil', builder: (context, state) => const PerfilScreen()),
+      GoRoute(
+        path: '/proximos',
+        builder: (context, state) => const RachasProximosScreen(),
+      ),
       GoRoute(
         path: '/perfil/editar',
         builder: (context, state) =>

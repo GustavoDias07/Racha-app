@@ -6,6 +6,10 @@
          notificações — sem ela no manifesto, FirebaseMessaging.requestPermission()
          não tem o que pedir. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Captura das coordenadas do racha (tela de criar/editar grupo) e da
+         posição do usuário na aba "Rachas Próximos". -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="racha_app"
         android:name="${applicationName}"

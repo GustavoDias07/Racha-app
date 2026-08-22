@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/enums.dart';
 import '../../models/grupo_model.dart';
 import '../../providers/grupo_controller.dart';
+import 'localizacao_picker_screen.dart';
 
 /// Edita a configuração padrão de um Grupo já criado — nome, local, dia da
 /// semana, horário, tipo de campo. Só vale pras próximas rodadas que ainda
@@ -27,6 +29,8 @@ class _EditarGrupoScreenState extends ConsumerState<EditarGrupoScreen> {
   late DiaSemana _diaSemana;
   late TipoCampo _tipoCampo;
   late TimeOfDay _horario;
+  GeoPoint? _localizacao;
+  late bool _abertoParaNovosMembros;
 
   @override
   void initState() {
@@ -40,6 +44,8 @@ class _EditarGrupoScreenState extends ConsumerState<EditarGrupoScreen> {
     _tipoCampo = grupo.tipoCampoPadrao;
     final partes = grupo.horario.split(':');
     _horario = TimeOfDay(hour: int.parse(partes[0]), minute: int.parse(partes[1]));
+    _localizacao = grupo.localizacao;
+    _abertoParaNovosMembros = grupo.abertoParaNovosMembros;
   }
 
   @override
@@ -65,6 +71,11 @@ class _EditarGrupoScreenState extends ConsumerState<EditarGrupoScreen> {
     if (horario != null) setState(() => _horario = horario);
   }
 
+  Future<void> _escolherLocalizacao() async {
+    final ponto = await escolherLocalizacaoNoMapa(context, inicial: _localizacao);
+    if (ponto != null) setState(() => _localizacao = ponto);
+  }
+
   Future<void> _submeter() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -79,6 +90,8 @@ class _EditarGrupoScreenState extends ConsumerState<EditarGrupoScreen> {
           horario: horarioFormatado,
           tipoCampoPadrao: _tipoCampo,
           qtdJogadoresLinhaPadrao: int.parse(_qtdController.text),
+          localizacao: _localizacao,
+          abertoParaNovosMembros: _abertoParaNovosMembros,
         );
 
     final erro = ref.read(grupoControllerProvider).error;
@@ -122,7 +135,20 @@ class _EditarGrupoScreenState extends ConsumerState<EditarGrupoScreen> {
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Informe o local' : null,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _escolherLocalizacao,
+                    icon: const Icon(Icons.map_outlined, size: 18),
+                    label: Text(
+                      _localizacao == null
+                          ? 'Escolher localização no mapa'
+                          : 'Localização marcada ✓ (toque pra ajustar)',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
@@ -172,7 +198,18 @@ class _EditarGrupoScreenState extends ConsumerState<EditarGrupoScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Aberto para novos jogadores'),
+                  subtitle: const Text(
+                    'Aparece na aba "Rachas Próximos" pra qualquer jogador logado perto '
+                    'daqui, que pode solicitar entrada.',
+                  ),
+                  value: _abertoParaNovosMembros,
+                  onChanged: (v) => setState(() => _abertoParaNovosMembros = v),
+                ),
+                const SizedBox(height: 12),
                 FilledButton(
                   onPressed: carregando ? null : _submeter,
                   child: carregando

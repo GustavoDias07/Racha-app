@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/enums.dart';
 import '../../providers/grupo_controller.dart';
+import 'localizacao_picker_screen.dart';
 
 /// Cria um racha recorrente (Grupo): dia da semana e horário fixos, em vez
 /// de uma data específica — a data de cada rodada é resolvida dentro do
@@ -23,6 +25,8 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
   DiaSemana _diaSemana = DiaSemana.sabado;
   TipoCampo _tipoCampo = TipoCampo.campao;
   TimeOfDay? _horario;
+  GeoPoint? _localizacao;
+  bool _abertoParaNovosMembros = false;
 
   @override
   void initState() {
@@ -55,6 +59,13 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
     if (horario != null) setState(() => _horario = horario);
   }
 
+  /// Captura as coordenadas do racha num mapa, usadas depois pra calcular a
+  /// distância na aba "Rachas Próximos" (ver `lib/core/utils/geo_utils.dart`).
+  Future<void> _escolherLocalizacao() async {
+    final ponto = await escolherLocalizacaoNoMapa(context, inicial: _localizacao);
+    if (ponto != null) setState(() => _localizacao = ponto);
+  }
+
   Future<void> _submeter() async {
     if (!_formKey.currentState!.validate()) return;
     if (_horario == null) {
@@ -74,6 +85,8 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
           horario: horarioFormatado,
           tipoCampoPadrao: _tipoCampo,
           qtdJogadoresLinhaPadrao: int.parse(_qtdController.text),
+          localizacao: _localizacao,
+          abertoParaNovosMembros: _abertoParaNovosMembros,
         );
 
     final erro = ref.read(grupoControllerProvider).error;
@@ -118,7 +131,20 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Informe o local' : null,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _escolherLocalizacao,
+                    icon: const Icon(Icons.map_outlined, size: 18),
+                    label: Text(
+                      _localizacao == null
+                          ? 'Escolher localização no mapa'
+                          : 'Localização marcada ✓ (toque pra ajustar)',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
@@ -168,7 +194,18 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Aberto para novos jogadores'),
+                  subtitle: const Text(
+                    'Aparece na aba "Rachas Próximos" pra qualquer jogador logado perto '
+                    'daqui, que pode solicitar entrada.',
+                  ),
+                  value: _abertoParaNovosMembros,
+                  onChanged: (v) => setState(() => _abertoParaNovosMembros = v),
+                ),
+                const SizedBox(height: 12),
                 FilledButton(
                   onPressed: carregando ? null : _submeter,
                   child: carregando

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/utils/data_utils.dart';
@@ -17,6 +18,8 @@ class GrupoController extends AsyncNotifier<void> {
     required String horario,
     required TipoCampo tipoCampoPadrao,
     required int qtdJogadoresLinhaPadrao,
+    GeoPoint? localizacao,
+    bool abertoParaNovosMembros = false,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -30,6 +33,8 @@ class GrupoController extends AsyncNotifier<void> {
         diaSemana: diaSemana,
         horario: horario,
         adminId: adminId,
+        localizacao: localizacao,
+        abertoParaNovosMembros: abertoParaNovosMembros,
       );
       final grupoId = await ref.read(grupoRepositoryProvider).criar(grupo);
 
@@ -88,6 +93,8 @@ class GrupoController extends AsyncNotifier<void> {
     required String horario,
     required TipoCampo tipoCampoPadrao,
     required int qtdJogadoresLinhaPadrao,
+    GeoPoint? localizacao,
+    bool abertoParaNovosMembros = false,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() {
@@ -99,6 +106,8 @@ class GrupoController extends AsyncNotifier<void> {
             horario: horario,
             tipoCampoPadrao: tipoCampoPadrao,
             qtdJogadoresLinhaPadrao: qtdJogadoresLinhaPadrao,
+            localizacao: localizacao,
+            abertoParaNovosMembros: abertoParaNovosMembros,
           );
     });
   }

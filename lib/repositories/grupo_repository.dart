@@ -40,6 +40,17 @@ class GrupoRepository {
             snap.docs.map((d) => GrupoModel.fromMap(d.id, d.data())).toList());
   }
 
+  /// Grupos abertos pra novos membros — base da aba "Rachas Próximos". Sem
+  /// filtro geográfico no servidor (ver `lib/core/utils/geo_utils.dart`): a
+  /// tela filtra/ordena por distância no cliente a partir dessa lista.
+  Stream<List<GrupoModel>> observarAbertos() {
+    return _collection
+        .where('abertoParaNovosMembros', isEqualTo: true)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => GrupoModel.fromMap(d.id, d.data())).toList());
+  }
+
   /// Grava a lista de membros fixos (User) convidados automaticamente toda
   /// vez que uma nova rodada do grupo nasce (Fluxo 5).
   Future<void> atualizarMembrosFixos(String grupoId, List<String> membrosFixos) {
@@ -57,6 +68,8 @@ class GrupoRepository {
     required String horario,
     required TipoCampo tipoCampoPadrao,
     required int qtdJogadoresLinhaPadrao,
+    GeoPoint? localizacao,
+    bool abertoParaNovosMembros = false,
   }) {
     return _collection.doc(grupoId).update({
       'nome': nome,
@@ -65,6 +78,8 @@ class GrupoRepository {
       'horario': horario,
       'tipoCampoPadrao': tipoCampoPadrao.name,
       'qtdJogadoresLinhaPadrao': qtdJogadoresLinhaPadrao,
+      'localizacao': localizacao,
+      'abertoParaNovosMembros': abertoParaNovosMembros,
     });
   }
 

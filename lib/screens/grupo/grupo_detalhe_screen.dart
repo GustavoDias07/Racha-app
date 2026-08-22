@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../core/widgets/info_tile.dart';
 import '../../models/enums.dart';
 import '../../models/grupo_model.dart';
+import '../../models/solicitacao_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/firebase_providers.dart';
 import '../../providers/grupo_controller.dart';
+import '../../providers/solicitacao_controller.dart';
 import '../racha/racha_tabs_section.dart';
 
 enum _AcaoGrupo { editar, apagar }
@@ -89,6 +91,7 @@ class GrupoDetalheScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   _MembrosFixosSection(grupo: grupo),
+                  _SolicitacoesSection(grupo: grupo),
                 ],
               ),
             ),
@@ -310,4 +313,77 @@ Future<void> _mostrarDialogoAdicionarMembro(
       },
     ),
   );
+}
+
+/// Pedidos de entrada pendentes (aba "Rachas Próximos" de quem ainda não é
+/// membro) — só aparece pro admin quando há pelo menos um pendente, mesmo
+/// que o grupo já tenha sido fechado de novo nesse meio tempo.
+class _SolicitacoesSection extends ConsumerWidget {
+  const _SolicitacoesSection({required this.grupo});
+
+  final GrupoModel grupo;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final solicitacoesAsync = ref.watch(solicitacoesPendentesProvider(grupo.id));
+    final solicitacoes = solicitacoesAsync.valueOrNull ?? const [];
+    if (solicitacoes.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.person_add_outlined, size: 20, color: Colors.black54),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Solicitações de entrada (${solicitacoes.length})',
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          for (final solicitacao in solicitacoes)
+            _SolicitacaoTile(grupo: grupo, solicitacao: solicitacao),
+        ],
+      ),
+    );
+  }
+}
+
+class _SolicitacaoTile extends ConsumerWidget {
+  const _SolicitacaoTile({required this.grupo, required this.solicitacao});
+
+  final GrupoModel grupo;
+  final SolicitacaoModel solicitacao;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(userPorIdProvider(solicitacao.solicitanteId));
+    return Padding(
+      padding: const EdgeInsets.only(left: 32),
+      child: Row(
+        children: [
+          Expanded(child: Text(userAsync.valueOrNull?.nome ?? 'Carregando...')),
+          IconButton(
+            icon: const Icon(Icons.check, size: 18, color: Colors.green),
+            tooltip: 'Aprovar',
+            onPressed: () => ref
+                .read(solicitacaoControllerProvider.notifier)
+                .aprovar(grupo, solicitacao),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18, color: Colors.red),
+            tooltip: 'Recusar',
+            onPressed: () => ref
+                .read(solicitacaoControllerProvider.notifier)
+                .recusar(grupo, solicitacao),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -13,6 +13,7 @@ import '../models/grupo_model.dart';
 import '../models/participante_model.dart';
 import '../models/racha_model.dart';
 import '../models/ranking_model.dart';
+import '../models/solicitacao_model.dart';
 import '../models/user_model.dart';
 import '../repositories/avaliacao_repository.dart';
 import '../repositories/convidado_repository.dart';
@@ -21,9 +22,11 @@ import '../repositories/grupo_repository.dart';
 import '../repositories/participante_repository.dart';
 import '../repositories/racha_repository.dart';
 import '../repositories/ranking_repository.dart';
+import '../repositories/solicitacao_repository.dart';
 import '../repositories/user_repository.dart';
 import '../services/auth_service.dart';
 import '../services/local_notification_service.dart';
+import '../services/location_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 
@@ -39,6 +42,8 @@ final authServiceProvider = Provider<AuthService>((ref) {
 });
 
 final storageServiceProvider = Provider<StorageService>((ref) => StorageService());
+
+final locationServiceProvider = Provider<LocationService>((ref) => LocationService());
 
 final firebaseMessagingProvider =
     Provider<FirebaseMessaging>((ref) => FirebaseMessaging.instance);
@@ -83,6 +88,10 @@ final estatisticaRepositoryProvider = Provider<EstatisticaRepository>((ref) {
   return EstatisticaRepository(ref.watch(firestoreProvider));
 });
 
+final solicitacaoRepositoryProvider = Provider<SolicitacaoRepository>((ref) {
+  return SolicitacaoRepository(ref.watch(firestoreProvider));
+});
+
 /// Rachas (grupos recorrentes) do usuário logado, para a lista da Home.
 final meusGruposProvider = StreamProvider<List<GrupoModel>>((ref) {
   final uid = ref.watch(authStateChangesProvider).value?.uid;
@@ -107,6 +116,30 @@ final meusRachasAvulsosProvider = StreamProvider<List<RachaModel>>((ref) {
 final rachaAtualDoGrupoProvider =
     StreamProvider.family<RachaModel?, String>((ref, grupoId) {
   return ref.watch(rachaRepositoryProvider).observarAtualPorGrupo(grupoId);
+});
+
+/// Grupos abertos pra novos membros — base da aba "Rachas Próximos"
+/// (`GrupoRepository.observarAbertos`); a tela filtra/ordena por distância
+/// no cliente a partir daqui.
+final rachasAbertosProvider = StreamProvider<List<GrupoModel>>((ref) {
+  return ref.watch(grupoRepositoryProvider).observarAbertos();
+});
+
+/// Pedidos de entrada pendentes de um grupo — seção de aprovação na tela de
+/// detalhe do grupo, visível só pro admin.
+final solicitacoesPendentesProvider =
+    StreamProvider.family<List<SolicitacaoModel>, String>((ref, grupoId) {
+  return ref.watch(solicitacaoRepositoryProvider).observarPendentes(grupoId);
+});
+
+/// Solicitação pendente do usuário logado num grupo, se houver — usado na
+/// aba "Rachas Próximos" pra trocar o botão "Solicitar entrada" por "Pedido
+/// pendente" e não deixar pedir duas vezes.
+final minhaSolicitacaoProvider =
+    FutureProvider.family<SolicitacaoModel?, String>((ref, grupoId) {
+  final uid = ref.watch(authStateChangesProvider).value?.uid;
+  if (uid == null) return Future.value(null);
+  return ref.watch(solicitacaoRepositoryProvider).buscarMinhaSolicitacao(grupoId, uid);
 });
 
 /// Grupo por id, em stream — usado pela seção "Membros fixos" da tela de

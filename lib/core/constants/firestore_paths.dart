@@ -18,4 +18,7 @@ class FirestorePaths {
   static const convidados = 'convidados';
   static const avaliacoes = 'avaliacoes';
   static const estatisticas = 'estatisticas';
+
+  // Subcoleção de grupos/{grupoId} — pedidos de entrada (aba "Rachas Próximos").
+  static const solicitacoes = 'solicitacoes';
 }
