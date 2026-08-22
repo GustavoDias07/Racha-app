@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Regras do Firebase Storage. Provisório: o Storage ainda não está
+// ativado no projeto (plano Blaze pendente — ver StorageService), e por
+// enquanto a foto de perfil é salva em base64 direto no Firestore. Essas
+// regras já deixam o caminho pronto pro dia em que StorageService passar a
+// fazer upload de verdade, sem exigir revisão de segurança nessa hora.
+service firebase.storage {
+  match /b/{bucket}/o {
+    // fotos_perfil/{userId}/... — só o dono sobe a própria foto; qualquer
+    // logado pode ver (aparece pra outros participantes nas listas do app).
+    match /fotos_perfil/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

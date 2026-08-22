@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "500693195167",
+    "project_id": "racha-app-ghad-108ab",
+    "storage_bucket": "racha-app-ghad-108ab.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:500693195167:android:a47d9a067b9027ea8605aa",
+        "android_client_info": {
+          "package_name": "com.example.racha_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIh2er6pORFz5d3miGIJHAQeg3NT0xeIo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,162 @@
+rules_version = '2';
+
+// Regras do Firestore para o racha_app. Espelham a autorização que já
+// existe no app (Flutter) — ver docs/estrutura.md e lib/providers/*.dart —
+// porque sem essas regras qualquer cliente autenticado conseguiria ler ou
+// escrever em qualquer documento direto, ignorando toda a lógica de admin/
+// participante da UI.
+//
+// Limitação conhecida: este projeto não tem backend (Cloud Functions). Os
+// documentos de `rankings` são recalculados e gravados pelo cliente de
+// quem quer que tenha disparado a ação (ex: ao avaliar um companheiro, é o
+// cliente de quem avaliou que atualiza o ranking do avaliado). Não dá pra
+// garantir 100% a integridade desses valores só com regras — só limitar o
+// formato/faixa. Uma versão futura com Cloud Functions resolveria isso de
+// vez, movendo o cálculo pro servidor.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isRachaAdmin(rachaId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/rachas/$(rachaId)).data.adminId == request.auth.uid;
+    }
+
+    // users/{userId} — jogador cadastrado (docs/estrutura.md, entidade User).
+    match /users/{userId} {
+      // Leitura aberta a qualquer logado: nomes/fotos aparecem em listas de
+      // participantes, times, ranking etc., de qualquer racha.
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && request.resource.data.nome is string
+        && request.resource.data.email is string
+        && request.resource.data.idade is int
+        && request.resource.data.peso is number;
+
+      // Só o próprio dono edita, e não pela porta dos fundos: email e data
+      // de criação são imutáveis por aqui (só o cadastro define email).
+      allow update: if isSignedIn() && request.auth.uid == userId
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if false;
+    }
+
+    // grupos/{grupoId} — racha recorrente (docs/estrutura.md, entidade Grupo).
+    match /grupos/{grupoId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.adminId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.adminId == request.auth.uid
+        && request.resource.data.adminId == resource.data.adminId;
+      allow delete: if false;
+    }
+
+    // rachas/{rachaId} — uma rodada, avulsa ou vinda de um Grupo.
+    match /rachas/{rachaId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.adminId == request.auth.uid;
+      // Só o admin edita o racha (nome/local/data/status/mvpUserId etc.);
+      // admin e grupoId são imutáveis depois de criado.
+      allow update: if isSignedIn() && resource.data.adminId == request.auth.uid
+        && request.resource.data.adminId == resource.data.adminId
+        && request.resource.data.grupoId == resource.data.grupoId;
+      allow delete: if false;
+
+      // participantes/{participanteId} — um User dentro deste racha.
+      match /participantes/{participanteId} {
+        allow read: if isSignedIn();
+
+        // Qualquer jogador logado pode convidar outro (a tela "Convidar"
+        // não é restrita ao admin do racha). Convite sempre nasce
+        // pendente — ninguém se autoconfirma na criação — com uma exceção:
+        // o admin se juntando confirmado à própria rodada que acabou de
+        // criar (GrupoController.criar).
+        allow create: if isSignedIn()
+          && request.resource.data.rachaId == rachaId
+          && request.resource.data.userId is string
+          && (
+            request.resource.data.statusConfirmacao == 'pendente' ||
+            (
+              request.resource.data.statusConfirmacao == 'confirmado' &&
+              request.resource.data.userId == request.auth.uid &&
+              isRachaAdmin(rachaId)
+            )
+          );
+
+        // O admin do racha controla tudo (aprovação, posições, time). O
+        // próprio participante só mexe no status de presença e nas
+        // próprias posições — nunca no `time`, que é exclusivo do
+        // algoritmo de balanceamento (ação só do admin).
+        allow update: if isSignedIn() && (
+          isRachaAdmin(rachaId) ||
+          (
+            resource.data.userId == request.auth.uid &&
+            request.resource.data.userId == resource.data.userId &&
+            request.resource.data.rachaId == resource.data.rachaId &&
+            request.resource.data.time == resource.data.time
+          )
+        );
+        allow delete: if false;
+      }
+
+      // convidados/{convidadoId} — perfil temporário, sem login.
+      match /convidados/{convidadoId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.rachaId == rachaId
+          && request.resource.data.statusAprovacao == 'pendente';
+        // Convidado não tem conta própria — só o admin aprova/recusa e
+        // define o time.
+        allow update: if isRachaAdmin(rachaId);
+        allow delete: if false;
+      }
+
+      // avaliacoes/{avaliacaoId} — nota pós-jogo; imutável depois de criada
+      // (não existe tela de edição, então não existe motivo pra permitir).
+      match /avaliacoes/{avaliacaoId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.rachaId == rachaId
+          && request.resource.data.avaliadorId == request.auth.uid
+          && request.resource.data.nota is number
+          && request.resource.data.nota >= 1
+          && request.resource.data.nota <= 5;
+        allow update, delete: if false;
+      }
+
+      // estatisticas/{jogadorId} — o id do doc é o próprio jogadorId
+      // (userId real do User, ou id do Convidado — ver EstatisticaRepository).
+      match /estatisticas/{jogadorId} {
+        allow read: if isSignedIn();
+        allow create, update: if isSignedIn()
+          && request.resource.data.rachaId == rachaId
+          && request.resource.data.jogadorId == jogadorId
+          && (isRachaAdmin(rachaId) || request.auth.uid == jogadorId)
+          && request.resource.data.gols >= 0
+          && request.resource.data.assistencias >= 0
+          && request.resource.data.cartoesAmarelos >= 0
+          && request.resource.data.cartoesVermelhos >= 0;
+        allow delete: if false;
+      }
+    }
+
+    // rankings/{userId} — acumulado (média de avaliação, MVPs, gols,
+    // assistências). Ver limitação de arquitetura no comentário do topo.
+    match /rankings/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.resource.data.mediaAvaliacoes is number
+        && request.resource.data.mediaAvaliacoes >= 0
+        && request.resource.data.mediaAvaliacoes <= 5
+        && request.resource.data.totalMvps >= 0
+        && request.resource.data.totalGols >= 0
+        && request.resource.data.totalAssistencias >= 0
+        && request.resource.data.totalRachas >= 0;
+      allow delete: if false;
+    }
+  }
+}
