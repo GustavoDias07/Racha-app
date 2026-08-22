@@ -42,11 +42,6 @@ class HomeScreen extends ConsumerWidget {
                 : () => _mostrarConvitesPendentes(context, convites.valueOrNull ?? [], meuUid),
           ),
           IconButton(
-            icon: const Icon(Icons.leaderboard),
-            tooltip: 'Ranking',
-            onPressed: () => context.push('/ranking'),
-          ),
-          IconButton(
             icon: const Icon(Icons.person),
             tooltip: 'Meu perfil',
             onPressed: () => context.push('/perfil'),

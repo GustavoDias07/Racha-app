@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/info_tile.dart';
 import '../../models/enums.dart';
@@ -27,6 +28,11 @@ class GrupoDetalheScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(grupo.nome),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.leaderboard_outlined),
+            tooltip: 'Ranking do grupo',
+            onPressed: () => context.push('/grupos/${grupo.id}/ranking', extra: grupo),
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             tooltip: 'Apagar grupo',

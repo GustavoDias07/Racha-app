@@ -10,6 +10,7 @@ import '../../screens/auth/cadastro_screen.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/grupo/criar_grupo_screen.dart';
 import '../../screens/grupo/grupo_detalhe_screen.dart';
+import '../../screens/grupo/grupo_ranking_screen.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/perfil/editar_perfil_screen.dart';
 import '../../screens/perfil/perfil_screen.dart';
@@ -18,7 +19,6 @@ import '../../screens/racha/convidar_jogador_screen.dart';
 import '../../screens/racha/criar_racha_screen.dart';
 import '../../screens/racha/editar_racha_screen.dart';
 import '../../screens/racha/racha_detalhe_screen.dart';
-import '../../screens/ranking/ranking_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateChangesProvider);
@@ -60,6 +60,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             GrupoDetalheScreen(grupo: state.extra as GrupoModel),
       ),
       GoRoute(
+        path: '/grupos/:id/ranking',
+        builder: (context, state) {
+          final grupo = state.extra as GrupoModel;
+          return GrupoRankingScreen(grupoId: grupo.id, grupoNome: grupo.nome);
+        },
+      ),
+      GoRoute(
         path: '/rachas/:id',
         builder: (context, state) =>
             RachaDetalheScreen(rachaId: state.pathParameters['id']!),
@@ -81,7 +88,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) =>
             AvaliacaoScreen(rachaId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/ranking', builder: (context, state) => const RankingScreen()),
     ],
   );
 });

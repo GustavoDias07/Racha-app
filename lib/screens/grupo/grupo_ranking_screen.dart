@@ -4,19 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/ranking_model.dart';
 import '../../providers/firebase_providers.dart';
 
-/// Ranking geral: lista de Users ordenada por média de avaliação, com MVPs,
-/// gols e assistências acumulados (docs/estrutura.md, tela 12). Gols e
-/// assistências ficam zerados até que a funcionalidade de Estatísticas seja
-/// implementada — o campo já existe no `RankingModel`, só não é alimentado.
-class RankingScreen extends ConsumerWidget {
-  const RankingScreen({super.key});
+/// Ranking desse Grupo só — quem tem mais MVPs e melhor desempenho nas
+/// rodadas jogadas ali. Nada de ranking geral do app: comparar jogadores
+/// de grupos diferentes, que nem se conhecem, não fazia sentido.
+class GrupoRankingScreen extends ConsumerWidget {
+  const GrupoRankingScreen({super.key, required this.grupoId, required this.grupoNome});
+
+  final String grupoId;
+  final String grupoNome;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rankingAsync = ref.watch(rankingTopProvider);
+    final rankingAsync = ref.watch(rankingDoGrupoProvider(grupoId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ranking')),
+      appBar: AppBar(title: Text('Ranking — $grupoNome')),
       body: SafeArea(
         child: rankingAsync.when(
           data: (lista) {
@@ -25,7 +27,8 @@ class RankingScreen extends ConsumerWidget {
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
-                    'Ainda não há avaliações suficientes pra formar um ranking.',
+                    'Ainda não há avaliações suficientes pra formar um ranking '
+                    'nesse grupo.',
                     textAlign: TextAlign.center,
                   ),
                 ),

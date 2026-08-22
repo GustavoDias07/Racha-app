@@ -36,14 +36,4 @@ class RankingRepository {
       'totalRachas': FieldValue.increment(0),
     }, SetOptions(merge: true));
   }
-
-  /// Ranking geral ordenado por média de avaliação — tela de Ranking.
-  Stream<List<RankingModel>> observarTop({int limit = 50}) {
-    return _collection
-        .orderBy('mediaAvaliacoes', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => RankingModel.fromMap(d.id, d.data())).toList());
-  }
 }

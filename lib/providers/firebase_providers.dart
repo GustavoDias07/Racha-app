@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/alvo_avaliacao.dart';
+import '../models/avaliacao_model.dart';
 import '../models/convidado_model.dart';
 import '../models/enums.dart';
 import '../models/estatistica_model.dart';
@@ -159,11 +160,6 @@ final currentUserModelProvider = StreamProvider((ref) {
   return ref.watch(userRepositoryProvider).observar(authState.uid);
 });
 
-/// Ranking geral, ordenado por média de avaliação — tela de Ranking.
-final rankingTopProvider = StreamProvider<List<RankingModel>>((ref) {
-  return ref.watch(rankingRepositoryProvider).observarTop();
-});
-
 /// Ranking de um User específico — tela de Perfil. Nulo até que ele receba
 /// a primeira avaliação/estatística (nenhum racha avaliado ainda).
 final rankingPorUserIdProvider =
@@ -232,4 +228,81 @@ final contextoAvaliacaoProvider = FutureProvider.family<ContextoAvaliacao,
     companheiros: companheiros,
     adversarios: adversarios,
   );
+});
+
+/// Ranking de um Grupo: soma avaliações/estatísticas/MVPs de User em todas
+/// as rodadas já jogadas ali (aberta ou finalizada), do zero, a cada
+/// chamada — diferente do `rankings/{userId}` global (usado só no Perfil),
+/// não existe um doc persistido por grupo porque o recorte muda dependendo
+/// de qual grupo está sendo olhado. Convidados ficam de fora: o id de um
+/// Convidado não sobrevive entre rodadas diferentes do mesmo grupo (é só
+/// um perfil daquela rodada), então não daria pra comparar "desempenho no
+/// grupo" de alguém que nem tem uma identidade estável nele.
+final rankingDoGrupoProvider =
+    FutureProvider.family<List<RankingModel>, String>((ref, grupoId) async {
+  final rachaRepo = ref.watch(rachaRepositoryProvider);
+  final avaliacaoRepo = ref.watch(avaliacaoRepositoryProvider);
+  final estatisticaRepo = ref.watch(estatisticaRepositoryProvider);
+
+  final rachas = await rachaRepo.buscarTodosPorGrupo(grupoId);
+  if (rachas.isEmpty) return [];
+
+  final notasPorUser = <String, List<double>>{};
+  final rachasPorUser = <String, Set<String>>{};
+  final golsPorUser = <String, int>{};
+  final assistenciasPorUser = <String, int>{};
+  final mvpsPorUser = <String, int>{};
+
+  for (final racha in rachas) {
+    final List<AvaliacaoModel> avaliacoes =
+        await avaliacaoRepo.observarPorRacha(racha.id).first;
+    for (final a in avaliacoes) {
+      if (a.avaliadoTipo != TipoJogador.user) continue;
+      notasPorUser.putIfAbsent(a.avaliadoId, () => []).add(a.nota);
+      rachasPorUser.putIfAbsent(a.avaliadoId, () => {}).add(racha.id);
+    }
+
+    final List<EstatisticaModel> estatisticas =
+        await estatisticaRepo.observarPorRacha(racha.id).first;
+    for (final e in estatisticas) {
+      if (e.jogadorTipo != TipoJogador.user) continue;
+      golsPorUser.update(e.jogadorId, (v) => v + e.gols, ifAbsent: () => e.gols);
+      assistenciasPorUser.update(
+        e.jogadorId,
+        (v) => v + e.assistencias,
+        ifAbsent: () => e.assistencias,
+      );
+    }
+
+    if (racha.mvpUserId != null) {
+      mvpsPorUser.update(racha.mvpUserId!, (v) => v + 1, ifAbsent: () => 1);
+    }
+  }
+
+  final userIds = {
+    ...notasPorUser.keys,
+    ...golsPorUser.keys,
+    ...assistenciasPorUser.keys,
+    ...mvpsPorUser.keys,
+  };
+
+  final ranking = userIds.map((userId) {
+    final notas = notasPorUser[userId] ?? const [];
+    final media = notas.isEmpty ? 0.0 : notas.reduce((a, b) => a + b) / notas.length;
+    return RankingModel(
+      userId: userId,
+      mediaAvaliacoes: media,
+      totalMvps: mvpsPorUser[userId] ?? 0,
+      totalGols: golsPorUser[userId] ?? 0,
+      totalAssistencias: assistenciasPorUser[userId] ?? 0,
+      totalRachas: rachasPorUser[userId]?.length ?? 0,
+    );
+  }).toList()
+    ..sort((a, b) {
+      final porMvp = b.totalMvps.compareTo(a.totalMvps);
+      if (porMvp != 0) return porMvp;
+      return b.mediaAvaliacoes.compareTo(a.mediaAvaliacoes);
+    });
+
+  return ranking;
 });

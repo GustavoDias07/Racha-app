@@ -101,6 +101,16 @@ class RachaRepository {
     return _collection.doc(id).delete();
   }
 
+  /// Todas as rodadas de um Grupo, qualquer status (aberta ou finalizada)
+  /// — busca one-shot usada pra montar o ranking do grupo (Ranking passou
+  /// a ser por grupo, não mais uma lista geral — ver
+  /// `rankingDoGrupoProvider`), que precisa somar avaliações/estatísticas
+  /// de todas as rodadas já jogadas, não só a atual.
+  Future<List<RachaModel>> buscarTodosPorGrupo(String grupoId) async {
+    final snap = await _collection.where('grupoId', isEqualTo: grupoId).get();
+    return snap.docs.map((d) => RachaModel.fromMap(d.id, d.data())).toList();
+  }
+
   /// Rodada aberta mais próxima de um Grupo recorrente — a que a tela de
   /// detalhe do grupo mostra (participantes, convidados, confirmação).
   Stream<RachaModel?> observarAtualPorGrupo(String grupoId) {
