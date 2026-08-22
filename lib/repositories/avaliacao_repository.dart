@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/constants/firestore_paths.dart';
 import '../models/avaliacao_model.dart';
+import '../models/enums.dart';
 
 class AvaliacaoRepository {
   AvaliacaoRepository(this._firestore);
@@ -56,5 +57,30 @@ class AvaliacaoRepository {
         .where('avaliadoId', isEqualTo: avaliadoId)
         .get();
     return snap.docs.map((d) => AvaliacaoModel.fromMap(d.id, d.data())).toList();
+  }
+
+  /// Fluxo 3.1 (docs/estrutura.md): reatribui pro `userId` oficial todas as
+  /// avaliações que um Convidado recebeu (em qualquer racha) enquanto
+  /// ainda era só um perfil temporário. Só `avaliadoId`/`avaliadoTipo`
+  /// mudam — ver a regra de `update` em `firestore.rules`, que trava os
+  /// demais campos pra essa escrita não virar uma porta pra editar notas.
+  Future<void> reatribuirParaUser({
+    required String convidadoId,
+    required String userId,
+  }) async {
+    final snap = await _firestore
+        .collectionGroup(FirestorePaths.avaliacoes)
+        .where('avaliadoId', isEqualTo: convidadoId)
+        .get();
+    if (snap.docs.isEmpty) return;
+
+    final batch = _firestore.batch();
+    for (final doc in snap.docs) {
+      batch.update(doc.reference, {
+        'avaliadoId': userId,
+        'avaliadoTipo': TipoJogador.user.name,
+      });
+    }
+    await batch.commit();
   }
 }

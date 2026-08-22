@@ -12,6 +12,10 @@ class ConvidadoModel {
   final Posicao? posicaoUsual;
   final StatusAprovacao statusAprovacao;
   final TimeRacha? time;
+  // userId do User oficial pro qual o histórico deste convidado (avaliações
+  // e estatísticas) foi migrado — ver Fluxo 3.1, docs/estrutura.md. Nulo
+  // enquanto o convidado continua só com o perfil temporário.
+  final String? oficializadoComoUserId;
 
   const ConvidadoModel({
     required this.id,
@@ -24,9 +28,11 @@ class ConvidadoModel {
     this.posicaoUsual,
     this.statusAprovacao = StatusAprovacao.pendente,
     this.time,
+    this.oficializadoComoUserId,
   });
 
   bool get aprovado => statusAprovacao == StatusAprovacao.aprovado;
+  bool get oficializado => oficializadoComoUserId != null;
 
   bool get isVersatil =>
       posicaoMain != null && posicaoUsual != null && posicaoMain != posicaoUsual;
@@ -48,6 +54,7 @@ class ConvidadoModel {
       statusAprovacao:
           StatusAprovacao.values.byName(map['statusAprovacao'] as String),
       time: map['time'] != null ? TimeRacha.values.byName(map['time'] as String) : null,
+      oficializadoComoUserId: map['oficializadoComoUserId'] as String?,
     );
   }
 
@@ -62,6 +69,7 @@ class ConvidadoModel {
       'posicaoUsual': posicaoUsual?.name,
       'statusAprovacao': statusAprovacao.name,
       'time': time?.name,
+      'oficializadoComoUserId': oficializadoComoUserId,
     };
   }
 
@@ -70,6 +78,7 @@ class ConvidadoModel {
     Posicao? posicaoUsual,
     StatusAprovacao? statusAprovacao,
     TimeRacha? time,
+    String? oficializadoComoUserId,
   }) {
     return ConvidadoModel(
       id: id,
@@ -82,6 +91,7 @@ class ConvidadoModel {
       posicaoUsual: posicaoUsual ?? this.posicaoUsual,
       statusAprovacao: statusAprovacao ?? this.statusAprovacao,
       time: time ?? this.time,
+      oficializadoComoUserId: oficializadoComoUserId ?? this.oficializadoComoUserId,
     );
   }
 }

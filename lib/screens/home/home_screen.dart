@@ -15,13 +15,32 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userModel = ref.watch(currentUserModelProvider);
     final grupos = ref.watch(meusGruposProvider);
+    final rachasAvulsos = ref.watch(meusRachasAvulsosProvider);
     final convites = ref.watch(meusConvitesProvider);
     final meuUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
+
+    final pendentes = convites.valueOrNull
+            ?.where((p) => p.statusConfirmacao == StatusConfirmacao.pendente)
+            .length ??
+        0;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meus rachas'),
         actions: [
+          IconButton(
+            icon: Badge(
+              label: Text('$pendentes'),
+              isLabelVisible: pendentes > 0,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            tooltip: pendentes > 0
+                ? '$pendentes convite(s) pendente(s)'
+                : 'Nenhum convite pendente',
+            onPressed: pendentes == 0
+                ? null
+                : () => _mostrarConvitesPendentes(context, convites.valueOrNull ?? [], meuUid),
+          ),
           IconButton(
             icon: const Icon(Icons.leaderboard),
             tooltip: 'Ranking',
@@ -44,15 +63,7 @@ class HomeScreen extends ConsumerWidget {
           children: [
             grupos.when(
               data: (lista) {
-                if (lista.isEmpty) {
-                  final nome = userModel.valueOrNull?.nome;
-                  return Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(nome == null
-                        ? 'Nenhum racha ainda.'
-                        : 'Olá, $nome! Nenhum racha ainda.'),
-                  );
-                }
+                if (lista.isEmpty) return const SizedBox.shrink();
                 return Column(
                   children: lista
                       .map((grupo) => ListTile(
@@ -76,6 +87,41 @@ class HomeScreen extends ConsumerWidget {
                 child: Text('Erro: $e'),
               ),
             ),
+            rachasAvulsos.when(
+              data: (lista) {
+                if (lista.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  children: lista
+                      .map((racha) => ListTile(
+                            title: Text(racha.nome),
+                            subtitle: Text(
+                              '${racha.local} • '
+                              '${DateFormat("dd/MM 'às' HH:mm", 'pt_BR').format(racha.dataHora)}',
+                            ),
+                            trailing: Text(racha.tipoCampo.label),
+                            onTap: () => context.push('/rachas/${racha.id}'),
+                          ))
+                      .toList(),
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (e, _) => Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text('Erro: $e'),
+              ),
+            ),
+            if (grupos.valueOrNull != null &&
+                grupos.valueOrNull!.isEmpty &&
+                rachasAvulsos.valueOrNull != null &&
+                rachasAvulsos.valueOrNull!.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  userModel.valueOrNull?.nome == null
+                      ? 'Nenhum racha ainda.'
+                      : 'Olá, ${userModel.valueOrNull!.nome}! Nenhum racha ainda.',
+                ),
+              ),
             convites.maybeWhen(
               data: (lista) {
                 if (lista.isEmpty || meuUid == null) return const SizedBox.shrink();
@@ -98,12 +144,81 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/grupos/criar'),
+        onPressed: () => _mostrarOpcoesCriarRacha(context),
         icon: const Icon(Icons.add),
         label: const Text('Criar racha'),
       ),
     );
   }
+}
+
+/// Fluxo 2 (docs/estrutura.md) prevê que "o jogador convidado recebe
+/// notificação" ao ser chamado pra um racha. Sem push (exigiria FCM,
+/// service worker no build web, etc. — fora do escopo aqui), o sino com
+/// contador na AppBar cumpre a mesma função dentro do app: deixa óbvio que
+/// tem convite esperando resposta assim que a Home abre.
+void _mostrarConvitesPendentes(
+  BuildContext context,
+  List<ParticipanteModel> convites,
+  String? meuUid,
+) {
+  if (meuUid == null) return;
+  final pendentes =
+      convites.where((p) => p.statusConfirmacao == StatusConfirmacao.pendente).toList();
+
+  showModalBottomSheet<void>(
+    context: context,
+    builder: (context) => SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text('Convites pendentes', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          ...pendentes.map((p) => _ConviteTile(participante: p, meuUid: meuUid)),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Tela 3 (docs/estrutura.md) prevê "criar racha" com opção de marcar
+/// "tornar recorrente" — como as duas configurações (data específica x dia
+/// da semana fixo) são bem diferentes, ficam em telas separadas
+/// (`CriarRachaScreen` x `CriarGrupoScreen`) e essa folha só decide qual
+/// abrir.
+void _mostrarOpcoesCriarRacha(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    builder: (context) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.event),
+            title: const Text('Racha avulso'),
+            subtitle: const Text('Uma data específica, sem repetição'),
+            onTap: () {
+              Navigator.of(context).pop();
+              context.push('/rachas/criar');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.event_repeat),
+            title: const Text('Racha recorrente'),
+            subtitle: const Text('Toda semana, no mesmo dia e horário'),
+            onTap: () {
+              Navigator.of(context).pop();
+              context.push('/grupos/criar');
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Uma rodada em que o usuário foi convidado (não é admin). Ignora silenciosamente

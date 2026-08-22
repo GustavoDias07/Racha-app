@@ -52,7 +52,11 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.adminId == request.auth.uid;
       allow update: if isSignedIn() && resource.data.adminId == request.auth.uid
         && request.resource.data.adminId == resource.data.adminId;
-      allow delete: if false;
+      // Só o admin apaga, e só o Grupo em si — as rodadas (rachas) já
+      // geradas a partir dele continuam existindo (rachas não têm delete),
+      // só deixam de aparecer na Home porque `meusGruposProvider` não acha
+      // mais o Grupo dono.
+      allow delete: if isSignedIn() && resource.data.adminId == request.auth.uid;
     }
 
     // rachas/{rachaId} — uma rodada, avulsa ou vinda de um Grupo.
@@ -64,7 +68,11 @@ service cloud.firestore {
       allow update: if isSignedIn() && resource.data.adminId == request.auth.uid
         && request.resource.data.adminId == resource.data.adminId
         && request.resource.data.grupoId == resource.data.grupoId;
-      allow delete: if false;
+      // Só racha avulso (sem Grupo) pode ser apagado — uma rodada de Grupo
+      // some junto quando o Grupo é apagado (ver regra de `grupos`), nunca
+      // sozinha, pra não quebrar a rodada aberta que o grupo espera achar.
+      allow delete: if isSignedIn() && resource.data.adminId == request.auth.uid
+        && resource.data.grupoId == null;
 
       // participantes/{participanteId} — um User dentro deste racha.
       match /participantes/{participanteId} {
@@ -115,8 +123,12 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      // avaliacoes/{avaliacaoId} — nota pós-jogo; imutável depois de criada
-      // (não existe tela de edição, então não existe motivo pra permitir).
+      // avaliacoes/{avaliacaoId} — nota pós-jogo. Não existe tela de edição
+      // de nota (só criação), mas o admin pode reatribuir uma avaliação de
+      // um Convidado pro User oficial quando ele se cadastra de verdade
+      // (Fluxo 3.1 — `ConvidadoController.oficializar`). Essa é a única
+      // forma de update permitida: `avaliadorId`, `nota` e `rachaId` ficam
+      // travados no valor original, só `avaliadoId`/`avaliadoTipo` mudam.
       match /avaliacoes/{avaliacaoId} {
         allow read: if isSignedIn();
         allow create: if isSignedIn()
@@ -125,7 +137,12 @@ service cloud.firestore {
           && request.resource.data.nota is number
           && request.resource.data.nota >= 1
           && request.resource.data.nota <= 5;
-        allow update, delete: if false;
+        allow update: if isRachaAdmin(rachaId)
+          && request.resource.data.rachaId == resource.data.rachaId
+          && request.resource.data.avaliadorId == resource.data.avaliadorId
+          && request.resource.data.nota == resource.data.nota
+          && request.resource.data.avaliadoTipo == 'user';
+        allow delete: if false;
       }
 
       // estatisticas/{jogadorId} — o id do doc é o próprio jogadorId

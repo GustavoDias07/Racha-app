@@ -10,10 +10,12 @@ import '../../models/enums.dart';
 import '../../models/estatistica_model.dart';
 import '../../models/participante_model.dart';
 import '../../models/racha_model.dart';
+import '../../models/user_model.dart';
 import '../../providers/convidado_controller.dart';
 import '../../providers/estatistica_controller.dart';
 import '../../providers/firebase_providers.dart';
 import '../../providers/participante_controller.dart';
+import '../../providers/racha_controller.dart';
 import '../../providers/ranking_controller.dart';
 import '../../providers/times_controller.dart';
 
@@ -284,6 +286,10 @@ class _TimesTab extends ConsumerWidget {
                   participantes: timeBParticipantes,
                   convidados: timeBConvidados,
                 ),
+                if (isAdmin) ...[
+                  const SizedBox(height: 24),
+                  _FinalizarRachaSection(racha: racha),
+                ],
               ],
             ],
           );
@@ -293,6 +299,78 @@ class _TimesTab extends ConsumerWidget {
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Text('Erro: $e'),
+    );
+  }
+}
+
+/// Encerra a rodada (admin) — se ela vier de um Grupo recorrente, a
+/// próxima já nasce automaticamente com os membros fixos convidados
+/// (Fluxo 5, docs/estrutura.md). Ação irreversível pela UI, por isso pede
+/// confirmação antes de disparar.
+class _FinalizarRachaSection extends ConsumerWidget {
+  const _FinalizarRachaSection({required this.racha});
+
+  final RachaModel racha;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(rachaControllerProvider);
+
+    if (racha.status == RachaStatus.finalizado) {
+      return const Row(
+        children: [
+          Icon(Icons.check_circle, color: Colors.green),
+          SizedBox(width: 8),
+          Text('Racha finalizado', style: TextStyle(fontWeight: FontWeight.w600)),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        OutlinedButton.icon(
+          onPressed: state.isLoading
+              ? null
+              : () async {
+                  final confirmar = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Finalizar racha'),
+                      content: Text(
+                        racha.grupoId == null
+                            ? 'Isso encerra a rodada. Não dá pra voltar atrás.'
+                            : 'Isso encerra a rodada e já cria a próxima automaticamente, '
+                                'convidando os membros fixos do grupo. Não dá pra voltar atrás.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Cancelar'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Finalizar'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmar == true) {
+                    await ref.read(rachaControllerProvider.notifier).finalizar(racha);
+                  }
+                },
+          icon: state.isLoading
+              ? const SizedBox(
+                  height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.flag_outlined),
+          label: const Text('Finalizar racha'),
+        ),
+        if (state.hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text('Erro: ${state.error}', style: const TextStyle(color: Colors.red)),
+          ),
+      ],
     );
   }
 }
@@ -649,6 +727,7 @@ class _ProximoRachaTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = ref.watch(firebaseAuthProvider).currentUser?.uid;
+    final isAdmin = racha.adminId == uid;
     final participantes = ref.watch(participantesDoRachaProvider(racha.id));
 
     return ListView(
@@ -665,6 +744,18 @@ class _ProximoRachaTab extends ConsumerWidget {
           label: 'Tipo de campo',
           valor: '${racha.tipoCampo.label} • ${racha.qtdJogadoresLinha} jogadores de linha',
         ),
+        if (isAdmin) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              onPressed: () =>
+                  context.push('/rachas/${racha.id}/editar', extra: racha),
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Editar racha'),
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         participantes.maybeWhen(
           data: (lista) {
@@ -880,38 +971,147 @@ class _ConvidadoTile extends ConsumerWidget {
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.person_outline),
       title: Text(convidado.nome),
-      subtitle: _StatusChip(statusAprovacao: convidado.statusAprovacao),
-      trailing: (isAdmin && pendente)
+      subtitle: convidado.oficializado
+          ? const Text('Oficializado', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600))
+          : _StatusChip(statusAprovacao: convidado.statusAprovacao),
+      trailing: isAdmin
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.check_circle, color: Colors.green),
-                  tooltip: 'Aprovar',
-                  onPressed: () => ref
-                      .read(convidadoControllerProvider.notifier)
-                      .atualizarAprovacao(
-                        rachaId: rachaId,
-                        convidadoId: convidado.id,
-                        status: StatusAprovacao.aprovado,
-                      ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.cancel, color: Colors.red),
-                  tooltip: 'Recusar',
-                  onPressed: () => ref
-                      .read(convidadoControllerProvider.notifier)
-                      .atualizarAprovacao(
-                        rachaId: rachaId,
-                        convidadoId: convidado.id,
-                        status: StatusAprovacao.recusado,
-                      ),
-                ),
+                if (pendente) ...[
+                  IconButton(
+                    icon: const Icon(Icons.check_circle, color: Colors.green),
+                    tooltip: 'Aprovar',
+                    onPressed: () => ref
+                        .read(convidadoControllerProvider.notifier)
+                        .atualizarAprovacao(
+                          rachaId: rachaId,
+                          convidadoId: convidado.id,
+                          status: StatusAprovacao.aprovado,
+                        ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.cancel, color: Colors.red),
+                    tooltip: 'Recusar',
+                    onPressed: () => ref
+                        .read(convidadoControllerProvider.notifier)
+                        .atualizarAprovacao(
+                          rachaId: rachaId,
+                          convidadoId: convidado.id,
+                          status: StatusAprovacao.recusado,
+                        ),
+                  ),
+                ],
+                if (!convidado.oficializado)
+                  IconButton(
+                    icon: const Icon(Icons.badge_outlined),
+                    tooltip: 'Oficializar (virar jogador cadastrado)',
+                    onPressed: () =>
+                        _mostrarDialogoOficializar(context, ref, rachaId, convidado),
+                  ),
               ],
             )
           : null,
     );
   }
+}
+
+/// Fluxo 3.1 (docs/estrutura.md): o convidado já criou a própria conta em
+/// outro momento (Cadastro normal) — aqui o admin só busca esse User por
+/// email e vincula ao histórico que ele acumulou como convidado.
+Future<void> _mostrarDialogoOficializar(
+  BuildContext context,
+  WidgetRef ref,
+  String rachaId,
+  ConvidadoModel convidado,
+) {
+  final buscaController = TextEditingController();
+  // Fora do builder do StatefulBuilder de propósito — ver o comentário
+  // equivalente em `_mostrarDialogoAdicionarMembro`
+  // (grupo_detalhe_screen.dart): declarar isso dentro do builder faz o
+  // resultado da busca sumir a cada rebuild disparada pelo próprio
+  // setState.
+  var buscando = false;
+  List<UserModel> resultados = [];
+
+  return showDialog<void>(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) {
+        Future<void> buscar() async {
+          final termo = buscaController.text.trim();
+          if (termo.isEmpty) return;
+          setState(() => buscando = true);
+          final encontrados =
+              await ref.read(userRepositoryProvider).buscarPorNomeOuEmail(termo);
+          setState(() {
+            resultados = encontrados;
+            buscando = false;
+          });
+        }
+
+        return AlertDialog(
+          title: Text('Oficializar ${convidado.nome}'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Busque a conta que essa pessoa já criou pra migrar o '
+                  'histórico de avaliações e estatísticas dela.',
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: buscaController,
+                        decoration: const InputDecoration(labelText: 'Email do jogador'),
+                        onSubmitted: (_) => buscar(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      onPressed: buscando ? null : buscar,
+                      icon: const Icon(Icons.search),
+                    ),
+                  ],
+                ),
+                for (final user in resultados)
+                  ListTile(
+                    title: Text(user.nome),
+                    subtitle: Text(user.email),
+                    trailing: FilledButton(
+                      onPressed: () {
+                        ref.read(convidadoControllerProvider.notifier).oficializar(
+                              rachaId: rachaId,
+                              convidadoId: convidado.id,
+                              userId: user.id,
+                            );
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('Vincular'),
+                    ),
+                  ),
+                if (!buscando && resultados.isEmpty && buscaController.text.isNotEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text('Nenhum jogador encontrado.'),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+          ],
+        );
+      },
+    ),
+  );
 }
 
 class _StatusChip extends StatelessWidget {

@@ -62,6 +62,27 @@ class ParticipanteRepository {
     await _collection(rachaId).add(participante.toMap());
   }
 
+  /// Mesma coisa que `convidar`, mas escrevendo num `WriteBatch`
+  /// compartilhado em vez de na hora — usado pelo `RachaController.finalizar`
+  /// pra criar a próxima rodada e já convidar os membros fixos do grupo
+  /// atomicamente (Fluxo 5). Sem checagem de duplicidade: o racha de
+  /// destino acabou de ser criado nesse mesmo batch, não tem como já ter
+  /// esse participante.
+  void convidarEmLote(
+    WriteBatch batch, {
+    required String rachaId,
+    required String userId,
+    StatusConfirmacao status = StatusConfirmacao.pendente,
+  }) {
+    final participante = ParticipanteModel(
+      id: '',
+      rachaId: rachaId,
+      userId: userId,
+      statusConfirmacao: status,
+    );
+    batch.set(_collection(rachaId).doc(), participante.toMap());
+  }
+
   Future<void> atualizarStatus({
     required String rachaId,
     required String participanteId,

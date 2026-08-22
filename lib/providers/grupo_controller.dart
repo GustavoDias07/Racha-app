@@ -54,6 +54,39 @@ class GrupoController extends AsyncNotifier<void> {
           );
     });
   }
+
+  /// Adiciona um User à lista de membros fixos do grupo — convidado
+  /// automaticamente toda vez que uma nova rodada nascer (Fluxo 5).
+  Future<void> adicionarMembroFixo(GrupoModel grupo, String userId) async {
+    if (grupo.membrosFixos.contains(userId)) return;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() {
+      return ref.read(grupoRepositoryProvider).atualizarMembrosFixos(
+            grupo.id,
+            [...grupo.membrosFixos, userId],
+          );
+    });
+  }
+
+  Future<void> removerMembroFixo(GrupoModel grupo, String userId) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() {
+      return ref.read(grupoRepositoryProvider).atualizarMembrosFixos(
+            grupo.id,
+            grupo.membrosFixos.where((id) => id != userId).toList(),
+          );
+    });
+  }
+
+  /// Apaga o grupo (racha recorrente) — só o admin dono chega a essa tela,
+  /// e a regra do Firestore também exige isso. As rodadas já geradas não
+  /// somem junto (ver `GrupoRepository.remover`).
+  Future<void> remover(GrupoModel grupo) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() {
+      return ref.read(grupoRepositoryProvider).remover(grupo.id);
+    });
+  }
 }
 
 final grupoControllerProvider =

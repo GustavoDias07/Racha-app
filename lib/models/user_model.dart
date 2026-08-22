@@ -16,6 +16,11 @@ class UserModel {
   final int idade;
   final double peso;
   final DateTime createdAt;
+  // Token do FCM (Firebase Cloud Messaging) do último dispositivo em que o
+  // usuário logou — é pra onde um envio de notificação futuro miraria.
+  // Nulo em quem nunca logou num dispositivo com push disponível (ex: só
+  // testou pela web) ou negou a permissão. Ver NotificationService.
+  final String? fcmToken;
 
   const UserModel({
     required this.id,
@@ -25,6 +30,7 @@ class UserModel {
     required this.idade,
     required this.peso,
     required this.createdAt,
+    this.fcmToken,
   });
 
   factory UserModel.fromMap(String id, Map<String, dynamic> map) {
@@ -36,6 +42,7 @@ class UserModel {
       idade: map['idade'] as int,
       peso: (map['peso'] as num).toDouble(),
       createdAt: (map['createdAt'] as Timestamp).toDate(),
+      fcmToken: map['fcmToken'] as String?,
     );
   }
 
@@ -47,6 +54,7 @@ class UserModel {
       'idade': idade,
       'peso': peso,
       'createdAt': Timestamp.fromDate(createdAt),
+      'fcmToken': fcmToken,
     };
   }
 
@@ -56,6 +64,7 @@ class UserModel {
     String? fotoPerfilBase64,
     int? idade,
     double? peso,
+    String? fcmToken,
   }) {
     return UserModel(
       id: id,
@@ -65,6 +74,7 @@ class UserModel {
       idade: idade ?? this.idade,
       peso: peso ?? this.peso,
       createdAt: createdAt,
+      fcmToken: fcmToken ?? this.fcmToken,
     );
   }
 }

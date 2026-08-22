@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/grupo_model.dart';
+import '../../models/racha_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/firebase_providers.dart';
 import '../../screens/auth/cadastro_screen.dart';
@@ -14,6 +15,8 @@ import '../../screens/perfil/editar_perfil_screen.dart';
 import '../../screens/perfil/perfil_screen.dart';
 import '../../screens/racha/avaliacao_screen.dart';
 import '../../screens/racha/convidar_jogador_screen.dart';
+import '../../screens/racha/criar_racha_screen.dart';
+import '../../screens/racha/editar_racha_screen.dart';
 import '../../screens/racha/racha_detalhe_screen.dart';
 import '../../screens/ranking/ranking_screen.dart';
 
@@ -48,6 +51,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const CriarGrupoScreen(),
       ),
       GoRoute(
+        path: '/rachas/criar',
+        builder: (context, state) => const CriarRachaScreen(),
+      ),
+      GoRoute(
         path: '/grupos/:id',
         builder: (context, state) =>
             GrupoDetalheScreen(grupo: state.extra as GrupoModel),
@@ -63,6 +70,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           rachaId: state.pathParameters['id']!,
           convidadoPor: state.extra as String,
         ),
+      ),
+      GoRoute(
+        path: '/rachas/:id/editar',
+        builder: (context, state) =>
+            EditarRachaScreen(racha: state.extra as RachaModel),
       ),
       GoRoute(
         path: '/rachas/:id/avaliar',

@@ -45,6 +45,19 @@ class ConvidadoRepository {
     return _collection(rachaId).doc(convidadoId).update({'time': time.name});
   }
 
+  /// Fecha o Fluxo 3.1 (docs/estrutura.md): grava o `userId` da conta
+  /// oficial pra qual o histórico deste convidado foi migrado
+  /// (`ConvidadoController.oficializar`).
+  Future<void> marcarOficializado({
+    required String rachaId,
+    required String convidadoId,
+    required String userId,
+  }) {
+    return _collection(rachaId)
+        .doc(convidadoId)
+        .update({'oficializadoComoUserId': userId});
+  }
+
   /// Mesma coisa que `definirTime`, mas adiciona a um `WriteBatch`
   /// compartilhado — ver `ParticipanteRepository.definirTimeEmLote`.
   void definirTimeEmLote(

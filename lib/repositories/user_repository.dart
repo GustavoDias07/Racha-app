@@ -32,6 +32,14 @@ class UserRepository {
     return _collection.doc(user.id).update(user.toMap());
   }
 
+  /// Grava o token do FCM do dispositivo atual — update parcial, separado
+  /// de `atualizar`, porque roda a cada login/refresh de token, sem
+  /// relação nenhuma com a tela de editar perfil (ver
+  /// `NotificationService`/`notificationSyncProvider`).
+  Future<void> atualizarFcmToken(String userId, String token) {
+    return _collection.doc(userId).update({'fcmToken': token});
+  }
+
   Future<List<UserModel>> buscarPorNomeOuEmail(String termo) async {
     final termoBusca = termo.trim().toLowerCase();
     if (termoBusca.isEmpty) return [];

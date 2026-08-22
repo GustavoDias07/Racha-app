@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/alvo_avaliacao.dart';
@@ -20,6 +21,7 @@ import '../repositories/racha_repository.dart';
 import '../repositories/ranking_repository.dart';
 import '../repositories/user_repository.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 
 /// Instâncias cruas dos SDKs do Firebase. Ficam isoladas aqui pra tudo mais
@@ -34,6 +36,13 @@ final authServiceProvider = Provider<AuthService>((ref) {
 });
 
 final storageServiceProvider = Provider<StorageService>((ref) => StorageService());
+
+final firebaseMessagingProvider =
+    Provider<FirebaseMessaging>((ref) => FirebaseMessaging.instance);
+
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationService(ref.watch(firebaseMessagingProvider));
+});
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository(ref.watch(firestoreProvider));
@@ -74,11 +83,31 @@ final meusGruposProvider = StreamProvider<List<GrupoModel>>((ref) {
   return ref.watch(grupoRepositoryProvider).observarPorAdmin(uid);
 });
 
+/// Rachas avulsos (sem Grupo) que o usuário logado administra — os
+/// vinculados a um Grupo já aparecem em `meusGruposProvider`, então ficam
+/// de fora daqui pra não duplicar na Home.
+final meusRachasAvulsosProvider = StreamProvider<List<RachaModel>>((ref) {
+  final uid = ref.watch(authStateChangesProvider).value?.uid;
+  if (uid == null) return Stream.value(const []);
+  return ref
+      .watch(rachaRepositoryProvider)
+      .observarPorAdmin(uid)
+      .map((lista) => lista.where((r) => r.grupoId == null).toList());
+});
+
 /// Rodada aberta atual de um Grupo — a tela de detalhe do grupo mostra
 /// participantes/convidados dessa rodada, não do Grupo em si.
 final rachaAtualDoGrupoProvider =
     StreamProvider.family<RachaModel?, String>((ref, grupoId) {
   return ref.watch(rachaRepositoryProvider).observarAtualPorGrupo(grupoId);
+});
+
+/// Grupo por id, em stream — usado pela seção "Membros fixos" da tela de
+/// detalhe do grupo, que precisa refletir na hora quando o admin
+/// adiciona/remove alguém (o `GrupoModel` recebido por `extra` na
+/// navegação é só um snapshot do momento em que a lista foi aberta).
+final grupoPorIdProvider = StreamProvider.family<GrupoModel?, String>((ref, grupoId) {
+  return ref.watch(grupoRepositoryProvider).observar(grupoId);
 });
 
 final participantesDoRachaProvider =

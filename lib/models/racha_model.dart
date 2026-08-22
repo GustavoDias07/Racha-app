@@ -81,6 +81,7 @@ class RachaModel {
       qtdJogadoresLinha: qtdJogadoresLinha ?? this.qtdJogadoresLinha,
       adminId: adminId,
       status: status ?? this.status,
+      mvpUserId: mvpUserId,
     );
   }
 }
