@@ -10,6 +10,12 @@ class ParticipanteModel {
   final TimeRacha? time;
   final StatusConfirmacao statusConfirmacao;
 
+  /// O que aconteceu no dia, registrado na chamada por quem tem permissão
+  /// (admin ou anotador). Nulo enquanto a chamada não é feita — e nulo numa
+  /// rodada já finalizada significa que ninguém fez a chamada, não que a
+  /// pessoa faltou.
+  final PresencaFinal? presenca;
+
   const ParticipanteModel({
     required this.id,
     required this.rachaId,
@@ -18,6 +24,7 @@ class ParticipanteModel {
     this.posicaoUsual,
     this.time,
     this.statusConfirmacao = StatusConfirmacao.pendente,
+    this.presenca,
   });
 
   /// Único critério usado pelo algoritmo de balanceamento para elegibilidade.
@@ -42,6 +49,9 @@ class ParticipanteModel {
       time: map['time'] != null ? TimeRacha.values.byName(map['time'] as String) : null,
       statusConfirmacao:
           StatusConfirmacao.values.byName(map['statusConfirmacao'] as String),
+      presenca: map['presenca'] != null
+          ? PresencaFinal.values.byName(map['presenca'] as String)
+          : null,
     );
   }
 
@@ -53,6 +63,7 @@ class ParticipanteModel {
       'posicaoUsual': posicaoUsual?.name,
       'time': time?.name,
       'statusConfirmacao': statusConfirmacao.name,
+      'presenca': presenca?.name,
     };
   }
 

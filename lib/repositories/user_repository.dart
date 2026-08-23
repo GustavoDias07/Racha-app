@@ -21,6 +21,21 @@ class UserRepository {
     return UserModel.fromMap(doc.id, doc.data()!);
   }
 
+  /// Vários usuários de uma vez, em paralelo — o `TimesController` precisa
+  /// do cadastro de todos os confirmados ao mesmo tempo, e uma leitura por
+  /// jogador em série custa caro num racha cheio. Quem não existir mais
+  /// (conta apagada) fica de fora do mapa.
+  Future<Map<String, UserModel>> buscarVarios(Iterable<String> ids) async {
+    final unicos = ids.toSet();
+    if (unicos.isEmpty) return {};
+
+    final docs = await Future.wait(unicos.map((id) => _collection.doc(id).get()));
+    return {
+      for (final doc in docs)
+        if (doc.exists) doc.id: UserModel.fromMap(doc.id, doc.data()!),
+    };
+  }
+
   Stream<UserModel?> observar(String id) {
     return _collection.doc(id).snapshots().map((doc) {
       if (!doc.exists) return null;

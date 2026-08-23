@@ -71,6 +71,15 @@ class RachaRepository {
     batch.update(_collection.doc(rachaId), {'status': status.name});
   }
 
+  /// Propaga a lista de anotadores do grupo pra rodada aberta — ver
+  /// `GrupoController.alternarAnotador`.
+  Future<void> atualizarAnotadores({
+    required String rachaId,
+    required List<String> anotadores,
+  }) {
+    return _collection.doc(rachaId).update({'anotadores': anotadores});
+  }
+
   /// Edita os campos que o admin pode ajustar depois de criado (nome,
   /// local, data/hora, tipo de campo, jogadores de linha) — ver Fluxo 2,
   /// docs/estrutura.md: "o admin ainda pode ajustar a ocorrência gerada
@@ -108,6 +117,15 @@ class RachaRepository {
   /// de todas as rodadas já jogadas, não só a atual.
   Future<List<RachaModel>> buscarTodosPorGrupo(String grupoId) async {
     final snap = await _collection.where('grupoId', isEqualTo: grupoId).get();
+    return snap.docs.map((d) => RachaModel.fromMap(d.id, d.data())).toList();
+  }
+
+  /// Rachas em que o jogador foi eleito MVP — a contagem de títulos do
+  /// ranking sai daqui, em vez de ser incrementada a cada eleição. Contar a
+  /// partir da fonte de verdade deixa o recálculo idempotente: dois cliques
+  /// no botão de MVP, ou dois admins ao mesmo tempo, chegam ao mesmo número.
+  Future<List<RachaModel>> buscarPorMvp(String userId) async {
+    final snap = await _collection.where('mvpUserId', isEqualTo: userId).get();
     return snap.docs.map((d) => RachaModel.fromMap(d.id, d.data())).toList();
   }
 

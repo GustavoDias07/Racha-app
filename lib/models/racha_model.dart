@@ -18,6 +18,13 @@ class RachaModel {
   // acione o cálculo pela aba Times.
   final String? mvpUserId;
 
+  /// Quem pode fazer a chamada nesta rodada, além do admin. Copiado dos
+  /// `auxiliares` do Grupo quando a rodada nasce — mesma desnormalização do
+  /// `grupoId` em avaliações: a regra do Firestore precisa decidir a
+  /// permissão com uma leitura só, e ir buscar o grupo a cada escrita de
+  /// presença dobraria o custo de uma chamada inteira.
+  final List<String> anotadores;
+
   const RachaModel({
     required this.id,
     this.grupoId,
@@ -29,10 +36,15 @@ class RachaModel {
     required this.adminId,
     this.status = RachaStatus.aberto,
     this.mvpUserId,
+    this.anotadores = const [],
   });
 
   /// Formação derivada: goleiro fixo + vagas de linha.
   int get totalVagas => qtdJogadoresLinha + 1;
+
+  /// Pode registrar presença nesta rodada.
+  bool podeFazerChamada(String? userId) =>
+      userId != null && (userId == adminId || anotadores.contains(userId));
 
   factory RachaModel.fromMap(String id, Map<String, dynamic> map) {
     return RachaModel(
@@ -46,6 +58,7 @@ class RachaModel {
       adminId: map['adminId'] as String,
       status: RachaStatus.values.byName(map['status'] as String),
       mvpUserId: map['mvpUserId'] as String?,
+      anotadores: List<String>.from(map['anotadores'] as List? ?? const []),
     );
   }
 
@@ -60,6 +73,7 @@ class RachaModel {
       'adminId': adminId,
       'status': status.name,
       'mvpUserId': mvpUserId,
+      'anotadores': anotadores,
     };
   }
 
@@ -82,6 +96,7 @@ class RachaModel {
       adminId: adminId,
       status: status ?? this.status,
       mvpUserId: mvpUserId,
+      anotadores: anotadores,
     );
   }
 }

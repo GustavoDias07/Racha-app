@@ -88,6 +88,7 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
 
     final minhaPosicao = _minhaPosicao!;
     final gruposAsync = ref.watch(rachasAbertosProvider);
+    final meuUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
 
     return Column(
       children: [
@@ -108,8 +109,14 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
         Expanded(
           child: gruposAsync.when(
             data: (grupos) {
+              // Grupo que já é meu (dono ou membro fixo) não é "descoberta":
+              // ele aparece na Home, e deixar o card aqui só oferecia um
+              // botão de solicitar entrada em algo em que já estou dentro.
               final proximos = grupos
-                  .where((g) => g.localizacao != null)
+                  .where((g) =>
+                      g.localizacao != null &&
+                      g.adminId != meuUid &&
+                      !g.membrosFixos.contains(meuUid))
                   .map((g) => (grupo: g, distancia: distanciaKm(minhaPosicao, g.localizacao!)))
                   .where((par) => par.distancia <= _raioKm)
                   .toList()
@@ -150,11 +157,42 @@ class _RachaProximoTile extends ConsumerWidget {
   final GrupoModel grupo;
   final double distanciaKm;
 
+  Future<void> _solicitar(BuildContext context, WidgetRef ref) async {
+    final resultado =
+        await ref.read(solicitacaoControllerProvider.notifier).solicitar(grupo);
+    if (!context.mounted) return;
+
+    final mensagem = switch (resultado) {
+      ResultadoSolicitacao.enviada =>
+        'Pedido enviado! O admin do racha precisa aprovar.',
+      ResultadoSolicitacao.jaSolicitou => 'Você já tem um pedido pendente aqui.',
+      ResultadoSolicitacao.jaEraMembro => 'Você já é membro desse racha.',
+      ResultadoSolicitacao.recusadoAntes =>
+        'Seu pedido foi recusado. Só o organizador pode reabrir.',
+      ResultadoSolicitacao.erro =>
+        'Não deu pra enviar o pedido. Tente de novo.',
+    };
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(mensagem)));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final minhaSolicitacaoAsync = ref.watch(minhaSolicitacaoProvider(grupo.id));
-    final jaSolicitou = minhaSolicitacaoAsync.valueOrNull != null;
+    final solicitacao = ref.watch(minhaSolicitacaoProvider(grupo.id)).valueOrNull;
     final solicitacaoState = ref.watch(solicitacaoControllerProvider);
+
+    // Recusa trava o botão de vez: quem decide se a pessoa pode tentar de
+    // novo é o organizador, reabrindo o pedido na tela do grupo. Sem isso o
+    // recusado pedia de novo no segundo seguinte, e o admin ficava recusando
+    // a mesma pessoa pra sempre.
+    final status = solicitacao?.status;
+    final bloqueado = status != null || solicitacaoState.isLoading;
+    final rotulo = switch (status) {
+      StatusAprovacao.pendente => 'Pedido pendente',
+      StatusAprovacao.aprovado => 'Pedido aprovado',
+      StatusAprovacao.recusado => 'Pedido recusado',
+      null => 'Solicitar entrada',
+    };
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -174,14 +212,20 @@ class _RachaProximoTile extends ConsumerWidget {
             const SizedBox(height: 4),
             Text('${grupo.localPadrao} • ${grupo.diaSemana.label}, ${grupo.horario}'),
             Text('${grupo.tipoCampoPadrao.label} • ${grupo.qtdJogadoresLinhaPadrao} de linha'),
+            if (status == StatusAprovacao.recusado)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Pedido recusado — fale com o organizador se quiser tentar de novo.',
+                  style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                ),
+              ),
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerRight,
               child: FilledButton(
-                onPressed: jaSolicitou || solicitacaoState.isLoading
-                    ? null
-                    : () => ref.read(solicitacaoControllerProvider.notifier).solicitar(grupo),
-                child: Text(jaSolicitou ? 'Pedido pendente' : 'Solicitar entrada'),
+                onPressed: bloqueado ? null : () => _solicitar(context, ref),
+                child: Text(rotulo),
               ),
             ),
           ],

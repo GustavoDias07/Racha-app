@@ -75,6 +75,21 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
       return;
     }
 
+    // "Aberto para novos jogadores" sem coordenadas é um grupo que nunca
+    // aparece na busca por proximidade (a tela filtra por distância e não
+    // tem como calcular a de um grupo sem ponto no mapa) — barra aqui em vez
+    // de deixar o admin achar que publicou o racha.
+    if (_abertoParaNovosMembros && _localizacao == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Marque a localização no mapa pra o racha aparecer em "Rachas Próximos".',
+          ),
+        ),
+      );
+      return;
+    }
+
     final horarioFormatado =
         '${_horario!.hour.toString().padLeft(2, '0')}:${_horario!.minute.toString().padLeft(2, '0')}';
 

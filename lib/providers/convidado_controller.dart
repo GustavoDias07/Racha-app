@@ -82,9 +82,11 @@ class ConvidadoController extends AsyncNotifier<void> {
             userId: userId,
           );
 
-      final rankingController = ref.read(rankingControllerProvider.notifier);
-      await rankingController.recalcularParaAvaliado(userId);
-      await rankingController.recalcularEstatisticas(userId);
+      // Um recálculo só: ele já refaz média, gols, assistências e MVPs a
+      // partir do histórico recém-herdado do convidado.
+      await ref
+          .read(rankingControllerProvider.notifier)
+          .recalcularRanking(userId);
     });
   }
 }

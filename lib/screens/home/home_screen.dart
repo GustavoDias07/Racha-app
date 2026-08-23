@@ -16,14 +16,17 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userModel = ref.watch(currentUserModelProvider);
     final grupos = ref.watch(meusGruposProvider);
+    final gruposQueParticipo = ref.watch(gruposQueParticipoProvider);
     final rachasAvulsos = ref.watch(meusRachasAvulsosProvider);
     final convites = ref.watch(meusConvitesProvider);
     final meuUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
 
+    final avisos = ref.watch(meusAvisosProvider).valueOrNull ?? const [];
     final pendentes = convites.valueOrNull
             ?.where((p) => p.statusConfirmacao == StatusConfirmacao.pendente)
             .length ??
         0;
+    final naCaixa = pendentes + avisos.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -36,16 +39,16 @@ class HomeScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: Badge(
-              label: Text('$pendentes'),
-              isLabelVisible: pendentes > 0,
+              label: Text('$naCaixa'),
+              isLabelVisible: naCaixa > 0,
               child: const Icon(Icons.notifications_outlined),
             ),
-            tooltip: pendentes > 0
-                ? '$pendentes convite(s) pendente(s)'
-                : 'Nenhum convite pendente',
-            onPressed: pendentes == 0
+            tooltip: naCaixa > 0
+                ? '$naCaixa item(ns) esperando você'
+                : 'Nada esperando você',
+            onPressed: naCaixa == 0
                 ? null
-                : () => _mostrarConvitesPendentes(context, convites.valueOrNull ?? [], meuUid),
+                : () => _mostrarCaixaDeEntrada(context, meuUid),
           ),
           IconButton(
             icon: const Icon(Icons.person),
@@ -111,10 +114,44 @@ class HomeScreen extends ConsumerWidget {
                 child: Text('Erro: $e'),
               ),
             ),
+            // Grupos em que sou só membro fixo (entrei por solicitação
+            // aprovada na aba "Rachas Próximos" ou o admin me adicionou).
+            // Sem essa seção o grupo era invisível pra quem participa: só
+            // chegava o convite solto de cada rodada, sem caminho pro
+            // ranking, histórico ou pra sair do grupo.
+            gruposQueParticipo.maybeWhen(
+              data: (lista) {
+                if (lista.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+                      child: Text(
+                        'Rachas que participo',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    ...lista.map(
+                      (grupo) => ListTile(
+                        title: Text(grupo.nome),
+                        subtitle: Text(
+                          '${grupo.localPadrao} • ${grupo.diaSemana.label}, ${grupo.horario}',
+                        ),
+                        trailing: Text(grupo.tipoCampoPadrao.label),
+                        onTap: () => context.push('/grupos/${grupo.id}', extra: grupo),
+                      ),
+                    ),
+                  ],
+                );
+              },
+              orElse: () => const SizedBox.shrink(),
+            ),
             if (grupos.valueOrNull != null &&
                 grupos.valueOrNull!.isEmpty &&
                 rachasAvulsos.valueOrNull != null &&
-                rachasAvulsos.valueOrNull!.isEmpty)
+                rachasAvulsos.valueOrNull!.isEmpty &&
+                (gruposQueParticipo.valueOrNull?.isEmpty ?? true))
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
@@ -157,29 +194,69 @@ class HomeScreen extends ConsumerWidget {
 /// notificação" ao ser chamado pra um racha. Sem push (exigiria FCM,
 /// service worker no build web, etc. — fora do escopo aqui), o sino com
 /// contador na AppBar cumpre a mesma função dentro do app: deixa óbvio que
-/// tem convite esperando resposta assim que a Home abre.
-void _mostrarConvitesPendentes(
-  BuildContext context,
-  List<ParticipanteModel> convites,
-  String? meuUid,
-) {
+/// tem coisa esperando resposta assim que a Home abre.
+///
+/// Junta as duas coisas que chegam pra pessoa: convites pra rodadas e avisos
+/// (ver `AvisoModel`), que contam o que aconteceu quando não sobrou nenhuma
+/// tela pra mostrar — o caso típico é o grupo que ela pediu pra entrar ter
+/// sido apagado.
+///
+/// O conteúdo é um `Consumer` de propósito: dispensar um aviso apaga o
+/// documento, e a folha precisa se redesenhar sozinha em vez de continuar
+/// mostrando o que já não existe.
+void _mostrarCaixaDeEntrada(BuildContext context, String? meuUid) {
   if (meuUid == null) return;
-  final pendentes =
-      convites.where((p) => p.statusConfirmacao == StatusConfirmacao.pendente).toList();
 
   showModalBottomSheet<void>(
     context: context,
     builder: (context) => SafeArea(
-      child: ListView(
-        shrinkWrap: true,
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text('Convites pendentes', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          ...pendentes.map((p) => _ConviteTile(participante: p, meuUid: meuUid)),
-        ],
+      child: Consumer(
+        builder: (context, ref, _) {
+          final avisos = ref.watch(meusAvisosProvider).valueOrNull ?? const [];
+          final pendentes = (ref.watch(meusConvitesProvider).valueOrNull ?? [])
+              .where((p) => p.statusConfirmacao == StatusConfirmacao.pendente)
+              .toList();
+
+          if (avisos.isEmpty && pendentes.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('Nada esperando você por aqui.'),
+            );
+          }
+
+          return ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: [
+              if (avisos.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Text('Avisos', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                ...avisos.map((aviso) => ListTile(
+                      leading: const Icon(Icons.info_outline),
+                      title: Text(aviso.mensagem),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.close),
+                        tooltip: 'Dispensar',
+                        onPressed: () => ref.read(avisoRepositoryProvider).dispensar(
+                              userId: meuUid,
+                              avisoId: aviso.id,
+                            ),
+                      ),
+                    )),
+              ],
+              if (pendentes.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  child: Text('Convites pendentes',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                ...pendentes.map((p) => _ConviteTile(participante: p, meuUid: meuUid)),
+              ],
+            ],
+          );
+        },
       ),
     ),
   );

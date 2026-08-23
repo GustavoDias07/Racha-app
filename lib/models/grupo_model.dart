@@ -21,6 +21,10 @@ class GrupoModel {
   // Controla se o grupo aparece na busca por proximidade pra qualquer
   // jogador logado, que pode então solicitar entrada (ver SolicitacaoModel).
   final bool abertoParaNovosMembros;
+  /// Jogadores autorizados a fazer a chamada nas rodadas deste grupo — os
+  /// "caras da planilha". Não é co-administração: eles registram presença e
+  /// nada mais, não editam o racha nem aprovam entrada.
+  final List<String> auxiliares;
 
   const GrupoModel({
     required this.id,
@@ -34,6 +38,7 @@ class GrupoModel {
     this.membrosFixos = const [],
     this.localizacao,
     this.abertoParaNovosMembros = false,
+    this.auxiliares = const [],
   });
 
   factory GrupoModel.fromMap(String id, Map<String, dynamic> map) {
@@ -49,6 +54,7 @@ class GrupoModel {
       membrosFixos: List<String>.from(map['membrosFixos'] as List? ?? const []),
       localizacao: map['localizacao'] as GeoPoint?,
       abertoParaNovosMembros: map['abertoParaNovosMembros'] as bool? ?? false,
+      auxiliares: List<String>.from(map['auxiliares'] as List? ?? const []),
     );
   }
 
@@ -64,6 +70,7 @@ class GrupoModel {
       'membrosFixos': membrosFixos,
       'localizacao': localizacao,
       'abertoParaNovosMembros': abertoParaNovosMembros,
+      'auxiliares': auxiliares,
     };
   }
 
@@ -77,6 +84,7 @@ class GrupoModel {
     List<String>? membrosFixos,
     GeoPoint? localizacao,
     bool? abertoParaNovosMembros,
+    List<String>? auxiliares,
   }) {
     return GrupoModel(
       id: id,
@@ -91,6 +99,7 @@ class GrupoModel {
       membrosFixos: membrosFixos ?? this.membrosFixos,
       localizacao: localizacao ?? this.localizacao,
       abertoParaNovosMembros: abertoParaNovosMembros ?? this.abertoParaNovosMembros,
+      auxiliares: auxiliares ?? this.auxiliares,
     );
   }
 }

@@ -51,6 +51,18 @@ class AvaliacaoRepository {
   /// consulta entre coleções (collectionGroup). É a fonte de verdade que o
   /// `RankingController` usa pra recalcular a média geral do zero, em vez
   /// de manter um total incremental que poderia dessincronizar.
+  /// Avaliações de todas as rodadas de um grupo, numa consulta só — antes o
+  /// ranking do grupo listava as rodadas e buscava as avaliações de cada
+  /// uma, o que crescia junto com o histórico (um grupo com um ano de racha
+  /// semanal chegava a mais de cem consultas por abertura de tela).
+  Future<List<AvaliacaoModel>> buscarPorGrupo(String grupoId) async {
+    final snap = await _firestore
+        .collectionGroup(FirestorePaths.avaliacoes)
+        .where('grupoId', isEqualTo: grupoId)
+        .get();
+    return snap.docs.map((d) => AvaliacaoModel.fromMap(d.id, d.data())).toList();
+  }
+
   Future<List<AvaliacaoModel>> buscarRecebidasPor(String avaliadoId) async {
     final snap = await _firestore
         .collectionGroup(FirestorePaths.avaliacoes)

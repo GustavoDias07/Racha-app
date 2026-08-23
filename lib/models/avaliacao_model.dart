@@ -11,6 +11,12 @@ class AvaliacaoModel {
   final TipoJogador avaliadoTipo;
   final double nota;
 
+  /// Grupo a que a rodada pertence, copiado do racha na hora de gravar
+  /// (nulo em racha avulso). Guardar aqui é o que permite o ranking do
+  /// grupo puxar todas as avaliações numa consulta só, em vez de percorrer
+  /// rodada por rodada — ver `rankingDoGrupoProvider`.
+  final String? grupoId;
+
   const AvaliacaoModel({
     required this.id,
     required this.rachaId,
@@ -18,6 +24,7 @@ class AvaliacaoModel {
     required this.avaliadoId,
     required this.avaliadoTipo,
     required this.nota,
+    this.grupoId,
   });
 
   factory AvaliacaoModel.fromMap(String id, Map<String, dynamic> map) {
@@ -28,6 +35,7 @@ class AvaliacaoModel {
       avaliadoId: map['avaliadoId'] as String,
       avaliadoTipo: TipoJogador.values.byName(map['avaliadoTipo'] as String),
       nota: (map['nota'] as num).toDouble(),
+      grupoId: map['grupoId'] as String?,
     );
   }
 
@@ -38,6 +46,7 @@ class AvaliacaoModel {
       'avaliadoId': avaliadoId,
       'avaliadoTipo': avaliadoTipo.name,
       'nota': nota,
+      'grupoId': grupoId,
     };
   }
 }

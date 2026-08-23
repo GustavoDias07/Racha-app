@@ -6,6 +6,7 @@ import '../core/balanceamento/jogador_elegivel.dart';
 import '../core/constants/balanceamento_constants.dart';
 import '../models/enums.dart';
 import '../models/racha_model.dart';
+import '../models/ranking_model.dart';
 import '../repositories/convidado_repository.dart';
 import '../repositories/participante_repository.dart';
 import 'firebase_providers.dart';
@@ -38,9 +39,16 @@ class TimesController extends AsyncNotifier<void> {
         );
       }
 
+      // Cadastro e ranking de todo mundo de uma vez, em paralelo — antes
+      // isso era um `await` por jogador dentro do laço, o que num campão
+      // (22 confirmados) enfileirava 22 idas ao servidor.
+      final userIds = participantes.map((p) => p.userId).toSet();
+      final users = await userRepo.buscarVarios(userIds);
+      final rankings = await ref.read(rankingRepositoryProvider).buscarVarios(userIds);
+
       final elegiveis = <JogadorElegivel>[];
       for (final p in participantes) {
-        final user = await userRepo.buscarPorId(p.userId);
+        final user = users[p.userId];
         if (user == null) continue;
         elegiveis.add(JogadorElegivel(
           id: p.id,
@@ -48,7 +56,7 @@ class TimesController extends AsyncNotifier<void> {
           nome: user.nome,
           posicaoMain: p.posicaoMain,
           posicaoUsual: p.posicaoUsual,
-          nota: notaNeutra,
+          nota: _notaDe(rankings[p.userId]),
           idade: user.idade,
           peso: user.peso,
         ));
@@ -60,13 +68,16 @@ class TimesController extends AsyncNotifier<void> {
           nome: c.nome,
           posicaoMain: c.posicaoMain,
           posicaoUsual: c.posicaoUsual,
+          // Convidado não tem histórico de avaliação (não é User, não tem
+          // Ranking), então sempre entra com a nota neutra.
           nota: notaNeutra,
           idade: c.idadeAproximada,
           peso: c.pesoAproximado,
         ));
       }
 
-      final resultado = const BalanceadorTimes().gerar(elegiveis);
+      final resultado = const BalanceadorTimes()
+          .gerar(elegiveis, qtdJogadoresLinha: racha.qtdJogadoresLinha);
 
       // Um único batch (tudo ou nada) — sem isso, uma falha de rede no
       // meio da escrita deixaria o racha com times parcialmente
@@ -80,6 +91,16 @@ class TimesController extends AsyncNotifier<void> {
       }
       await batch.commit();
     });
+  }
+
+  /// Média real do jogador quando ela existe. Um documento de ranking pode
+  /// existir com `mediaAvaliacoes` zerada — é o caso de quem só recebeu MVP
+  /// ou estatística e nunca foi avaliado — e zero ali significa "sem
+  /// histórico", não "joga mal": nesses casos vale a nota neutra, senão o
+  /// jogador seria tratado como o pior do racha.
+  double _notaDe(RankingModel? ranking) {
+    final media = ranking?.mediaAvaliacoes ?? 0;
+    return media > 0 ? media : notaNeutra;
   }
 
   void _salvarTimeEmLote(

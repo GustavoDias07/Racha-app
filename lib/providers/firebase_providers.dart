@@ -4,8 +4,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/alvo_avaliacao.dart';
+import '../core/ranking/agregador_ranking.dart';
 import '../models/avaliacao_model.dart';
+import '../models/aviso_model.dart';
+import '../models/alvo_avaliacao.dart';
 import '../models/convidado_model.dart';
 import '../models/enums.dart';
 import '../models/estatistica_model.dart';
@@ -16,6 +18,7 @@ import '../models/ranking_model.dart';
 import '../models/solicitacao_model.dart';
 import '../models/user_model.dart';
 import '../repositories/avaliacao_repository.dart';
+import '../repositories/aviso_repository.dart';
 import '../repositories/convidado_repository.dart';
 import '../repositories/estatistica_repository.dart';
 import '../repositories/grupo_repository.dart';
@@ -92,11 +95,37 @@ final solicitacaoRepositoryProvider = Provider<SolicitacaoRepository>((ref) {
   return SolicitacaoRepository(ref.watch(firestoreProvider));
 });
 
-/// Rachas (grupos recorrentes) do usuário logado, para a lista da Home.
+final avisoRepositoryProvider = Provider<AvisoRepository>((ref) {
+  return AvisoRepository(ref.watch(firestoreProvider));
+});
+
+/// Recados pendentes do usuário logado (ver `AvisoModel`) — aparecem no sino
+/// da Home junto com os convites.
+final meusAvisosProvider = StreamProvider<List<AvisoModel>>((ref) {
+  final uid = ref.watch(authStateChangesProvider).value?.uid;
+  if (uid == null) return Stream.value(const []);
+  return ref.watch(avisoRepositoryProvider).observar(uid);
+});
+
+/// Rachas (grupos recorrentes) que o usuário logado administra, para a
+/// lista da Home.
 final meusGruposProvider = StreamProvider<List<GrupoModel>>((ref) {
   final uid = ref.watch(authStateChangesProvider).value?.uid;
   if (uid == null) return Stream.value(const []);
   return ref.watch(grupoRepositoryProvider).observarPorAdmin(uid);
+});
+
+/// Grupos em que o usuário logado é membro fixo sem ser o dono — entrou por
+/// solicitação aprovada na aba "Rachas Próximos" ou foi adicionado pelo
+/// admin. Ficam numa seção separada da Home porque as ações disponíveis são
+/// outras (não dá pra editar/apagar, só acompanhar a rodada e sair).
+final gruposQueParticipoProvider = StreamProvider<List<GrupoModel>>((ref) {
+  final uid = ref.watch(authStateChangesProvider).value?.uid;
+  if (uid == null) return Stream.value(const []);
+  return ref
+      .watch(grupoRepositoryProvider)
+      .observarPorMembro(uid)
+      .map((lista) => lista.where((g) => g.adminId != uid).toList());
 });
 
 /// Rachas avulsos (sem Grupo) que o usuário logado administra — os
@@ -132,14 +161,25 @@ final solicitacoesPendentesProvider =
   return ref.watch(solicitacaoRepositoryProvider).observarPendentes(grupoId);
 });
 
-/// Solicitação pendente do usuário logado num grupo, se houver — usado na
-/// aba "Rachas Próximos" pra trocar o botão "Solicitar entrada" por "Pedido
-/// pendente" e não deixar pedir duas vezes.
+/// Pedidos recusados de um grupo — o admin precisa vê-los pra poder
+/// reabrir, já que quem foi recusado não consegue pedir de novo sozinho.
+final solicitacoesRecusadasProvider =
+    StreamProvider.family<List<SolicitacaoModel>, String>((ref, grupoId) {
+  return ref.watch(solicitacaoRepositoryProvider).observarRecusadas(grupoId);
+});
+
+/// Último pedido de entrada do usuário logado num grupo, se houver — a aba
+/// "Rachas Próximos" usa pra trocar "Solicitar entrada" por "Pedido
+/// pendente"/"Pedido recusado". É stream (não one-shot) pra o botão mudar
+/// no mesmo instante em que o pedido é criado e de novo quando o admin
+/// responde, sem depender de sair e voltar na tela.
 final minhaSolicitacaoProvider =
-    FutureProvider.family<SolicitacaoModel?, String>((ref, grupoId) {
+    StreamProvider.family<SolicitacaoModel?, String>((ref, grupoId) {
   final uid = ref.watch(authStateChangesProvider).value?.uid;
-  if (uid == null) return Future.value(null);
-  return ref.watch(solicitacaoRepositoryProvider).buscarMinhaSolicitacao(grupoId, uid);
+  if (uid == null) return Stream.value(null);
+  return ref
+      .watch(solicitacaoRepositoryProvider)
+      .observarMinhaSolicitacao(grupoId, uid);
 });
 
 /// Grupo por id, em stream — usado pela seção "Membros fixos" da tela de
@@ -281,79 +321,41 @@ final contextoAvaliacaoProvider = FutureProvider.family<ContextoAvaliacao,
   );
 });
 
-/// Ranking de um Grupo: soma avaliações/estatísticas/MVPs de User em todas
-/// as rodadas já jogadas ali (aberta ou finalizada), do zero, a cada
-/// chamada — diferente do `rankings/{userId}` global (usado só no Perfil),
-/// não existe um doc persistido por grupo porque o recorte muda dependendo
-/// de qual grupo está sendo olhado. Convidados ficam de fora: o id de um
-/// Convidado não sobrevive entre rodadas diferentes do mesmo grupo (é só
-/// um perfil daquela rodada), então não daria pra comparar "desempenho no
-/// grupo" de alguém que nem tem uma identidade estável nele.
+/// Ranking de um Grupo: o desempenho de cada jogador considerando só as
+/// rodadas daquele grupo. É um recorte diferente do `rankings/{userId}`
+/// global (usado no Perfil e no balanceamento), e por isso não dá pra
+/// derivar um do outro — de uma média global não se extrai a média dentro
+/// de um grupo. O que os dois compartilham é a conta em si, feita por
+/// `agregarRanking`, pra nenhum jogador aparecer com número diferente
+/// dependendo da tela.
+///
+/// Calculado sob demanda, sem documento persistido: o recorte muda conforme
+/// o grupo que está sendo olhado, e é uma tela consultada de vez em quando.
 final rankingDoGrupoProvider =
     FutureProvider.family<List<RankingModel>, String>((ref, grupoId) async {
-  final rachaRepo = ref.watch(rachaRepositoryProvider);
-  final avaliacaoRepo = ref.watch(avaliacaoRepositoryProvider);
-  final estatisticaRepo = ref.watch(estatisticaRepositoryProvider);
+  // Três consultas, sempre — não importa se o grupo tem duas rodadas ou
+  // duzentas. As avaliações e estatísticas vêm direto pelo `grupoId` gravado
+  // em cada documento; a lista de rodadas ainda é necessária pra contar os
+  // títulos de MVP, que moram no próprio racha.
+  final resultados = await Future.wait([
+    ref.watch(rachaRepositoryProvider).buscarTodosPorGrupo(grupoId),
+    ref.watch(avaliacaoRepositoryProvider).buscarPorGrupo(grupoId),
+    ref.watch(estatisticaRepositoryProvider).buscarPorGrupo(grupoId),
+  ]);
 
-  final rachas = await rachaRepo.buscarTodosPorGrupo(grupoId);
-  if (rachas.isEmpty) return [];
+  final rachas = resultados[0] as List<RachaModel>;
+  final avaliacoes = resultados[1] as List<AvaliacaoModel>;
+  final estatisticas = resultados[2] as List<EstatisticaModel>;
+  if (rachas.isEmpty) return const [];
 
-  final notasPorUser = <String, List<double>>{};
-  final rachasPorUser = <String, Set<String>>{};
-  final golsPorUser = <String, int>{};
-  final assistenciasPorUser = <String, int>{};
-  final mvpsPorUser = <String, int>{};
+  final ranking = agregarRanking(
+    avaliacoes: avaliacoes,
+    estatisticas: estatisticas,
+    mvpUserIds: [
+      for (final racha in rachas)
+        if (racha.mvpUserId != null) racha.mvpUserId!,
+    ],
+  );
 
-  for (final racha in rachas) {
-    final List<AvaliacaoModel> avaliacoes =
-        await avaliacaoRepo.observarPorRacha(racha.id).first;
-    for (final a in avaliacoes) {
-      if (a.avaliadoTipo != TipoJogador.user) continue;
-      notasPorUser.putIfAbsent(a.avaliadoId, () => []).add(a.nota);
-      rachasPorUser.putIfAbsent(a.avaliadoId, () => {}).add(racha.id);
-    }
-
-    final List<EstatisticaModel> estatisticas =
-        await estatisticaRepo.observarPorRacha(racha.id).first;
-    for (final e in estatisticas) {
-      if (e.jogadorTipo != TipoJogador.user) continue;
-      golsPorUser.update(e.jogadorId, (v) => v + e.gols, ifAbsent: () => e.gols);
-      assistenciasPorUser.update(
-        e.jogadorId,
-        (v) => v + e.assistencias,
-        ifAbsent: () => e.assistencias,
-      );
-    }
-
-    if (racha.mvpUserId != null) {
-      mvpsPorUser.update(racha.mvpUserId!, (v) => v + 1, ifAbsent: () => 1);
-    }
-  }
-
-  final userIds = {
-    ...notasPorUser.keys,
-    ...golsPorUser.keys,
-    ...assistenciasPorUser.keys,
-    ...mvpsPorUser.keys,
-  };
-
-  final ranking = userIds.map((userId) {
-    final notas = notasPorUser[userId] ?? const [];
-    final media = notas.isEmpty ? 0.0 : notas.reduce((a, b) => a + b) / notas.length;
-    return RankingModel(
-      userId: userId,
-      mediaAvaliacoes: media,
-      totalMvps: mvpsPorUser[userId] ?? 0,
-      totalGols: golsPorUser[userId] ?? 0,
-      totalAssistencias: assistenciasPorUser[userId] ?? 0,
-      totalRachas: rachasPorUser[userId]?.length ?? 0,
-    );
-  }).toList()
-    ..sort((a, b) {
-      final porMvp = b.totalMvps.compareTo(a.totalMvps);
-      if (porMvp != 0) return porMvp;
-      return b.mediaAvaliacoes.compareTo(a.mediaAvaliacoes);
-    });
-
-  return ranking;
+  return ordenarRanking(ranking.values);
 });

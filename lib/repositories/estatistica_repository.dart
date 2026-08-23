@@ -49,6 +49,19 @@ class EstatisticaRepository {
   /// id do convidado, e o novo, sob o id do User) porque busca por
   /// `jogadorId` (ver `buscarTodasDe`) — sem duplicar total nenhum, já que
   /// os dois docs têm ids diferentes.
+  /// Estatísticas de todas as rodadas de um grupo, numa consulta só — o
+  /// `grupoId` gravado em cada documento (ver `EstatisticaModel`) é o que
+  /// dispensa percorrer rodada por rodada.
+  Future<List<EstatisticaModel>> buscarPorGrupo(String grupoId) async {
+    final snap = await _firestore
+        .collectionGroup(FirestorePaths.estatisticas)
+        .where('grupoId', isEqualTo: grupoId)
+        .get();
+    return snap.docs
+        .map((d) => EstatisticaModel.fromMap(d.id, d.data()))
+        .toList();
+  }
+
   Future<void> copiarParaUser({
     required String convidadoId,
     required String userId,
@@ -65,6 +78,7 @@ class EstatisticaRepository {
       final nova = EstatisticaModel(
         id: userId,
         rachaId: antiga.rachaId,
+        grupoId: antiga.grupoId,
         jogadorId: userId,
         jogadorTipo: TipoJogador.user,
         gols: antiga.gols,

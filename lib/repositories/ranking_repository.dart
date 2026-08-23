@@ -17,23 +17,27 @@ class RankingRepository {
     return RankingModel.fromMap(doc.id, doc.data()!);
   }
 
-  Future<void> salvar(RankingModel ranking) {
-    return _collection.doc(ranking.userId).set(ranking.toMap());
+  /// Rankings de vários jogadores de uma vez — usado pelo
+  /// `TimesController` na hora de montar os times, que precisa da média de
+  /// avaliação de todo mundo confirmado. Dispara as leituras em paralelo em
+  /// vez de uma por vez: num racha de campão são 22 jogadores, e em série
+  /// isso vira 22 idas ao servidor enfileiradas.
+  ///
+  /// Quem ainda não tem documento de ranking simplesmente não aparece no
+  /// mapa devolvido — cabe a quem chamou decidir o que fazer (o
+  /// `TimesController` usa a nota neutra nesse caso).
+  Future<Map<String, RankingModel>> buscarVarios(Iterable<String> userIds) async {
+    final ids = userIds.toSet();
+    if (ids.isEmpty) return {};
+
+    final docs = await Future.wait(ids.map((id) => _collection.doc(id).get()));
+    return {
+      for (final doc in docs)
+        if (doc.exists) doc.id: RankingModel.fromMap(doc.id, doc.data()!),
+    };
   }
 
-  /// Ajusta `totalMvps` atomicamente (+1/-1), sem precisar ler o doc antes
-  /// — evita perder incrementos quando dois clientes mexem no MVP da mesma
-  /// rodada ao mesmo tempo (ver RankingController.calcularMvpDaRodada).
-  /// Os demais campos entram com `increment(0)` só pra garantir que
-  /// existam no documento (as regras do Firestore exigem todos os campos
-  /// presentes em toda escrita — ver firestore.rules).
-  Future<void> incrementarMvp(String userId, int delta) {
-    return _collection.doc(userId).set({
-      'mediaAvaliacoes': FieldValue.increment(0),
-      'totalMvps': FieldValue.increment(delta),
-      'totalGols': FieldValue.increment(0),
-      'totalAssistencias': FieldValue.increment(0),
-      'totalRachas': FieldValue.increment(0),
-    }, SetOptions(merge: true));
+  Future<void> salvar(RankingModel ranking) {
+    return _collection.doc(ranking.userId).set(ranking.toMap());
   }
 }

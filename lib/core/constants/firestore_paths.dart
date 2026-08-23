@@ -19,6 +19,9 @@ class FirestorePaths {
   static const avaliacoes = 'avaliacoes';
   static const estatisticas = 'estatisticas';
 
+  // Subcoleção de users/{userId} — recados curtos pro jogador (ver AvisoModel).
+  static const avisos = 'avisos';
+
   // Subcoleção de grupos/{grupoId} — pedidos de entrada (aba "Rachas Próximos").
   static const solicitacoes = 'solicitacoes';
 }

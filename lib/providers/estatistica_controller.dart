@@ -13,6 +13,7 @@ class EstatisticaController extends AsyncNotifier<void> {
 
   Future<void> salvar({
     required String rachaId,
+    required String? grupoId,
     required String jogadorId,
     required TipoJogador jogadorTipo,
     required int gols,
@@ -25,6 +26,7 @@ class EstatisticaController extends AsyncNotifier<void> {
       await ref.read(estatisticaRepositoryProvider).salvar(EstatisticaModel(
             id: jogadorId,
             rachaId: rachaId,
+            grupoId: grupoId,
             jogadorId: jogadorId,
             jogadorTipo: jogadorTipo,
             gols: gols,
@@ -36,7 +38,7 @@ class EstatisticaController extends AsyncNotifier<void> {
       if (jogadorTipo == TipoJogador.user) {
         await ref
             .read(rankingControllerProvider.notifier)
-            .recalcularEstatisticas(jogadorId);
+            .recalcularRanking(jogadorId);
       }
     });
   }

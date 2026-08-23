@@ -22,6 +22,11 @@ class AvaliacaoController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       final avaliacaoRepo = ref.read(avaliacaoRepositoryProvider);
 
+      // Uma leitura do racha só pra copiar o grupo pra dentro de cada
+      // avaliação: é o que permite o ranking do grupo buscar tudo numa
+      // consulta, em vez de varrer rodada por rodada.
+      final racha = await ref.read(rachaRepositoryProvider).observar(rachaId).first;
+
       await avaliacaoRepo.avaliarEmLote([
         for (final (alvo, nota) in alvosComNota)
           AvaliacaoModel(
@@ -31,6 +36,7 @@ class AvaliacaoController extends AsyncNotifier<void> {
             avaliadoId: alvo.id,
             avaliadoTipo: alvo.tipo,
             nota: nota,
+            grupoId: racha?.grupoId,
           ),
       ]);
 
@@ -40,7 +46,7 @@ class AvaliacaoController extends AsyncNotifier<void> {
           if (alvo.tipo == TipoJogador.user) alvo.id,
       };
       for (final userId in usuariosAfetados) {
-        await rankingController.recalcularParaAvaliado(userId);
+        await rankingController.recalcularRanking(userId);
       }
     });
   }

@@ -16,6 +16,10 @@ class EstatisticaModel {
   final int cartoesAmarelos;
   final int cartoesVermelhos;
 
+  /// Grupo a que a rodada pertence (nulo em racha avulso) — mesma razão do
+  /// campo em `AvaliacaoModel`: o ranking do grupo busca tudo de uma vez.
+  final String? grupoId;
+
   const EstatisticaModel({
     required this.id,
     required this.rachaId,
@@ -25,6 +29,7 @@ class EstatisticaModel {
     this.assistencias = 0,
     this.cartoesAmarelos = 0,
     this.cartoesVermelhos = 0,
+    this.grupoId,
   });
 
   factory EstatisticaModel.fromMap(String id, Map<String, dynamic> map) {
@@ -37,6 +42,7 @@ class EstatisticaModel {
       assistencias: map['assistencias'] as int? ?? 0,
       cartoesAmarelos: map['cartoesAmarelos'] as int? ?? 0,
       cartoesVermelhos: map['cartoesVermelhos'] as int? ?? 0,
+      grupoId: map['grupoId'] as String?,
     );
   }
 
@@ -49,6 +55,7 @@ class EstatisticaModel {
       'assistencias': assistencias,
       'cartoesAmarelos': cartoesAmarelos,
       'cartoesVermelhos': cartoesVermelhos,
+      'grupoId': grupoId,
     };
   }
 
@@ -67,6 +74,7 @@ class EstatisticaModel {
       assistencias: assistencias ?? this.assistencias,
       cartoesAmarelos: cartoesAmarelos ?? this.cartoesAmarelos,
       cartoesVermelhos: cartoesVermelhos ?? this.cartoesVermelhos,
+      grupoId: grupoId,
     );
   }
 }

@@ -40,6 +40,21 @@ class ParticipanteController extends AsyncNotifier<void> {
     });
   }
 
+  Future<void> registrarPresenca({
+    required String rachaId,
+    required String participanteId,
+    required PresencaFinal presenca,
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() {
+      return ref.read(participanteRepositoryProvider).registrarPresenca(
+            rachaId: rachaId,
+            participanteId: participanteId,
+            presenca: presenca,
+          );
+    });
+  }
+
   Future<void> definirPosicoes({
     required String rachaId,
     required String participanteId,

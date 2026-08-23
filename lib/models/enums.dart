@@ -55,6 +55,25 @@ enum TimeRacha { A, B }
 /// condição usada pelo algoritmo de balanceamento para elegibilidade.
 enum StatusConfirmacao { pendente, confirmado, recusado }
 
+/// O que de fato aconteceu no dia do jogo, registrado por quem faz a chamada
+/// (admin ou anotador). Diferente de `StatusConfirmacao`, que é a **intenção**
+/// declarada dias antes.
+///
+/// A distinção que justifica esse enum existir: quem recusou com antecedência
+/// e quem confirmou e não apareceu são coisas completamente diferentes pra
+/// quem organiza — o primeiro avisou a tempo de chamar outro, o segundo
+/// deixou o racha com um a menos. No `StatusConfirmacao` os dois acabavam
+/// indistinguíveis depois do jogo.
+enum PresencaFinal { compareceu, atrasou, faltou }
+
+extension PresencaFinalX on PresencaFinal {
+  String get label => switch (this) {
+        PresencaFinal.compareceu => 'Compareceu',
+        PresencaFinal.atrasou => 'Atrasou',
+        PresencaFinal.faltou => 'Faltou',
+      };
+}
+
 /// Status de aprovação de um Convidado pelo admin do racha.
 ///
 /// Mesmo raciocínio do `StatusConfirmacao`: a tela de Aprovação de

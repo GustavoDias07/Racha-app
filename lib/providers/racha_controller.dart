@@ -3,14 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/utils/data_utils.dart';
 import '../models/enums.dart';
 import '../models/racha_model.dart';
+import 'criar_racha_com_admin.dart';
 import 'firebase_providers.dart';
 
 class RachaController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  /// Cria um racha avulso (sem Grupo) — o admin já entra como participante
-  /// confirmado, mesma regra usada pelo `GrupoController.criar`.
+  /// Cria um racha avulso (sem Grupo). O admin entra como participante
+  /// pendente e confirma presença como qualquer outro — ver
+  /// `criarRachaComAdmin`, que é a mesma porta usada pelo
+  /// `GrupoController.criar`.
   Future<void> criar({
     required String nome,
     required String local,
@@ -30,12 +33,7 @@ class RachaController extends AsyncNotifier<void> {
         qtdJogadoresLinha: qtdJogadoresLinha,
         adminId: adminId,
       );
-      final rachaId = await ref.read(rachaRepositoryProvider).criar(racha);
-      await ref.read(participanteRepositoryProvider).convidar(
-            rachaId: rachaId,
-            userId: adminId,
-            status: StatusConfirmacao.confirmado,
-          );
+      await criarRachaComAdmin(ref, racha);
     });
   }
 
@@ -68,17 +66,14 @@ class RachaController extends AsyncNotifier<void> {
             tipoCampo: grupo.tipoCampoPadrao,
             qtdJogadoresLinha: grupo.qtdJogadoresLinhaPadrao,
             adminId: grupo.adminId,
+            anotadores: grupo.auxiliares,
           );
           rachaRepo.criarEmLote(batch, proximaRef, proxima);
-          participanteRepo.convidarEmLote(
-            batch,
-            rachaId: proximaRef.id,
-            userId: grupo.adminId,
-            status: StatusConfirmacao.confirmado,
-          );
-          for (final membroId in grupo.membrosFixos) {
-            if (membroId == grupo.adminId) continue;
-            participanteRepo.convidarEmLote(batch, rachaId: proximaRef.id, userId: membroId);
+          // O admin é convidado como qualquer membro fixo: ele confirma
+          // presença se for jogar. Organizar a rodada não é o mesmo que
+          // estar em campo nela.
+          for (final userId in {grupo.adminId, ...grupo.membrosFixos}) {
+            participanteRepo.convidarEmLote(batch, rachaId: proximaRef.id, userId: userId);
           }
         }
       }
@@ -133,6 +128,12 @@ class RachaController extends AsyncNotifier<void> {
       final racha = await ref.read(rachaRepositoryProvider).observar(codigoLimpo).first;
       if (racha == null) {
         throw Exception('Código inválido — nenhum racha encontrado.');
+      }
+      // Racha encerrado não recebe mais ninguém: entrar aqui só criaria um
+      // participante confirmado num jogo que já aconteceu, que ainda por cima
+      // entraria na conta de quem pode avaliar a rodada.
+      if (racha.status == RachaStatus.finalizado) {
+        throw Exception('Esse racha já foi encerrado.');
       }
 
       final uid = ref.read(firebaseAuthProvider).currentUser!.uid;

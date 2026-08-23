@@ -40,6 +40,19 @@ class GrupoRepository {
             snap.docs.map((d) => GrupoModel.fromMap(d.id, d.data())).toList());
   }
 
+  /// Grupos em que o usuário entrou como membro fixo (via solicitação
+  /// aprovada ou adicionado pelo admin) — ele não é dono de nenhum deles,
+  /// então `observarPorAdmin` nunca os traria, e sem isso o grupo ficava
+  /// invisível pra quem só participa: só chegavam os convites avulsos de
+  /// cada rodada.
+  Stream<List<GrupoModel>> observarPorMembro(String userId) {
+    return _collection
+        .where('membrosFixos', arrayContains: userId)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => GrupoModel.fromMap(d.id, d.data())).toList());
+  }
+
   /// Grupos abertos pra novos membros — base da aba "Rachas Próximos". Sem
   /// filtro geográfico no servidor (ver `lib/core/utils/geo_utils.dart`): a
   /// tela filtra/ordena por distância no cliente a partir dessa lista.
@@ -55,6 +68,12 @@ class GrupoRepository {
   /// vez que uma nova rodada do grupo nasce (Fluxo 5).
   Future<void> atualizarMembrosFixos(String grupoId, List<String> membrosFixos) {
     return _collection.doc(grupoId).update({'membrosFixos': membrosFixos});
+  }
+
+  /// Quem pode fazer a chamada nas rodadas do grupo (ver
+  /// `GrupoModel.auxiliares`).
+  Future<void> atualizarAuxiliares(String grupoId, List<String> auxiliares) {
+    return _collection.doc(grupoId).update({'auxiliares': auxiliares});
   }
 
   /// Edita a configuração padrão do grupo — só vale pras próximas rodadas
@@ -83,10 +102,25 @@ class GrupoRepository {
     });
   }
 
-  /// Apaga só o Grupo — as rodadas (rachas) já geradas a partir dele não
-  /// são apagadas junto (não têm delete permitido pelas regras), só param
-  /// de aparecer na Home porque o Grupo dono sumiu.
-  Future<void> remover(String id) {
-    return _collection.doc(id).delete();
+  /// Saída do próprio jogador do grupo (não é o admin removendo alguém —
+  /// ver `atualizarMembrosFixos`). Usa `arrayRemove` em vez de reescrever a
+  /// lista inteira porque a regra do Firestore só libera essa escrita pra
+  /// quem está tirando a si mesmo, e um `set` da lista inteira correria o
+  /// risco de sobrescrever entradas que o admin adicionou nesse meio tempo.
+  Future<void> sair(String grupoId, String userId) {
+    return _collection.doc(grupoId).update({
+      'membrosFixos': FieldValue.arrayRemove([userId]),
+    });
+  }
+
+  /// Apaga o Grupo dentro de um batch — as rodadas (rachas) já geradas a
+  /// partir dele não são apagadas junto (não têm delete permitido pelas
+  /// regras), só param de aparecer na Home porque o Grupo dono sumiu.
+  ///
+  /// Em lote porque a remoção nunca é só do grupo: os pedidos de entrada vão
+  /// junto e os avisos pros solicitantes nascem no mesmo commit — ver
+  /// `GrupoController.remover`.
+  void removerEmLote(WriteBatch batch, String id) {
+    batch.delete(_collection.doc(id));
   }
 }

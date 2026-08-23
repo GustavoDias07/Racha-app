@@ -99,6 +99,19 @@ class ParticipanteRepository {
         .update({'statusConfirmacao': status.name});
   }
 
+  /// Registra o que aconteceu no dia (chamada). Só quem tem permissão chega
+  /// aqui — admin do racha ou anotador (`RachaModel.anotadores`), o que a
+  /// regra do Firestore também exige.
+  Future<void> registrarPresenca({
+    required String rachaId,
+    required String participanteId,
+    required PresencaFinal presenca,
+  }) {
+    return _collection(rachaId)
+        .doc(participanteId)
+        .update({'presenca': presenca.name});
+  }
+
   Future<void> definirPosicoes({
     required String rachaId,
     required String participanteId,

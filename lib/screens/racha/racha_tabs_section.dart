@@ -72,16 +72,32 @@ class _ParticipantesTab extends ConsumerWidget {
     final isAdmin = racha.adminId == uid;
     final participantes = ref.watch(participantesDoRachaProvider(racha.id));
 
+    // A chamada só faz sentido a partir da hora do jogo — antes disso não há
+    // o que registrar, e o botão só atrapalharia quem está organizando.
+    final podeChamar = racha.podeFazerChamada(uid) &&
+        DateTime.now().isAfter(racha.dataHora) &&
+        racha.status != RachaStatus.finalizado;
+
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton.tonalIcon(
-            onPressed: () => context.push('/rachas/${racha.id}/convidar', extra: uid),
-            icon: const Icon(Icons.person_add),
-            label: const Text('Convidar'),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (podeChamar) ...[
+              FilledButton.icon(
+                onPressed: () => _mostrarChamada(context, racha),
+                icon: const Icon(Icons.fact_check_outlined),
+                label: const Text('Fazer chamada'),
+              ),
+              const SizedBox(width: 8),
+            ],
+            FilledButton.tonalIcon(
+              onPressed: () => context.push('/rachas/${racha.id}/convidar', extra: uid),
+              icon: const Icon(Icons.person_add),
+              label: const Text('Convidar'),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         participantes.when(
@@ -220,6 +236,15 @@ class _TimesTab extends ConsumerWidget {
           final minimo = racha.totalVagas * 2;
           final suficiente = totalElegiveis >= minimo;
 
+          // O balanceamento é feito pela posição principal de cada um (ver
+          // core/balanceamento/setores.dart), então vale avisar o admin antes
+          // de gerar: sem goleiro declarado nenhum time ganha goleiro fixo, e
+          // quem não escolheu posição vira tapa-buraco de setor.
+          final semPosicao = confirmados.where((p) => p.posicaoMain == null).length +
+              aprovados.where((c) => c.posicaoMain == null).length;
+          final semGoleiro = !confirmados.any((p) => p.posicaoMain == Posicao.goleiro) &&
+              !aprovados.any((c) => c.posicaoMain == Posicao.goleiro);
+
           int porPosicao(Posicao? p) => p == Posicao.goleiro ? 0 : 1;
           final timeAParticipantes =
               confirmados.where((p) => p.time == TimeRacha.A).toList()
@@ -250,6 +275,10 @@ class _TimesTab extends ConsumerWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (semGoleiro || semPosicao > 0) ...[
+                  const SizedBox(height: 8),
+                  _AvisoEscalacao(semPosicao: semPosicao, semGoleiro: semGoleiro),
+                ],
                 const SizedBox(height: 12),
                 FilledButton.icon(
                   onPressed: (suficiente && !timesState.isLoading)
@@ -586,6 +615,7 @@ class _EstatisticaParticipanteTile extends ConsumerWidget {
         context,
         ref,
         rachaId: racha.id,
+        grupoId: racha.grupoId,
         jogadorId: participante.userId,
         jogadorTipo: TipoJogador.user,
         estatistica: estatistica,
@@ -617,6 +647,7 @@ class _EstatisticaConvidadoTile extends ConsumerWidget {
         context,
         ref,
         rachaId: racha.id,
+        grupoId: racha.grupoId,
         jogadorId: convidado.id,
         jogadorTipo: TipoJogador.convidado,
         estatistica: estatistica,
@@ -670,6 +701,7 @@ Future<void> _mostrarDialogoEstatistica(
   BuildContext context,
   WidgetRef ref, {
   required String rachaId,
+  required String? grupoId,
   required String jogadorId,
   required TipoJogador jogadorTipo,
   required EstatisticaModel? estatistica,
@@ -744,6 +776,7 @@ Future<void> _mostrarDialogoEstatistica(
           onPressed: () {
             ref.read(estatisticaControllerProvider.notifier).salvar(
                   rachaId: rachaId,
+                  grupoId: grupoId,
                   jogadorId: jogadorId,
                   jogadorTipo: jogadorTipo,
                   gols: int.tryParse(golsController.text) ?? 0,
@@ -952,6 +985,26 @@ class _ParticipanteTile extends ConsumerWidget {
           if (participante.posicaoMain != null) ...[
             const SizedBox(width: 8),
             Text('• ${participante.posicaoMain!.label}'),
+          ] else if (confirmado) ...[
+            const SizedBox(width: 8),
+            Text(
+              '• Sem posição',
+              style: TextStyle(color: Colors.orange[800]),
+            ),
+          ],
+          if (participante.presenca != null) ...[
+            const SizedBox(width: 8),
+            Text(
+              '• ${participante.presenca!.label}',
+              style: TextStyle(
+                color: switch (participante.presenca!) {
+                  PresencaFinal.compareceu => Colors.green[700],
+                  PresencaFinal.atrasou => Colors.orange[800],
+                  PresencaFinal.faltou => Colors.red[700],
+                },
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ],
       ),
@@ -966,13 +1019,22 @@ class _ParticipanteTile extends ConsumerWidget {
                         ? 'Definir posição'
                         : 'Editar posição',
                     onPressed: () =>
-                        _mostrarDialogoPosicao(context, ref, rachaId, participante),
+                        _mostrarDialogoPosicao(context, ref, racha, participante),
                   ),
                 if (souEu && pendente) ...[
                   IconButton(
                     icon: const Icon(Icons.check_circle, color: Colors.green),
                     tooltip: 'Confirmar presença',
+                    // Confirmar e escolher posição viraram um passo só: quem
+                    // entra no racha já diz onde joga, senão o balanceamento
+                    // fica sem o dado principal dele. Quem já tinha posição
+                    // (voltou atrás depois de recusar) não é perguntado de novo.
                     onPressed: () async {
+                      if (participante.posicaoMain == null) {
+                        final definiu = await _mostrarDialogoPosicao(
+                            context, ref, racha, participante);
+                        if (!definiu) return;
+                      }
                       await ref
                           .read(participanteControllerProvider.notifier)
                           .atualizarStatus(
@@ -1048,71 +1110,263 @@ Future<void> _confirmarERemoverParticipante(
       .remover(rachaId: rachaId, participanteId: participante.id);
 }
 
-/// Diálogo pra o próprio participante escolher posição main/usual — usadas
-/// pelo Estágio 1 do algoritmo de balanceamento (goleiro fixo + versáteis
-/// por último). Sem isso, `Participante.posicaoMain` nunca é preenchido e o
-/// algoritmo nunca sabe quem é goleiro.
-Future<void> _mostrarDialogoPosicao(
+/// Lista de chamada do dia. Aparece pra quem tem permissão (admin ou
+/// anotador) a partir do horário do racha.
+///
+/// Só lista quem **confirmou presença**: a chamada existe pra comparar o que
+/// a pessoa disse que ia fazer com o que ela fez. Quem recusou com
+/// antecedência não está sendo cobrado de nada — avisar é o comportamento
+/// correto, e aparecer numa lista de chamada sugeriria o contrário.
+void _mostrarChamada(BuildContext context, RachaModel racha) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => SafeArea(
+      child: Consumer(
+        builder: (context, ref, _) {
+          final confirmados =
+              (ref.watch(participantesDoRachaProvider(racha.id)).valueOrNull ?? [])
+                  .where((p) => p.confirmado)
+                  .toList();
+
+          if (confirmados.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('Ninguém confirmou presença nessa rodada.'),
+            );
+          }
+
+          final faltaRegistrar =
+              confirmados.where((p) => p.presenca == null).length;
+
+          return ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Chamada',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 2),
+                    Text(
+                      faltaRegistrar == 0
+                          ? 'Todo mundo registrado.'
+                          : 'Faltam $faltaRegistrar de ${confirmados.length}.',
+                      style: const TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+              ...confirmados.map(
+                (participante) => _LinhaChamada(racha: racha, participante: participante),
+              ),
+              const SizedBox(height: 8),
+            ],
+          );
+        },
+      ),
+    ),
+  );
+}
+
+class _LinhaChamada extends ConsumerWidget {
+  const _LinhaChamada({required this.racha, required this.participante});
+
+  final RachaModel racha;
+  final ParticipanteModel participante;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(userPorIdProvider(participante.userId));
+
+    return ListTile(
+      dense: true,
+      title: Text(userAsync.valueOrNull?.nome ?? 'Carregando...'),
+      trailing: SegmentedButton<PresencaFinal>(
+        showSelectedIcon: false,
+        emptySelectionAllowed: true,
+        segments: const [
+          ButtonSegment(
+            value: PresencaFinal.compareceu,
+            icon: Icon(Icons.check, size: 18),
+            tooltip: 'Chegou no horário',
+          ),
+          ButtonSegment(
+            value: PresencaFinal.atrasou,
+            icon: Icon(Icons.schedule, size: 18),
+            tooltip: 'Chegou atrasado',
+          ),
+          ButtonSegment(
+            value: PresencaFinal.faltou,
+            icon: Icon(Icons.close, size: 18),
+            tooltip: 'Não apareceu',
+          ),
+        ],
+        selected: {if (participante.presenca != null) participante.presenca!},
+        onSelectionChanged: (selecao) {
+          if (selecao.isEmpty) return;
+          ref.read(participanteControllerProvider.notifier).registrarPresenca(
+                rachaId: racha.id,
+                participanteId: participante.id,
+                presenca: selecao.first,
+              );
+        },
+      ),
+    );
+  }
+}
+
+/// Avisa o admin do que vai faltar quando os times forem gerados. Não
+/// bloqueia nada — dá pra jogar sem goleiro declarado, só é melhor saber
+/// disso antes de apertar o botão do que depois.
+class _AvisoEscalacao extends StatelessWidget {
+  const _AvisoEscalacao({required this.semPosicao, required this.semGoleiro});
+
+  final int semPosicao;
+  final bool semGoleiro;
+
+  @override
+  Widget build(BuildContext context) {
+    final avisos = [
+      if (semGoleiro)
+        'Ninguém escolheu goleiro — os dois times vão entrar sem goleiro fixo.',
+      if (semPosicao > 0)
+        semPosicao == 1
+            ? '1 jogador ainda não escolheu posição e vai entrar onde estiver faltando gente.'
+            : '$semPosicao jogadores ainda não escolheram posição e vão entrar onde estiver faltando gente.',
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final aviso in avisos)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.orange[800]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(aviso, style: const TextStyle(fontSize: 13)),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Diálogo em que o jogador escolhe onde joga. Aparece na hora de confirmar
+/// presença (e não escondido atrás de um botão depois), porque sem a posição
+/// main o algoritmo não sabe montar os setores nem quem é goleiro — ver
+/// `lib/core/balanceamento/setores.dart`.
+///
+/// Mostra a formação do racha junto: a escolha muda de sentido dependendo do
+/// campo (num futsal de 4 de linha não existe "ala esquerdo puro"), então o
+/// jogador decide vendo onde vai jogar.
+///
+/// Devolve `true` se as posições foram salvas.
+Future<bool> _mostrarDialogoPosicao(
   BuildContext context,
   WidgetRef ref,
-  String rachaId,
+  RachaModel racha,
   ParticipanteModel participante,
-) {
-  var main = participante.posicaoMain ?? Posicao.zagueiro;
-  var usual = participante.posicaoUsual ?? Posicao.zagueiro;
+) async {
+  var main = participante.posicaoMain;
+  // A secundária só existe quando é diferente da principal — guardar as duas
+  // iguais é o mesmo que não ter secundária.
+  var secundaria = participante.posicaoUsual == participante.posicaoMain
+      ? null
+      : participante.posicaoUsual;
 
-  return showDialog<void>(
+  final salvou = await showDialog<bool>(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
-        title: const Text('Suas posições'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<Posicao>(
-              initialValue: main,
-              decoration: const InputDecoration(labelText: 'Posição main'),
-              items: Posicao.values
-                  .map((p) => DropdownMenuItem(value: p, child: Text(p.label)))
-                  .toList(),
-              onChanged: (p) {
-                if (p != null) setState(() => main = p);
-              },
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<Posicao>(
-              initialValue: usual,
-              decoration: const InputDecoration(labelText: 'Posição usual'),
-              items: Posicao.values
-                  .map((p) => DropdownMenuItem(value: p, child: Text(p.label)))
-                  .toList(),
-              onChanged: (p) {
-                if (p != null) setState(() => usual = p);
-              },
-            ),
-          ],
+        title: const Text('Onde você joga?'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${racha.tipoCampo.label} • ${racha.qtdJogadoresLinha} na linha '
+                '+ goleiro',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<Posicao>(
+                initialValue: main,
+                decoration: const InputDecoration(
+                  labelText: 'Posição principal',
+                  helperText: 'É por ela que o time é montado',
+                ),
+                items: Posicao.values
+                    .map((p) => DropdownMenuItem(value: p, child: Text(p.label)))
+                    .toList(),
+                onChanged: (p) => setState(() => main = p),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<Posicao?>(
+                initialValue: secundaria,
+                decoration: const InputDecoration(
+                  labelText: 'Também joga de (opcional)',
+                  helperText: 'Só usada se faltar gente nesse setor',
+                ),
+                items: [
+                  const DropdownMenuItem<Posicao?>(
+                    value: null,
+                    child: Text('Só a principal'),
+                  ),
+                  ...Posicao.values.map(
+                    (p) => DropdownMenuItem<Posicao?>(value: p, child: Text(p.label)),
+                  ),
+                ],
+                onChanged: (p) => setState(() => secundaria = p),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () {
-              ref.read(participanteControllerProvider.notifier).definirPosicoes(
-                    rachaId: rachaId,
-                    participanteId: participante.id,
-                    posicaoMain: main,
-                    posicaoUsual: usual,
-                  );
-              Navigator.of(context).pop();
-            },
+            onPressed: main == null
+                ? null
+                : () {
+                    ref
+                        .read(participanteControllerProvider.notifier)
+                        .definirPosicoes(
+                          rachaId: racha.id,
+                          participanteId: participante.id,
+                          posicaoMain: main!,
+                          posicaoUsual: secundaria ?? main!,
+                        );
+                    Navigator.of(context).pop(true);
+                  },
             child: const Text('Salvar'),
           ),
         ],
       ),
     ),
   );
+
+  return salvou ?? false;
 }
 
 class _ConvidadoTile extends ConsumerWidget {
