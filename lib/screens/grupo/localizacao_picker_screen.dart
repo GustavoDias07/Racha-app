@@ -98,7 +98,7 @@ class _LocalizacaoPickerScreenState extends ConsumerState<LocalizacaoPickerScree
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.racha_app',
+                userAgentPackageName: 'com.gustavodias.rachaapp',
               ),
               MarkerLayer(
                 markers: [
@@ -108,6 +108,15 @@ class _LocalizacaoPickerScreenState extends ConsumerState<LocalizacaoPickerScree
                     height: 40,
                     child: const Icon(Icons.location_pin, size: 40, color: Colors.red),
                   ),
+                ],
+              ),
+              // A licença do OpenStreetMap (ODbL) exige crédito visível em
+              // qualquer tela que mostre os tiles — sem isso o uso é
+              // irregular, e a Play Store trata violação de licença de
+              // terceiros como motivo de remoção.
+              const RichAttributionWidget(
+                attributions: [
+                  TextSourceAttribution('© OpenStreetMap contributors'),
                 ],
               ),
             ],

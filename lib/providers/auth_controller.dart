@@ -75,6 +75,24 @@ class AuthController extends AsyncNotifier<void> {
     });
   }
 
+  /// Dispara o email de redefinicao de senha. Nao propaga
+  /// FirebaseAuthException: a tela sempre mostra a mesma confirmacao, tenha
+  /// o email conta ou nao. Responder de forma diferente pra email existente
+  /// transformaria esta tela num verificador de quem tem conta no app --
+  /// mesmo cuidado ja tomado em `cadastrar`.
+  Future<void> recuperarSenha({required String email}) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      try {
+        await ref
+            .read(authServiceProvider)
+            .recuperarSenha(email: email.trim().toLowerCase());
+      } on FirebaseAuthException {
+        return;
+      }
+    });
+  }
+
   Future<void> logout() async {
     await ref.read(authServiceProvider).logout();
   }

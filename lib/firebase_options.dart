@@ -51,12 +51,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAIh2er6pORFz5d3miGIJHAQeg3NT0xeIo',
-    appId: '1:500693195167:android:a47d9a067b9027ea8605aa',
+    appId: '1:500693195167:android:f749aff408b110bd8605aa',
     messagingSenderId: '500693195167',
     projectId: 'racha-app-ghad-108ab',
     storageBucket: 'racha-app-ghad-108ab.firebasestorage.app',
   );
-
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyD9mNzHIxhFDkME9F5sW6jry01-NS40dwA',
     appId: '1:500693195167:web:1a473d3cb11d4ed28605aa',

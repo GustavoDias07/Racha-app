@@ -31,6 +31,10 @@ class AuthService {
     );
   }
 
+  Future<void> recuperarSenha({required String email}) {
+    return _firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
   Future<void> logout() {
     return _firebaseAuth.signOut();
   }

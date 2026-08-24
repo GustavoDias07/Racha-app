@@ -43,6 +43,13 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+# Chave de assinatura de upload (T19). O keystore e a senha dele nunca vao
+# para o repositorio: quem tem os dois consegue publicar uma atualizacao do
+# app se passando por voce.
+android/key.properties
+*.jks
+*.keystore
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile

@@ -39,6 +39,69 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  /// Abre um dialogo ja preenchido com o que estiver no campo de email e
+  /// dispara o email de redefinicao. A confirmacao e sempre a mesma, exista
+  /// a conta ou nao -- ver `AuthController.recuperarSenha`.
+  Future<void> _recuperarSenha() async {
+    final controller = TextEditingController(text: _emailController.text.trim());
+    final formKey = GlobalKey<FormState>();
+
+    final email = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Recuperar senha'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Informe o email da sua conta. Enviaremos um link para voce '
+                'criar uma nova senha.',
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: controller,
+                autofocus: true,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'Email'),
+                validator: (v) =>
+                    (v == null || !v.contains('@')) ? 'Email invalido' : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (!formKey.currentState!.validate()) return;
+              Navigator.pop(dialogContext, controller.text.trim());
+            },
+            child: const Text('Enviar'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+    if (email == null) return;
+
+    await ref.read(authControllerProvider.notifier).recuperarSenha(email: email);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Se existir uma conta com esse email, o link de redefinicao foi enviado.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
@@ -89,6 +152,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         : const Text('Entrar'),
                   ),
                   const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: carregando ? null : _recuperarSenha,
+                    child: const Text('Esqueci minha senha'),
+                  ),
                   TextButton(
                     onPressed: () => context.push('/cadastro'),
                     child: const Text('Não tenho conta — cadastrar'),
