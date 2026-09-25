@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../models/ranking_model.dart';
 import '../../providers/firebase_providers.dart';
 
@@ -75,7 +76,7 @@ class _RankingTile extends ConsumerWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.star, color: Colors.amber, size: 16),
+              const Icon(Icons.star, color: AppColors.destaque, size: 16),
               const SizedBox(width: 2),
               Text(ranking.mediaAvaliacoes.toStringAsFixed(1)),
             ],
@@ -83,7 +84,7 @@ class _RankingTile extends ConsumerWidget {
           if (ranking.totalMvps > 0)
             Text(
               '${ranking.totalMvps} MVP${ranking.totalMvps > 1 ? 's' : ''}',
-              style: const TextStyle(fontSize: 12, color: Colors.black54),
+              style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
             ),
         ],
       ),

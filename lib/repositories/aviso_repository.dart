@@ -23,6 +23,20 @@ class AvisoRepository {
     });
   }
 
+  /// Deixa um recado avulso.
+  ///
+  /// Diferente do `criarEmLote`, aqui o aviso não acompanha nenhuma exclusão:
+  /// ele é o próprio fato ("fulano pediu para entrar"). Falhar não deve
+  /// derrubar a ação que o originou — quem chama trata isso.
+  Future<void> criar({required String userId, required String mensagem}) {
+    final aviso = AvisoModel(
+      id: '',
+      mensagem: mensagem,
+      criadoEm: DateTime.now(),
+    );
+    return _collection(userId).add(aviso.toMap());
+  }
+
   /// Deixa o recado dentro de um `WriteBatch` já em andamento. É sempre
   /// assim que um aviso nasce: ele existe justamente porque outra coisa foi
   /// apagada, e as duas escritas precisam acontecer juntas — senão dá pra

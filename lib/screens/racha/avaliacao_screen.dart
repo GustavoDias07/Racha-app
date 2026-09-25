@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../models/alvo_avaliacao.dart';
 import '../../models/enums.dart';
 import '../../providers/avaliacao_controller.dart';
@@ -244,7 +245,7 @@ class _NotaSelector extends StatelessWidget {
             constraints: const BoxConstraints(),
             icon: Icon(
               (nota ?? 0) >= i ? Icons.star : Icons.star_border,
-              color: Colors.amber,
+              color: AppColors.destaque,
             ),
             onPressed: () => onChanged(i.toDouble()),
           ),

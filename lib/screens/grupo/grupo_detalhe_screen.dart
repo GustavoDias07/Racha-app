@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/info_tile.dart';
 import '../../models/enums.dart';
 import '../../models/grupo_model.dart';
@@ -98,7 +99,7 @@ class GrupoDetalheScreen extends ConsumerWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Column(
                 children: [
                   InfoTile(
@@ -133,7 +134,7 @@ class GrupoDetalheScreen extends ConsumerWidget {
                         padding: EdgeInsets.all(24),
                         child: Text(
                           'Nenhuma rodada aberta no momento.',
-                          style: TextStyle(color: Colors.black54),
+                          style: TextStyle(color: AppColors.textoSecundario),
                         ),
                       ),
                     );
@@ -250,7 +251,7 @@ class _MembrosFixosSection extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.people_outline, size: 20, color: Colors.black54),
+            const Icon(Icons.people_outline, size: 20, color: AppColors.textoSecundario),
             const SizedBox(width: 12),
             const Expanded(
               child: Text('Membros fixos', style: TextStyle(fontWeight: FontWeight.w500)),
@@ -266,7 +267,7 @@ class _MembrosFixosSection extends ConsumerWidget {
         if (membrosFixos.isEmpty)
           const Padding(
             padding: EdgeInsets.only(left: 32, bottom: 4),
-            child: Text('Nenhum membro fixo ainda.', style: TextStyle(color: Colors.black54)),
+            child: Text('Nenhum membro fixo ainda.', style: TextStyle(color: AppColors.textoSecundario)),
           )
         else ...[
           for (final userId in membrosFixos)
@@ -276,7 +277,7 @@ class _MembrosFixosSection extends ConsumerWidget {
               padding: EdgeInsets.only(left: 32, top: 4, bottom: 4),
               child: Text(
                 'O ícone de prancheta libera o jogador a fazer a chamada do dia.',
-                style: TextStyle(fontSize: 11, color: Colors.black45),
+                style: TextStyle(fontSize: 11, color: AppColors.textoSecundario),
               ),
             ),
         ],
@@ -311,7 +312,7 @@ class _MembroFixoTile extends ConsumerWidget {
               icon: Icon(
                 anotador ? Icons.fact_check : Icons.fact_check_outlined,
                 size: 18,
-                color: anotador ? Colors.green[700] : Colors.black38,
+                color: anotador ? AppColors.confirmado : AppColors.neutro,
               ),
               tooltip: anotador
                   ? 'Tirar a permissão de fazer a chamada'
@@ -525,7 +526,7 @@ class _SolicitacoesSection extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.person_add_outlined, size: 20, color: Colors.black54),
+              const Icon(Icons.person_add_outlined, size: 20, color: AppColors.textoSecundario),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -552,20 +553,36 @@ class _SolicitacaoTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userPorIdProvider(solicitacao.solicitanteId));
+    final ficha =
+        ref.watch(fichaDoJogadorProvider(solicitacao.solicitanteId)).valueOrNull;
+
     return Padding(
-      padding: const EdgeInsets.only(left: 32),
+      padding: const EdgeInsets.only(left: 32, top: 4, bottom: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(child: Text(userAsync.valueOrNull?.nome ?? 'Carregando...')),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(userAsync.valueOrNull?.nome ?? 'Carregando...'),
+                const SizedBox(height: 2),
+                // A ficha carrega depois do nome: mostrar o nome na hora e a
+                // ficha quando chegar é melhor do que segurar a linha inteira
+                // esperando duas consultas.
+                if (ficha != null) _ResumoDoJogador(ficha: ficha),
+              ],
+            ),
+          ),
           IconButton(
-            icon: const Icon(Icons.check, size: 18, color: Colors.green),
+            icon: const Icon(Icons.check, size: 18, color: AppColors.confirmado),
             tooltip: 'Aprovar',
             onPressed: () => ref
                 .read(solicitacaoControllerProvider.notifier)
                 .aprovar(grupo, solicitacao),
           ),
           IconButton(
-            icon: const Icon(Icons.close, size: 18, color: Colors.red),
+            icon: const Icon(Icons.close, size: 18, color: AppColors.recusado),
             tooltip: 'Recusar',
             onPressed: () => ref
                 .read(solicitacaoControllerProvider.notifier)
@@ -573,6 +590,81 @@ class _SolicitacaoTile extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Linha de apoio embaixo do nome: nota média, posição e rodadas jogadas.
+///
+/// Jogador sem histórico recebe um rótulo próprio em vez de "0,0 ★", que
+/// pareceria nota baixa quando na verdade é ausência de nota.
+class _ResumoDoJogador extends StatelessWidget {
+  const _ResumoDoJogador({required this.ficha});
+
+  final FichaJogador ficha;
+
+  @override
+  Widget build(BuildContext context) {
+    if (ficha.semHistorico) {
+      return const Text(
+        'Jogador novo — sem avaliações ainda',
+        style: TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+      );
+    }
+
+    final partes = <Widget>[];
+
+    if (ficha.media != null) {
+      partes.add(Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.star, size: 13, color: AppColors.destaque),
+          const SizedBox(width: 2),
+          Text(
+            ficha.media!.toStringAsFixed(1).replaceAll('.', ','),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.texto,
+            ),
+          ),
+        ],
+      ));
+    }
+
+    if (ficha.posicao != null) {
+      partes.add(Text(
+        ficha.posicao!.posicao.label,
+        style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+      ));
+    }
+
+    if (ficha.totalRachas > 0) {
+      partes.add(Text(
+        '${ficha.totalRachas} ${ficha.totalRachas == 1 ? 'rodada' : 'rodadas'}',
+        style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+      ));
+    }
+
+    if (ficha.totalMvps > 0) {
+      partes.add(Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.emoji_events, size: 13, color: AppColors.destaque),
+          const SizedBox(width: 2),
+          Text(
+            '${ficha.totalMvps}',
+            style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+          ),
+        ],
+      ));
+    }
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: partes,
     );
   }
 }
@@ -600,7 +692,7 @@ class _RecusadasSection extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.person_off_outlined, size: 20, color: Colors.black54),
+              const Icon(Icons.person_off_outlined, size: 20, color: AppColors.textoSecundario),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -634,7 +726,7 @@ class _RecusadaTile extends ConsumerWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(nome, style: const TextStyle(color: Colors.black54)),
+            child: Text(nome, style: const TextStyle(color: AppColors.textoSecundario)),
           ),
           TextButton(
             onPressed: () async {

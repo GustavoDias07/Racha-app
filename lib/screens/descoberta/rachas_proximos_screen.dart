@@ -1,12 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../core/utils/geo_utils.dart';
 import '../../models/enums.dart';
 import '../../models/grupo_model.dart';
 import '../../providers/firebase_providers.dart';
 import '../../providers/solicitacao_controller.dart';
+import '../../services/location_service.dart';
 
 const _raiosKm = [5, 10, 25, 50];
 
@@ -23,7 +24,7 @@ class RachasProximosScreen extends ConsumerStatefulWidget {
 }
 
 class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
-  GeoPoint? _minhaPosicao;
+  PosicaoAtual? _minhaPosicao;
   String? _erro;
   bool _carregando = true;
   int _raioKm = _raiosKm[1];
@@ -86,12 +87,39 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
       );
     }
 
-    final minhaPosicao = _minhaPosicao!;
+    final minhaPosicao = _minhaPosicao!.ponto;
     final gruposAsync = ref.watch(rachasAbertosProvider);
     final meuUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
 
     return Column(
       children: [
+        if (_minhaPosicao!.imprecisa)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Card(
+              color: AppColors.superficieAlta,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.my_location,
+                        size: 20, color: AppColors.pendente),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Sua localização está aproximada '
+                        '(${_minhaPosicao!.precisaoLegivel}), então as distâncias '
+                        'abaixo são estimativas grosseiras. No computador o '
+                        'navegador calcula por Wi-Fi; no celular, com GPS, fica '
+                        'preciso.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Wrap(
@@ -109,28 +137,45 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
         Expanded(
           child: gruposAsync.when(
             data: (grupos) {
+              // O funil é peneirado em etapas, e cada etapa é guardada, porque
+              // é isso que permite explicar ao usuário POR QUE a lista veio
+              // vazia. Antes havia só o resultado final e uma mensagem única,
+              // que não distinguia "não existe racha aberto" de "existe, mas
+              // longe" — e não havia como saber qual era o caso.
+
               // Grupo que já é meu (dono ou membro fixo) não é "descoberta":
               // ele aparece na Home, e deixar o card aqui só oferecia um
               // botão de solicitar entrada em algo em que já estou dentro.
-              final proximos = grupos
+              final deOutros = grupos
                   .where((g) =>
-                      g.localizacao != null &&
-                      g.adminId != meuUid &&
-                      !g.membrosFixos.contains(meuUid))
-                  .map((g) => (grupo: g, distancia: distanciaKm(minhaPosicao, g.localizacao!)))
-                  .where((par) => par.distancia <= _raioKm)
+                      g.adminId != meuUid && !g.membrosFixos.contains(meuUid))
+                  .toList();
+
+              // Grupo sem ponto no mapa não tem como entrar no cálculo de
+              // distância. Só acontece em grupos criados antes de a tela de
+              // mapa existir — hoje a localização é obrigatória para abrir.
+              final comLocal =
+                  deOutros.where((g) => g.localizacao != null).toList();
+
+              final ordenados = comLocal
+                  .map((g) => (
+                        grupo: g,
+                        distancia: distanciaKm(minhaPosicao, g.localizacao!)
+                      ))
                   .toList()
                 ..sort((a, b) => a.distancia.compareTo(b.distancia));
 
+              final proximos =
+                  ordenados.where((par) => par.distancia <= _raioKm).toList();
+
               if (proximos.isEmpty) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'Nenhum racha aberto encontrado nesse raio.',
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                  ),
+                return _Vazio(
+                  totalAbertos: grupos.length,
+                  deOutros: deOutros.length,
+                  comLocal: comLocal.length,
+                  distanciaMaisProximo:
+                      ordenados.isEmpty ? null : ordenados.first.distancia,
+                  raioKm: _raioKm,
                 );
               }
 
@@ -147,6 +192,86 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Explica por que a lista veio vazia, em vez de só dizer que veio.
+///
+/// São quatro motivos possíveis e a diferença entre eles é o que a pessoa
+/// precisa saber para agir: aumentar o raio não adianta se o problema é que
+/// nenhum racha está aberto, e esperar não adianta se o problema é que o
+/// único racha aberto é o seu.
+class _Vazio extends StatelessWidget {
+  const _Vazio({
+    required this.totalAbertos,
+    required this.deOutros,
+    required this.comLocal,
+    required this.distanciaMaisProximo,
+    required this.raioKm,
+  });
+
+  final int totalAbertos;
+  final int deOutros;
+  final int comLocal;
+  final double? distanciaMaisProximo;
+  final int raioKm;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icone, titulo, detalhe) = switch (0) {
+      _ when totalAbertos == 0 => (
+          Icons.explore_off_outlined,
+          'Nenhum racha aberto ainda',
+          'Só aparecem aqui os rachas que o organizador marcou como "aberto '
+              'para novos jogadores" ao criar o grupo.',
+        ),
+      _ when deOutros == 0 => (
+          Icons.person_outline,
+          'Os rachas abertos são seus',
+          'Esta aba é para descobrir rachas de outras pessoas, então os que '
+              'você organiza ou já participa ficam de fora. Eles continuam na '
+              'tela inicial.',
+        ),
+      _ when comLocal == 0 => (
+          Icons.location_off_outlined,
+          'Sem localização no mapa',
+          'Existem rachas abertos, mas nenhum deles tem um ponto marcado no '
+              'mapa — sem isso não dá para calcular a distância.',
+        ),
+      _ => (
+          Icons.social_distance_outlined,
+          'Nenhum racha dentro de $raioKm km',
+          'O mais próximo está a ${distanciaMaisProximo!.toStringAsFixed(1)} km '
+              'daqui. Toque num raio maior acima para alcançá-lo.',
+        ),
+    };
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icone, size: 48, color: AppColors.neutro),
+            const SizedBox(height: 16),
+            Text(
+              titulo,
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              detalhe,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textoSecundario),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -206,7 +331,7 @@ class _RachaProximoTile extends ConsumerWidget {
                 Expanded(
                   child: Text(grupo.nome, style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                Text('~${distanciaKm.toStringAsFixed(1)} km'),
+                Text('a ${distanciaLegivel(distanciaKm)}'),
               ],
             ),
             const SizedBox(height: 4),
@@ -217,7 +342,7 @@ class _RachaProximoTile extends ConsumerWidget {
                 padding: EdgeInsets.only(top: 8),
                 child: Text(
                   'Pedido recusado — fale com o organizador se quiser tentar de novo.',
-                  style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                  style: TextStyle(color: AppColors.recusado, fontSize: 12),
                 ),
               ),
             const SizedBox(height: 12),

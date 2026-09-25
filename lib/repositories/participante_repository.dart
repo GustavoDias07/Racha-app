@@ -35,6 +35,21 @@ class ParticipanteRepository {
             .toList());
   }
 
+  /// Todas as participações de um jogador, em qualquer racha.
+  ///
+  /// One-shot, diferente de `observarMeusConvites`: quem usa isto é a ficha
+  /// que o admin abre ao avaliar um pedido de entrada, e ali não há por que
+  /// ficar ouvindo mudanças.
+  Future<List<ParticipanteModel>> buscarPorUser(String userId) async {
+    final snap = await _firestore
+        .collectionGroup(FirestorePaths.participantes)
+        .where('userId', isEqualTo: userId)
+        .get();
+    return snap.docs
+        .map((d) => ParticipanteModel.fromMap(d.id, d.data()))
+        .toList();
+  }
+
   Future<ParticipanteModel?> buscarPorUserId(String rachaId, String userId) async {
     final snap =
         await _collection(rachaId).where('userId', isEqualTo: userId).limit(1).get();

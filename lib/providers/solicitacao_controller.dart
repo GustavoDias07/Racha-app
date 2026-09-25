@@ -52,6 +52,11 @@ class SolicitacaoController extends AsyncNotifier<void> {
         solicitanteId: uid,
         criadoEm: DateTime.now(),
       ));
+
+      await _avisar(
+        userId: grupo.adminId,
+        mensagem: '${await _nome(uid)} pediu para entrar no ${grupo.nome}.',
+      );
     });
 
     return state.hasError ? ResultadoSolicitacao.erro : resultado;
@@ -86,6 +91,14 @@ class SolicitacaoController extends AsyncNotifier<void> {
               userId: solicitacao.solicitanteId,
             );
       }
+
+      await _avisar(
+        userId: solicitacao.solicitanteId,
+        mensagem: rachaAtual != null
+            ? 'Seu pedido no ${grupo.nome} foi aprovado! Você já está na '
+                'próxima rodada.'
+            : 'Seu pedido para entrar no ${grupo.nome} foi aprovado!',
+      );
     });
   }
 
@@ -105,13 +118,49 @@ class SolicitacaoController extends AsyncNotifier<void> {
 
   Future<void> recusar(GrupoModel grupo, SolicitacaoModel solicitacao) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() {
-      return ref.read(solicitacaoRepositoryProvider).atualizarStatus(
+    state = await AsyncValue.guard(() async {
+      await ref.read(solicitacaoRepositoryProvider).atualizarStatus(
             grupoId: grupo.id,
             solicitacaoId: solicitacao.id,
             status: StatusAprovacao.recusado,
           );
+      await _avisar(
+        userId: solicitacao.solicitanteId,
+        mensagem: 'Seu pedido para entrar no ${grupo.nome} foi recusado.',
+      );
     });
+  }
+
+  /// Nome do jogador, para o recado não ficar impessoal ("alguém pediu para
+  /// entrar"). Custa uma leitura; se falhar, cai num genérico em vez de
+  /// derrubar a ação inteira.
+  Future<String> _nome(String uid) async {
+    try {
+      final user = await ref.read(userRepositoryProvider).buscarPorId(uid);
+      return user?.nome ?? 'Um jogador';
+    } catch (_) {
+      return 'Um jogador';
+    }
+  }
+
+  /// Deixa o recado na caixa de entrada de alguém.
+  ///
+  /// O erro é engolido de propósito: o aviso é acessório. Se o pedido de
+  /// entrada foi gravado mas o recado falhou, o pedido continua valendo e
+  /// aparece na tela do grupo — melhor isso do que desfazer tudo e dizer à
+  /// pessoa que o pedido não foi enviado.
+  Future<void> _avisar({
+    required String userId,
+    required String mensagem,
+  }) async {
+    try {
+      await ref.read(avisoRepositoryProvider).criar(
+            userId: userId,
+            mensagem: mensagem,
+          );
+    } catch (_) {
+      // silencioso por design — ver comentário acima
+    }
   }
 }
 

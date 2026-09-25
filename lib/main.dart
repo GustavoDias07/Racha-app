@@ -37,7 +37,7 @@ class RachaApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Racha App',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
+      theme: AppTheme.dark,
       routerConfig: router,
     );
   }

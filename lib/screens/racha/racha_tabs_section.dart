@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/info_tile.dart';
 import '../../models/convidado_model.dart';
 import '../../models/enums.dart';
@@ -79,27 +80,32 @@ class _ParticipantesTab extends ConsumerWidget {
         racha.status != RachaStatus.finalizado;
 
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
+        // Os botões ocupam a largura toda, divididos igualmente. Antes eles
+        // ficavam alinhados à direita e, quando só havia "Convidar", sobrava
+        // uma faixa vazia atravessando a tela logo abaixo das abas.
         Row(
-          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             if (podeChamar) ...[
-              FilledButton.icon(
-                onPressed: () => _mostrarChamada(context, racha),
-                icon: const Icon(Icons.fact_check_outlined),
-                label: const Text('Fazer chamada'),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => _mostrarChamada(context, racha),
+                  icon: const Icon(Icons.fact_check_outlined),
+                  label: const Text('Fazer chamada'),
+                ),
               ),
               const SizedBox(width: 8),
             ],
-            FilledButton.tonalIcon(
-              onPressed: () => context.push('/rachas/${racha.id}/convidar', extra: uid),
-              icon: const Icon(Icons.person_add),
-              label: const Text('Convidar'),
+            Expanded(
+              child: FilledButton.tonalIcon(
+                onPressed: () => context.push('/rachas/${racha.id}/convidar', extra: uid),
+                icon: const Icon(Icons.person_add),
+                label: const Text('Convidar'),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
         participantes.when(
           data: (lista) {
             if (lista.isEmpty) {
@@ -176,7 +182,7 @@ class _ConvidadosTab extends ConsumerWidget {
     final convidados = ref.watch(convidadosDoRachaProvider(racha.id));
 
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         convidados.when(
           data: (lista) {
@@ -262,7 +268,7 @@ class _TimesTab extends ConsumerWidget {
               timeBConvidados.isNotEmpty;
 
           return ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
               if (isAdmin) ...[
                 Text(
@@ -271,7 +277,7 @@ class _TimesTab extends ConsumerWidget {
                       : 'Faltam confirmados: $totalElegiveis de $minimo necessários '
                           'pra fechar os dois times (formação ${racha.tipoCampo.label}).',
                   style: TextStyle(
-                    color: suficiente ? Colors.black87 : Colors.orange[800],
+                    color: suficiente ? AppColors.texto : AppColors.pendente,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -298,7 +304,7 @@ class _TimesTab extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       'Erro: ${timesState.error}',
-                      style: const TextStyle(color: Colors.red),
+                      style: const TextStyle(color: AppColors.recusado),
                     ),
                   ),
                 const SizedBox(height: 24),
@@ -337,7 +343,7 @@ class _TimesTab extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       'Erro: ${rankingState.error}',
-                      style: const TextStyle(color: Colors.red),
+                      style: const TextStyle(color: AppColors.recusado),
                     ),
                   ),
                 if (racha.mvpUserId != null) ...[
@@ -389,7 +395,7 @@ class _FinalizarRachaSection extends ConsumerWidget {
     if (racha.status == RachaStatus.finalizado) {
       return const Row(
         children: [
-          Icon(Icons.check_circle, color: Colors.green),
+          Icon(Icons.check_circle, color: AppColors.confirmado),
           SizedBox(width: 8),
           Text('Racha finalizado', style: TextStyle(fontWeight: FontWeight.w600)),
         ],
@@ -438,7 +444,7 @@ class _FinalizarRachaSection extends ConsumerWidget {
         if (state.hasError)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text('Erro: ${state.error}', style: const TextStyle(color: Colors.red)),
+            child: Text('Erro: ${state.error}', style: const TextStyle(color: AppColors.recusado)),
           ),
       ],
     );
@@ -455,7 +461,7 @@ class _MvpBanner extends ConsumerWidget {
     final userAsync = ref.watch(userPorIdProvider(userId));
     return Row(
       children: [
-        const Icon(Icons.emoji_events, color: Colors.amber),
+        const Icon(Icons.emoji_events, color: AppColors.destaque),
         const SizedBox(width: 8),
         Text(
           'MVP da rodada: ${userAsync.valueOrNull?.nome ?? '...'}',
@@ -560,7 +566,7 @@ class _EstatisticasTab extends ConsumerWidget {
             final porJogador = {for (final e in estatisticas) e.jogadorId: e};
 
             return ListView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
                 for (final jogador in participantes.where((p) => p.time != null))
                   _EstatisticaParticipanteTile(
@@ -805,7 +811,7 @@ class _ProximoRachaTab extends ConsumerWidget {
     final participantes = ref.watch(participantesDoRachaProvider(racha.id));
 
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         InfoTile(
           icone: Icons.calendar_today,
@@ -989,7 +995,7 @@ class _ParticipanteTile extends ConsumerWidget {
             const SizedBox(width: 8),
             Text(
               '• Sem posição',
-              style: TextStyle(color: Colors.orange[800]),
+              style: TextStyle(color: AppColors.pendente),
             ),
           ],
           if (participante.presenca != null) ...[
@@ -998,9 +1004,9 @@ class _ParticipanteTile extends ConsumerWidget {
               '• ${participante.presenca!.label}',
               style: TextStyle(
                 color: switch (participante.presenca!) {
-                  PresencaFinal.compareceu => Colors.green[700],
-                  PresencaFinal.atrasou => Colors.orange[800],
-                  PresencaFinal.faltou => Colors.red[700],
+                  PresencaFinal.compareceu => AppColors.confirmado,
+                  PresencaFinal.atrasou => AppColors.pendente,
+                  PresencaFinal.faltou => AppColors.recusado,
                 },
                 fontWeight: FontWeight.w500,
               ),
@@ -1023,7 +1029,7 @@ class _ParticipanteTile extends ConsumerWidget {
                   ),
                 if (souEu && pendente) ...[
                   IconButton(
-                    icon: const Icon(Icons.check_circle, color: Colors.green),
+                    icon: const Icon(Icons.check_circle, color: AppColors.confirmado),
                     tooltip: 'Confirmar presença',
                     // Confirmar e escolher posição viraram um passo só: quem
                     // entra no racha já diz onde joga, senão o balanceamento
@@ -1046,7 +1052,7 @@ class _ParticipanteTile extends ConsumerWidget {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.cancel, color: Colors.red),
+                    icon: const Icon(Icons.cancel, color: AppColors.recusado),
                     tooltip: 'Recusar',
                     onPressed: () async {
                       await ref
@@ -1155,7 +1161,7 @@ void _mostrarChamada(BuildContext context, RachaModel racha) {
                       faltaRegistrar == 0
                           ? 'Todo mundo registrado.'
                           : 'Faltam $faltaRegistrar de ${confirmados.length}.',
-                      style: const TextStyle(fontSize: 12, color: Colors.black54),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
                     ),
                   ],
                 ),
@@ -1242,9 +1248,9 @@ class _AvisoEscalacao extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.08),
+        color: AppColors.pendente.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+        border: Border.all(color: AppColors.pendente.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1255,7 +1261,7 @@ class _AvisoEscalacao extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: Colors.orange[800]),
+                  Icon(Icons.info_outline, size: 16, color: AppColors.pendente),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(aviso, style: const TextStyle(fontSize: 13)),
@@ -1385,7 +1391,7 @@ class _ConvidadoTile extends ConsumerWidget {
       leading: const Icon(Icons.person_outline),
       title: Text(convidado.nome),
       subtitle: convidado.oficializado
-          ? const Text('Oficializado', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600))
+          ? const Text('Oficializado', style: TextStyle(color: AppColors.info, fontWeight: FontWeight.w600))
           : _StatusChip(statusAprovacao: convidado.statusAprovacao),
       trailing: isAdmin
           ? Row(
@@ -1393,7 +1399,7 @@ class _ConvidadoTile extends ConsumerWidget {
               children: [
                 if (pendente) ...[
                   IconButton(
-                    icon: const Icon(Icons.check_circle, color: Colors.green),
+                    icon: const Icon(Icons.check_circle, color: AppColors.confirmado),
                     tooltip: 'Aprovar',
                     onPressed: () => ref
                         .read(convidadoControllerProvider.notifier)
@@ -1404,7 +1410,7 @@ class _ConvidadoTile extends ConsumerWidget {
                         ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.cancel, color: Colors.red),
+                    icon: const Icon(Icons.cancel, color: AppColors.recusado),
                     tooltip: 'Recusar',
                     onPressed: () => ref
                         .read(convidadoControllerProvider.notifier)
@@ -1573,13 +1579,13 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (texto, cor) = switch ((status, statusAprovacao)) {
-      (StatusConfirmacao.confirmado, _) => ('Confirmado', Colors.green),
-      (StatusConfirmacao.recusado, _) => ('Recusado', Colors.red),
-      (StatusConfirmacao.pendente, _) => ('Pendente', Colors.orange),
-      (_, StatusAprovacao.aprovado) => ('Aprovado', Colors.green),
-      (_, StatusAprovacao.recusado) => ('Recusado', Colors.red),
-      (_, StatusAprovacao.pendente) => ('Pendente', Colors.orange),
-      _ => ('', Colors.grey),
+      (StatusConfirmacao.confirmado, _) => ('Confirmado', AppColors.confirmado),
+      (StatusConfirmacao.recusado, _) => ('Recusado', AppColors.recusado),
+      (StatusConfirmacao.pendente, _) => ('Pendente', AppColors.pendente),
+      (_, StatusAprovacao.aprovado) => ('Aprovado', AppColors.confirmado),
+      (_, StatusAprovacao.recusado) => ('Recusado', AppColors.recusado),
+      (_, StatusAprovacao.pendente) => ('Pendente', AppColors.pendente),
+      _ => ('', AppColors.neutro),
     };
     return Text(texto, style: TextStyle(color: cor, fontWeight: FontWeight.w600));
   }

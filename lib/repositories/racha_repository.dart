@@ -18,6 +18,17 @@ class RachaRepository {
     return docRef.id;
   }
 
+  /// Busca avulsa por id, sem abrir listener.
+  ///
+  /// Usada para resolver em lote os rachas de uma lista de participações
+  /// (ver `proximasRodadasProvider`): manter um `snapshots()` aberto por
+  /// rodada só para ler nome e data custa caro e não traz nada de volta.
+  Future<RachaModel?> buscarPorId(String id) async {
+    final doc = await _collection.doc(id).get();
+    if (!doc.exists) return null;
+    return RachaModel.fromMap(doc.id, doc.data()!);
+  }
+
   Stream<RachaModel?> observar(String id) {
     return _collection.doc(id).snapshots().map((doc) {
       if (!doc.exists) return null;

@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/campo_de_toque.dart';
+import '../../core/widgets/titulo_secao.dart';
 import '../../models/enums.dart';
 import '../../providers/grupo_controller.dart';
 import 'localizacao_picker_screen.dart';
@@ -127,12 +130,13 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
       appBar: AppBar(title: const Text('Criar racha')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const TituloSecao('Sobre o racha'),
                 TextFormField(
                   controller: _nomeController,
                   decoration: const InputDecoration(labelText: 'Nome do racha'),
@@ -142,24 +146,27 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _localController,
-                  decoration: const InputDecoration(labelText: 'Local'),
+                  decoration: const InputDecoration(
+                    labelText: 'Local',
+                    helperText: 'Nome da quadra ou o endereço escrito',
+                  ),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Informe o local' : null,
                 ),
-                const SizedBox(height: 4),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: _escolherLocalizacao,
-                    icon: const Icon(Icons.map_outlined, size: 18),
-                    label: Text(
-                      _localizacao == null
-                          ? 'Escolher localização no mapa'
-                          : 'Localização marcada ✓ (toque pra ajustar)',
-                    ),
-                  ),
+                const SizedBox(height: 12),
+                // Vira campo, e não mais um link solto no meio do formulário:
+                // é obrigatório quando o racha é aberto, então precisa se ler
+                // como parte do que há para preencher, e mostrar sozinho se
+                // já foi resolvido.
+                CampoDeToque(
+                  rotulo: 'Localização no mapa',
+                  valor: _localizacao == null
+                      ? null
+                      : 'Marcada — toque para ajustar',
+                  icone: Icons.map_outlined,
+                  onTap: _escolherLocalizacao,
                 ),
-                const SizedBox(height: 8),
+                const TituloSecao('Quando'),
                 Row(
                   children: [
                     Expanded(
@@ -178,14 +185,16 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: _escolherHorario,
-                        child: Text(horarioFormatado),
+                      child: CampoDeToque(
+                        rotulo: 'Horário',
+                        valor: _horario == null ? null : horarioFormatado,
+                        icone: Icons.schedule,
+                        onTap: _escolherHorario,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const TituloSecao('Formato'),
                 DropdownButtonFormField<TipoCampo>(
                   initialValue: _tipoCampo,
                   decoration: const InputDecoration(labelText: 'Tipo de campo'),
@@ -209,18 +218,30 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Aberto para novos jogadores'),
-                  subtitle: const Text(
-                    'Aparece na aba "Rachas Próximos" pra qualquer jogador logado perto '
-                    'daqui, que pode solicitar entrada.',
+                const TituloSecao('Visibilidade'),
+                // Num card próprio: é a única opção da tela que muda quem
+                // enxerga o racha, e no meio dos outros campos ela passava
+                // despercebida.
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.superficie,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  value: _abertoParaNovosMembros,
-                  onChanged: (v) => setState(() => _abertoParaNovosMembros = v),
+                  padding: const EdgeInsets.fromLTRB(14, 4, 6, 4),
+                  child: SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Aberto para novos jogadores'),
+                    subtitle: const Text(
+                      'Aparece na aba "Rachas Próximos" para quem estiver perto '
+                      'daqui e permite pedir entrada. Exige a localização no '
+                      'mapa.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    value: _abertoParaNovosMembros,
+                    onChanged: (v) => setState(() => _abertoParaNovosMembros = v),
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 32),
                 FilledButton(
                   onPressed: carregando ? null : _submeter,
                   child: carregando

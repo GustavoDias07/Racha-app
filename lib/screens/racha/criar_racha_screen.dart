@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/widgets/campo_de_toque.dart';
+import '../../core/widgets/titulo_secao.dart';
 import '../../models/enums.dart';
 import '../../providers/racha_controller.dart';
 
@@ -116,12 +118,13 @@ class _CriarRachaScreenState extends ConsumerState<CriarRachaScreen> {
       appBar: AppBar(title: const Text('Criar racha')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const TituloSecao('Sobre o racha'),
                 TextFormField(
                   controller: _nomeController,
                   decoration: const InputDecoration(labelText: 'Nome do racha'),
@@ -135,25 +138,29 @@ class _CriarRachaScreenState extends ConsumerState<CriarRachaScreen> {
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Informe o local' : null,
                 ),
-                const SizedBox(height: 12),
+                const TituloSecao('Quando'),
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: _escolherData,
-                        child: Text(dataFormatada),
+                      child: CampoDeToque(
+                        rotulo: 'Data',
+                        valor: _data == null ? null : dataFormatada,
+                        icone: Icons.calendar_today_outlined,
+                        onTap: _escolherData,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: _escolherHorario,
-                        child: Text(horarioFormatado),
+                      child: CampoDeToque(
+                        rotulo: 'Horário',
+                        valor: _horario == null ? null : horarioFormatado,
+                        icone: Icons.schedule,
+                        onTap: _escolherHorario,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const TituloSecao('Formato'),
                 DropdownButtonFormField<TipoCampo>(
                   initialValue: _tipoCampo,
                   decoration: const InputDecoration(labelText: 'Tipo de campo'),
@@ -177,7 +184,7 @@ class _CriarRachaScreenState extends ConsumerState<CriarRachaScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 FilledButton(
                   onPressed: carregando ? null : _submeter,
                   child: carregando

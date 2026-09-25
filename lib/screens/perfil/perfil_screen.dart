@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/info_tile.dart';
 import '../../providers/firebase_providers.dart';
 
@@ -99,7 +100,7 @@ class _RankingResumo extends ConsumerWidget {
               padding: EdgeInsets.all(24),
               child: Text(
                 'Ainda sem avaliações registradas em nenhum racha.',
-                style: TextStyle(color: Colors.black54),
+                style: TextStyle(color: AppColors.textoSecundario),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -153,10 +154,10 @@ class _EstatisticaResumo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icone, color: Colors.amber),
+        Icon(icone, color: AppColors.destaque),
         const SizedBox(height: 4),
         Text(valor, style: Theme.of(context).textTheme.titleMedium),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario)),
       ],
     );
   }

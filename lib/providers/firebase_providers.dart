@@ -3,8 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 
 import '../core/ranking/agregador_ranking.dart';
+import '../core/utils/posicao_utils.dart';
 import '../models/avaliacao_model.dart';
 import '../models/aviso_model.dart';
 import '../models/alvo_avaliacao.dart';
@@ -29,6 +31,7 @@ import '../repositories/solicitacao_repository.dart';
 import '../repositories/user_repository.dart';
 import '../services/auth_service.dart';
 import '../services/local_notification_service.dart';
+import '../services/geocoding_service.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
@@ -47,6 +50,14 @@ final authServiceProvider = Provider<AuthService>((ref) {
 final storageServiceProvider = Provider<StorageService>((ref) => StorageService());
 
 final locationServiceProvider = Provider<LocationService>((ref) => LocationService());
+
+/// Busca de endereço/CEP para o seletor de localização. O `http.Client` é
+/// criado uma vez e reaproveitado — abrir um por consulta desperdiça conexão.
+final geocodingServiceProvider = Provider<GeocodingService>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return GeocodingService(client);
+});
 
 final firebaseMessagingProvider =
     Provider<FirebaseMessaging>((ref) => FirebaseMessaging.instance);
@@ -144,6 +155,7 @@ final meusRachasAvulsosProvider = StreamProvider<List<RachaModel>>((ref) {
 /// participantes/convidados dessa rodada, não do Grupo em si.
 final rachaAtualDoGrupoProvider =
     StreamProvider.family<RachaModel?, String>((ref, grupoId) {
+  if (ref.watch(uidLogadoProvider) == null) return Stream.value(null);
   return ref.watch(rachaRepositoryProvider).observarAtualPorGrupo(grupoId);
 });
 
@@ -151,6 +163,7 @@ final rachaAtualDoGrupoProvider =
 /// (`GrupoRepository.observarAbertos`); a tela filtra/ordena por distância
 /// no cliente a partir daqui.
 final rachasAbertosProvider = StreamProvider<List<GrupoModel>>((ref) {
+  if (ref.watch(uidLogadoProvider) == null) return Stream.value(const []);
   return ref.watch(grupoRepositoryProvider).observarAbertos();
 });
 
@@ -158,6 +171,7 @@ final rachasAbertosProvider = StreamProvider<List<GrupoModel>>((ref) {
 /// detalhe do grupo, visível só pro admin.
 final solicitacoesPendentesProvider =
     StreamProvider.family<List<SolicitacaoModel>, String>((ref, grupoId) {
+  if (ref.watch(uidLogadoProvider) == null) return Stream.value(const []);
   return ref.watch(solicitacaoRepositoryProvider).observarPendentes(grupoId);
 });
 
@@ -165,6 +179,7 @@ final solicitacoesPendentesProvider =
 /// reabrir, já que quem foi recusado não consegue pedir de novo sozinho.
 final solicitacoesRecusadasProvider =
     StreamProvider.family<List<SolicitacaoModel>, String>((ref, grupoId) {
+  if (ref.watch(uidLogadoProvider) == null) return Stream.value(const []);
   return ref.watch(solicitacaoRepositoryProvider).observarRecusadas(grupoId);
 });
 
@@ -187,16 +202,19 @@ final minhaSolicitacaoProvider =
 /// adiciona/remove alguém (o `GrupoModel` recebido por `extra` na
 /// navegação é só um snapshot do momento em que a lista foi aberta).
 final grupoPorIdProvider = StreamProvider.family<GrupoModel?, String>((ref, grupoId) {
+  if (ref.watch(uidLogadoProvider) == null) return Stream.value(null);
   return ref.watch(grupoRepositoryProvider).observar(grupoId);
 });
 
 final participantesDoRachaProvider =
     StreamProvider.family<List<ParticipanteModel>, String>((ref, rachaId) {
+  if (ref.watch(uidLogadoProvider) == null) return Stream.value(const []);
   return ref.watch(participanteRepositoryProvider).observarPorRacha(rachaId);
 });
 
 final rachaPorIdProvider =
     StreamProvider.family<RachaModel?, String>((ref, rachaId) {
+  if (ref.watch(uidLogadoProvider) == null) return Stream.value(null);
   return ref.watch(rachaRepositoryProvider).observar(rachaId);
 });
 
@@ -209,13 +227,63 @@ final meusConvitesProvider = StreamProvider<List<ParticipanteModel>>((ref) {
   return ref.watch(participanteRepositoryProvider).observarMeusConvites(uid);
 });
 
+/// Uma rodada para a qual o jogador foi convidado, junto da participação
+/// dele nela.
+typedef RodadaConvidada = ({ParticipanteModel participacao, RachaModel racha});
+
+/// Rodadas **futuras** em que o jogador foi convidado por outra pessoa.
+///
+/// A seção "Convites" da tela inicial mostrava toda participação já
+/// registrada, sem filtro nenhum: rodadas de meses atrás continuavam ali
+/// para sempre, e as já respondidas ficavam misturadas com as que ainda
+/// esperavam resposta. Este provider resolve as três coisas que faltavam:
+///
+///  - descarta rodada que já passou ou foi finalizada;
+///  - descarta rodada que o próprio jogador organiza (essa aparece em "Meus
+///    rachas", e convidar a si mesmo não faz sentido);
+///  - ordena da mais próxima para a mais distante, que é a ordem em que a
+///    pessoa precisa decidir.
+final proximasRodadasProvider =
+    FutureProvider<List<RodadaConvidada>>((ref) async {
+  final uid = ref.watch(uidLogadoProvider);
+  if (uid == null) return const [];
+
+  final participacoes = await ref.watch(meusConvitesProvider.future);
+  if (participacoes.isEmpty) return const [];
+
+  final repo = ref.watch(rachaRepositoryProvider);
+  final rachas = await Future.wait(
+    participacoes.map((p) => repo.buscarPorId(p.rachaId)),
+  );
+
+  // Uma hora de tolerância: a rodada que começou agora ainda interessa a
+  // quem está a caminho, e sumir da lista no minuto do apito seria pior do
+  // que deixar passar um pouco.
+  final limite = DateTime.now().subtract(const Duration(hours: 1));
+
+  final proximas = <RodadaConvidada>[];
+  for (var i = 0; i < participacoes.length; i++) {
+    final racha = rachas[i];
+    if (racha == null) continue;
+    if (racha.adminId == uid) continue;
+    if (racha.status == RachaStatus.finalizado) continue;
+    if (racha.dataHora.isBefore(limite)) continue;
+    proximas.add((participacao: participacoes[i], racha: racha));
+  }
+
+  proximas.sort((a, b) => a.racha.dataHora.compareTo(b.racha.dataHora));
+  return proximas;
+});
+
 final convidadosDoRachaProvider =
     StreamProvider.family<List<ConvidadoModel>, String>((ref, rachaId) {
+  if (ref.watch(uidLogadoProvider) == null) return Stream.value(const []);
   return ref.watch(convidadoRepositoryProvider).observarPorRacha(rachaId);
 });
 
 final estatisticasDoRachaProvider =
     StreamProvider.family<List<EstatisticaModel>, String>((ref, rachaId) {
+  if (ref.watch(uidLogadoProvider) == null) return Stream.value(const []);
   return ref.watch(estatisticaRepositoryProvider).observarPorRacha(rachaId);
 });
 
@@ -223,6 +291,7 @@ final estatisticasDoRachaProvider =
 /// participante, que só guardam o `userId`.
 final userPorIdProvider =
     FutureProvider.family<UserModel?, String>((ref, userId) {
+  if (ref.watch(uidLogadoProvider) == null) return Future.value(null);
   return ref.watch(userRepositoryProvider).buscarPorId(userId);
 });
 
@@ -232,6 +301,23 @@ final authStateChangesProvider = StreamProvider<User?>((ref) {
   return ref.watch(authServiceProvider).authStateChanges;
 });
 
+/// uid do usuário logado, ou nulo se ninguém está logado.
+///
+/// **Todo provider que lê o Firestore precisa observar este** — não pelo
+/// valor em si, mas porque é isso que faz o provider ser recriado quando a
+/// conta muda.
+///
+/// Sem essa dependência acontece o seguinte: o listener aberto pela conta
+/// anterior continua vivo durante o `signOut()`, o Firestore devolve
+/// `permission-denied` (as regras exigem `request.auth != null`) e o
+/// `AsyncValue` guarda esse erro. Como nada recria o provider quando a conta
+/// nova entra, a tela fica travada no erro para sempre — foi exatamente o
+/// "Erro ao carregar rodada: permission-denied" que aparecia ao trocar de
+/// conta.
+final uidLogadoProvider = Provider<String?>((ref) {
+  return ref.watch(authStateChangesProvider).value?.uid;
+});
+
 /// Documento do User (Firestore) correspondente ao usuário autenticado.
 final currentUserModelProvider = StreamProvider((ref) {
   final authState = ref.watch(authStateChangesProvider).value;
@@ -239,10 +325,57 @@ final currentUserModelProvider = StreamProvider((ref) {
   return ref.watch(userRepositoryProvider).observar(authState.uid);
 });
 
+/// Resumo de um jogador para o admin decidir sobre um pedido de entrada:
+/// como ele costuma ser avaliado e onde costuma jogar.
+///
+/// Existe porque aprovar alguém às cegas, só pelo nome, não dá base nenhuma
+/// para a decisão — e a posição não está no cadastro do jogador, só nas
+/// participações dele em cada racha.
+class FichaJogador {
+  const FichaJogador({
+    this.media,
+    this.totalRachas = 0,
+    this.totalMvps = 0,
+    this.posicao,
+  });
+
+  /// Nulo quando o jogador ainda não recebeu avaliação nenhuma.
+  final double? media;
+  final int totalRachas;
+  final int totalMvps;
+  final ({Posicao posicao, int vezes})? posicao;
+
+  /// Jogador novo: sem avaliação e sem histórico de posição.
+  bool get semHistorico => media == null && posicao == null;
+}
+
+final fichaDoJogadorProvider =
+    FutureProvider.family<FichaJogador, String>((ref, userId) async {
+  if (ref.watch(uidLogadoProvider) == null) return const FichaJogador();
+
+  // As duas consultas saem juntas: uma não depende da outra, e esta ficha
+  // aparece numa lista onde cada linha faz a sua.
+  final rankingFuture =
+      ref.watch(rankingRepositoryProvider).buscarPorUserId(userId);
+  final participacoesFuture =
+      ref.watch(participanteRepositoryProvider).buscarPorUser(userId);
+
+  final ranking = await rankingFuture;
+  final participacoes = await participacoesFuture;
+
+  return FichaJogador(
+    media: (ranking?.mediaAvaliacoes ?? 0) > 0 ? ranking!.mediaAvaliacoes : null,
+    totalRachas: ranking?.totalRachas ?? 0,
+    totalMvps: ranking?.totalMvps ?? 0,
+    posicao: posicaoMaisFrequente(participacoes),
+  );
+});
+
 /// Ranking de um User específico — tela de Perfil. Nulo até que ele receba
 /// a primeira avaliação/estatística (nenhum racha avaliado ainda).
 final rankingPorUserIdProvider =
     FutureProvider.family<RankingModel?, String>((ref, userId) {
+  if (ref.watch(uidLogadoProvider) == null) return Future.value(null);
   return ref.watch(rankingRepositoryProvider).buscarPorUserId(userId);
 });
 
@@ -252,6 +385,7 @@ final rankingPorUserIdProvider =
 /// Fluxo 5 (finalizar → próxima rodada) tirava elas de cena.
 final historicoDoGrupoProvider =
     FutureProvider.family<List<RachaModel>, String>((ref, grupoId) async {
+  if (ref.watch(uidLogadoProvider) == null) return const [];
   final todos = await ref.watch(rachaRepositoryProvider).buscarTodosPorGrupo(grupoId);
   final finalizados = todos.where((r) => r.status == RachaStatus.finalizado).toList()
     ..sort((a, b) => b.dataHora.compareTo(a.dataHora));
@@ -265,6 +399,14 @@ final historicoDoGrupoProvider =
 /// reativo a mudanças.
 final contextoAvaliacaoProvider = FutureProvider.family<ContextoAvaliacao,
     ({String rachaId, String uid})>((ref, args) async {
+  if (ref.watch(uidLogadoProvider) == null) {
+    return const ContextoAvaliacao(
+      jaAvaliou: false,
+      meuTime: null,
+      companheiros: [],
+      adversarios: [],
+    );
+  }
   final participanteRepo = ref.watch(participanteRepositoryProvider);
   final convidadoRepo = ref.watch(convidadoRepositoryProvider);
   final avaliacaoRepo = ref.watch(avaliacaoRepositoryProvider);
@@ -333,6 +475,7 @@ final contextoAvaliacaoProvider = FutureProvider.family<ContextoAvaliacao,
 /// o grupo que está sendo olhado, e é uma tela consultada de vez em quando.
 final rankingDoGrupoProvider =
     FutureProvider.family<List<RankingModel>, String>((ref, grupoId) async {
+  if (ref.watch(uidLogadoProvider) == null) return const [];
   // Três consultas, sempre — não importa se o grupo tem duas rodadas ou
   // duzentas. As avaliações e estatísticas vêm direto pelo `grupoId` gravado
   // em cada documento; a lista de rodadas ainda é necessária pra contar os
