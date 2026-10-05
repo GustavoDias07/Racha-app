@@ -58,12 +58,11 @@ android/key.properties
 # Widget Preview related
 .widget_preview/
 
-# Só lib/, web/, android/ e os arquivos soltos da raiz ficam no controle de
-# versão (seguindo o padrão do repo de referência do professor) — o resto
-# do projeto (docs, config do Firebase, testes) fica só local.
-/docs/
-/test/
-/firebase.json
-/firestore.rules
-/firestore.indexes.json
-/storage.rules
+# Testes, documentação e a configuração do Firebase ficavam de fora do
+# versionamento, seguindo o padrão do repositório de referência da
+# disciplina. Com o projeto passando para outras pessoas isso deixou de
+# fazer sentido: sem `firestore.rules` ninguém consegue publicar a segurança
+# do banco, e sem `test/` e `docs/` quem clona recebe o código sem as
+# verificações nem o histórico de decisões. Os únicos arquivos que seguem
+# fora são os que carregam segredo — a chave de assinatura e a senha dela,
+# protegidas mais acima.

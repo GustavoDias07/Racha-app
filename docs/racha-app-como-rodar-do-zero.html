@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Como rodar o projeto do zero</title>
+<style>
+@page { size: A4; margin: 15mm 13mm; }
+* { box-sizing: border-box; }
+body {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 11.5pt; line-height: 1.55; color: #1a1a1a; margin: 0;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+h1 { font-size: 26pt; line-height: 1.15; margin: 0 0 4pt; letter-spacing: -0.4pt; }
+h2 {
+  font-size: 17pt; margin: 0 0 11pt; padding-bottom: 5pt;
+  border-bottom: 2.5pt solid #2E7D32; color: #1B5E20; letter-spacing: -0.2pt;
+}
+h3 { font-size: 12.5pt; margin: 15pt 0 5pt; color: #1B5E20; }
+p { margin: 0 0 8pt; }
+code {
+  font-family: 'Consolas','DejaVu Sans Mono',monospace; font-size: 0.87em;
+  background: #eef2ee; padding: 0.5pt 3pt; border-radius: 2.5pt; color: #14421a;
+}
+pre {
+  background: #1e2430; color: #e6edf3; padding: 8pt 11pt; border-radius: 4pt;
+  margin: 0 0 9pt; font-size: 9pt; line-height: 1.45;
+  white-space: pre-wrap; word-break: break-word;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+.capa { text-align: center; padding-top: 52mm; page-break-after: always; }
+.capa .sub { font-size: 13pt; color: #444; margin-top: 8pt; }
+.capa .meta { margin-top: 26mm; font-size: 10pt; color: #666; line-height: 1.9; }
+.capa .tag {
+  display: inline-block; background: #2E7D32; color: #fff; padding: 3pt 11pt;
+  border-radius: 11pt; font-size: 9.5pt; font-family: Arial, sans-serif;
+  letter-spacing: 0.3pt;
+}
+.parte { page-break-before: always; }
+.rotulo {
+  font-family: Arial, sans-serif; font-size: 8.5pt; letter-spacing: 1.4pt;
+  color: #2E7D32; text-transform: uppercase; margin-bottom: 3pt;
+}
+.passo {
+  margin: 0 0 13pt; padding-left: 26pt; position: relative;
+  page-break-inside: avoid;
+}
+.passo .n {
+  position: absolute; left: 0; top: 0.5pt; width: 18pt; height: 18pt;
+  background: #2E7D32; color: #fff; border-radius: 50%;
+  font-family: Arial, sans-serif; font-size: 9.5pt; font-weight: bold;
+  text-align: center; line-height: 18pt;
+}
+.passo .tit {
+  font-weight: bold; color: #1B5E20; font-size: 11.5pt; display: block;
+  margin-bottom: 3pt;
+}
+.passo p:last-child { margin-bottom: 0; }
+.nota, .alerta, .dica {
+  padding: 8pt 11pt; margin: 10pt 0; font-size: 10.5pt; border-radius: 3pt;
+  page-break-inside: avoid;
+}
+.nota { background: #eef4fb; border-left: 3pt solid #3a6ea5; }
+.alerta { background: #fdf0ef; border-left: 3pt solid #c0392b; }
+.dica { background: #fffbe8; border-left: 3pt solid #d4a017; }
+.nota b { color: #234c73; } .alerta b { color: #922b21; } .dica b { color: #8a6d00; }
+table { border-collapse: collapse; width: 100%; font-size: 10pt; margin-bottom: 10pt; }
+th, td { border: 0.75pt solid #ccc; padding: 5pt 7pt; text-align: left; vertical-align: top; }
+th { background: #eef2ee; font-family: Arial, sans-serif; font-size: 9pt; }
+table.probs td:first-child { width: 42%; font-weight: bold; color: #922b21; }
+table.comp td:first-child { width: 26%; font-weight: bold; color: #1B5E20; }
+table.comp th:nth-child(2) { background: #e8f4e9; }
+ul { margin: 0 0 8pt; padding-left: 16pt; }
+li { margin-bottom: 3pt; }
+.sumario { font-size: 11pt; }
+.sumario li { margin-bottom: 4pt; }
+.check {
+  background: #f4f8f4; border: 0.75pt solid #cfe0d0; padding: 9pt 11pt;
+  margin: 12pt 0; page-break-inside: avoid;
+}
+.check ul { list-style: none; padding-left: 0; margin: 0; }
+.check li { padding-left: 16pt; position: relative; margin-bottom: 4pt; }
+.check li:before {
+  content: "☐"; position: absolute; left: 0; font-size: 12pt; color: #2E7D32;
+}
+</style>
+</head>
+<body>
+<div class="capa">
+  <div class="tag">FLUTTER &middot; INSTALAÇÃO</div>
+  <h1>Como rodar o projeto<br>do zero</h1>
+  <div class="sub">Telas de Login e Cadastro &mdash; Racha App<br>
+  Da instalação da IDE até o app na tela</div>
+  <div class="meta">
+    Guia para Windows 10 e 11 &middot; apêndice para macOS e Linux<br>
+    Testado com Flutter 3.47.0 (stable)
+  </div>
+</div>
+
+<section class="parte">
+  <div class="rotulo">Comece por aqui</div>
+  <h2>A resposta curta, e como usar este guia</h2>
+
+  <div class="alerta">
+    <b>Só abrir o arquivo <code>.dart</code> numa IDE não faz o app rodar.</b>
+    Um <code>.dart</code> sozinho é um arquivo de texto. Para rodar, ele precisa
+    estar dentro de um <b>projeto Flutter</b> — uma pasta com estrutura própria,
+    criada pelo comando <code>flutter create</code> — e a máquina precisa ter o
+    <b>Flutter SDK</b> instalado.
+  </div>
+
+  <p>A boa notícia: a IDE cria esse projeto para você em um clique. O trabalho
+  todo está em instalar o Flutter e configurá-lo <b>uma única vez</b> na
+  máquina. Feito isso, abrir qualquer projeto Flutter é imediato.</p>
+
+  <h3>Escolha o caminho antes de começar</h3>
+  <p>Existem dois, e a diferença entre eles é grande. Como este app
+  <b>não usa nenhum pacote externo, nem Firebase, nem câmera</b>, ele roda
+  perfeitamente dentro do Chrome — o que dispensa toda a parte pesada da
+  instalação.</p>
+
+  <table class="comp">
+    <thead>
+      <tr><th></th><th>Caminho rápido &mdash; Chrome</th><th>Caminho completo &mdash; Android</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Tempo</td><td>20 a 30 minutos</td><td>1 a 2 horas</td></tr>
+      <tr><td>Espaço em disco</td><td>~3 GB</td><td>~12 GB</td></tr>
+      <tr><td>O que instala</td>
+          <td>Git, Flutter e a IDE</td>
+          <td>Tudo do caminho rápido <b>+</b> Android Studio, Android SDK e emulador</td></tr>
+      <tr><td>Onde o app abre</td><td>Numa janela do Chrome</td><td>No emulador ou num celular por USB</td></tr>
+      <tr><td>Serve para apresentar?</td>
+          <td><b>Serve.</b> O código mostrado é exatamente o mesmo</td>
+          <td>Serve, e tem a aparência de celular de verdade</td></tr>
+    </tbody>
+  </table>
+
+  <div class="dica">
+    <b>Recomendação:</b> se o objetivo é só abrir o código e mostrar as telas
+    funcionando, faça o <b>caminho rápido</b>. Dá para fazer o caminho completo
+    depois, sem refazer nada — as Partes 1 a 3 servem para os dois.
+  </div>
+
+  <h3>O que tem neste guia</h3>
+  <ul class="sumario">
+    <li><b>Parte 1</b> — Instalar o Git</li>
+    <li><b>Parte 2</b> — Instalar o Flutter SDK</li>
+    <li><b>Parte 3</b> — Configurar a variável de ambiente PATH</li>
+    <li><b>Parte 4</b> — Conferir tudo com o <code>flutter doctor</code></li>
+    <li><b>Parte 5</b> — Instalar a IDE e os plugins</li>
+    <li><b>Parte 6</b> — Criar o projeto e colar o código</li>
+    <li><b>Parte 7</b> — Rodar (Chrome, emulador ou celular)</li>
+    <li><b>Parte 8</b> — Só para o caminho completo: Android Studio e emulador</li>
+    <li><b>Parte 9</b> — Problemas comuns e como resolver</li>
+  </ul>
+
+  <div class="nota">
+    <b>Este guia é para Windows 10 e 11</b>, que é o caso do grupo. No fim há um
+    apêndice com as diferenças para macOS e Linux. Tudo aqui foi testado numa
+    máquina real com Windows 10 e Flutter 3.47.0.
+  </div>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">Parte 1</div>
+  <h2>Instalar o Git</h2>
+
+  <p>O Flutter usa o Git internamente para se atualizar. Sem ele, o Flutter não
+  funciona — então este é o primeiro passo, mesmo para quem nunca usou Git.</p>
+
+  <div class="passo"><span class="n">1</span><span class="tit">Baixar</span><p>Acesse <code>git-scm.com/download/win</code>. O download do instalador de 64 bits começa sozinho.</p></div>
+  <div class="passo"><span class="n">2</span><span class="tit">Instalar</span><p>Abra o arquivo baixado e vá clicando em <b>Next</b> até o fim. <b>Não é preciso mudar nenhuma opção</b> — as respostas padrão estão certas para o nosso caso.</p></div>
+  <div class="passo"><span class="n">3</span><span class="tit">Conferir</span><p>Abra o <b>Prompt de Comando</b> (tecla Windows, digite <code>cmd</code>, Enter) e rode:</p><pre><code>git --version</code></pre><p>Tem que aparecer algo como <code>git version 2.51.0.windows.1</code>. Se disser que o comando não foi reconhecido, feche o Prompt, abra de novo e tente outra vez.</p></div>
+
+  <div class="dica">
+    <b>Já tem o Git?</b> Muita gente já instalou junto com outra ferramenta.
+    Para descobrir, abra o Prompt de Comando e digite <code>git --version</code>.
+    Se aparecer um número de versão, pule esta parte.
+  </div>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">Parte 2</div>
+  <h2>Instalar o Flutter SDK</h2>
+
+  <p>O SDK é o Flutter em si: o compilador, as ferramentas de linha de comando e
+  a biblioteca de widgets. Ele não tem instalador — é um arquivo <code>.zip</code>
+  que você extrai numa pasta.</p>
+
+  <div class="passo"><span class="n">1</span><span class="tit">Baixar o .zip</span><p>Acesse <code>docs.flutter.dev/get-started/install/windows</code> e baixe o <b>Flutter SDK</b> na versão estável (<i>stable</i>). São cerca de 1 GB.</p></div>
+  <div class="passo"><span class="n">2</span><span class="tit">Criar a pasta de destino</span><p>Abra o Explorador de Arquivos, vá até o disco <code>C:</code> e crie uma pasta chamada <code>flutter</code>. O caminho final tem que ser exatamente:</p><pre><code>C:\flutter</code></pre></div>
+  <div class="passo"><span class="n">3</span><span class="tit">Extrair</span><p>Clique com o botão direito no <code>.zip</code> baixado &rarr; <b>Extrair tudo</b> &rarr; escolha <code>C:\</code> como destino. Ao terminar, confira que existe o arquivo:</p><pre><code>C:\flutter\bin\flutter.bat</code></pre><p>Se você acabou com <code>C:\flutter\flutter\bin</code>, a pasta ficou duplicada: mova o conteúdo um nível para cima.</p></div>
+
+  <div class="alerta">
+    <b>O erro mais comum da instalação inteira é escolher a pasta errada.</b>
+    O caminho até o Flutter <b>não pode</b> ter:
+    <ul>
+      <li>espaços &mdash; por isso <b>nunca</b> em <code>C:\Program Files\</code></li>
+      <li>acentos ou cedilha &mdash; cuidado com pastas como <code>Área de Trabalho</code></li>
+      <li>sincronização do OneDrive &mdash; evite <code>Documentos</code> e
+      <code>Desktop</code>, que costumam estar sincronizados e corrompem o SDK</li>
+    </ul>
+    <code>C:\flutter</code> não tem nenhum desses problemas. Use ele.
+  </div>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">Parte 3</div>
+  <h2>Configurar a variável de ambiente PATH</h2>
+
+  <p>O PATH é a lista de pastas onde o Windows procura um programa quando você
+  digita o nome dele no terminal. Sem colocar o Flutter nessa lista, digitar
+  <code>flutter</code> devolve <i>“não é reconhecido como um comando”</i>.</p>
+
+  <div class="passo"><span class="n">1</span><span class="tit">Abrir as configurações</span><p>Aperte a tecla <b>Windows</b> e digite <code>variáveis de ambiente</code>. Clique em <b>Editar as variáveis de ambiente do sistema</b>.</p></div>
+  <div class="passo"><span class="n">2</span><span class="tit">Entrar na tela certa</span><p>Na janela que abrir (<i>Propriedades do Sistema</i>), clique no botão <b>Variáveis de Ambiente…</b>, embaixo à direita.</p></div>
+  <div class="passo"><span class="n">3</span><span class="tit">Achar o Path</span><p>A janela tem duas listas. Use a de <b>cima</b>, <i>Variáveis de usuário</i>. Clique na linha <code>Path</code> e depois no botão <b>Editar…</b>.</p><p>Se não existir nenhuma linha <code>Path</code> ali, clique em <b>Novo…</b> e crie uma com o nome <code>Path</code>.</p></div>
+  <div class="passo"><span class="n">4</span><span class="tit">Adicionar o Flutter</span><p>Clique em <b>Novo</b> e digite exatamente:</p><pre><code>C:\flutter\bin</code></pre><p>Confirme com <b>OK</b> nas três janelas abertas. Não basta fechar no X — precisa ser OK nas três, senão a mudança não é salva.</p></div>
+  <div class="passo"><span class="n">5</span><span class="tit">Testar</span><p>Feche todos os terminais abertos. Abra um Prompt de Comando novo e rode:</p><pre><code>flutter --version</code></pre><p>Deve aparecer a versão, o canal <code>stable</code> e o caminho <code>C:\flutter</code>. Na primeira vez o comando demora um pouco, porque o Flutter termina de se preparar.</p></div>
+
+  <div class="alerta">
+    <b>Terminal aberto antes da mudança não enxerga o novo PATH.</b> Se
+    <code>flutter --version</code> não funcionar, quase sempre é isso: feche
+    <b>todas</b> as janelas de Prompt de Comando, PowerShell e a IDE, e abra de
+    novo. Em casos raros é preciso reiniciar o computador.
+  </div>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">Parte 4</div>
+  <h2>Conferir tudo com o <code>flutter doctor</code></h2>
+
+  <p>O <code>flutter doctor</code> é uma ferramenta de diagnóstico: ele verifica
+  cada peça da instalação e diz o que está faltando. Vale rodar agora e sempre
+  que algo der errado.</p>
+
+  <pre><code>flutter doctor</code></pre>
+
+  <p>A saída é uma lista com <code>[√]</code> para o que está pronto e
+  <code>[X]</code> ou <code>[!]</code> para o que falta. Assim:</p>
+
+  <pre><code>[√] Flutter (Channel stable, 3.47.0, on Microsoft Windows)
+[√] Windows Version (10 Pro 64 bits, 22H2)
+[X] Android toolchain - develop for Android devices
+[√] Chrome - develop for the web
+[X] Visual Studio - develop Windows apps
+[√] Connected device (2 available)
+[√] Network resources</code></pre>
+
+  <h3>O que precisa estar verde, e o que pode ficar vermelho</h3>
+
+  <table>
+    <thead><tr><th>Linha</th><th>Precisa?</th></tr></thead>
+    <tbody>
+      <tr><td><code>Flutter</code></td>
+          <td><b>Sim, sempre.</b> Se estiver vermelha, revise as Partes 2 e 3.</td></tr>
+      <tr><td><code>Chrome</code></td>
+          <td><b>Sim, no caminho rápido.</b> Basta ter o Google Chrome instalado.</td></tr>
+      <tr><td><code>Android toolchain</code></td>
+          <td>Só no caminho completo. É o que a Parte 8 resolve.</td></tr>
+      <tr><td><code>Visual Studio</code></td>
+          <td><b>Não.</b> Serve para gerar app de <i>desktop</i> Windows, que não é
+          o nosso caso. Pode continuar vermelha para sempre.</td></tr>
+      <tr><td><code>Connected device</code></td>
+          <td>Precisa listar pelo menos um. Chrome já conta.</td></tr>
+      <tr><td><code>Network resources</code></td>
+          <td>Se falhar, costuma ser antivírus, firewall ou rede de faculdade
+          bloqueando. Tente em outra rede.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="dica">
+    <b>Para ver detalhes de cada item</b>, rode <code>flutter doctor -v</code>.
+    Ele mostra os caminhos exatos que o Flutter está usando, o que ajuda muito a
+    entender um erro.
+  </div>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">Parte 5</div>
+  <h2>Instalar a IDE e os plugins</h2>
+
+  <p>A IDE é onde o código é escrito e de onde o app é executado. O grupo usa o
+  <b>IntelliJ IDEA</b>, então é ele que este guia cobre.</p>
+
+  <div class="passo"><span class="n">1</span><span class="tit">Baixar o IntelliJ</span><p>Acesse <code>jetbrains.com/idea/download</code> e baixe a edição <b>Community</b>, que é gratuita. Ela role para baixo na página — a versão paga (Ultimate) aparece primeiro, mas não é necessária.</p></div>
+  <div class="passo"><span class="n">2</span><span class="tit">Instalar</span><p>Abra o instalador e siga clicando em <b>Next</b>. Na tela de opções, marcar <b>Add “bin” folder to the PATH</b> é útil, mas não é obrigatório.</p></div>
+  <div class="passo"><span class="n">3</span><span class="tit">Instalar os plugins Flutter e Dart</span><p>Abra o IntelliJ. Na tela inicial, clique na engrenagem &rarr; <b>Plugins</b> (ou <i>File &rarr; Settings &rarr; Plugins</i>, se já houver um projeto aberto).</p><p>Na aba <b>Marketplace</b>, busque <code>Flutter</code> e clique em <b>Install</b>. Ele vai perguntar se quer instalar o <b>Dart</b> junto: aceite. Depois clique em <b>Restart IDE</b>.</p></div>
+
+  <div class="nota">
+    <b>Alternativas, se preferir:</b> o <b>Android Studio</b> já é um IntelliJ por
+    dentro e os passos dos plugins são idênticos — e ele é necessário de qualquer
+    forma no caminho completo. O <b>VS Code</b> também funciona: instale a
+    extensão <b>Flutter</b> e ela puxa a do Dart junto.
+  </div>
+
+  <div class="alerta">
+    <b>Não pule o plugin.</b> Sem o plugin do Flutter, a IDE abre o arquivo e
+    colore o código, mas não oferece o botão de executar nem sabe criar projeto
+    Flutter. É justamente ele que transforma a IDE numa ferramenta de Flutter.
+  </div>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">Parte 6</div>
+  <h2>Criar o projeto e colar o código</h2>
+
+  <div class="passo"><span class="n">1</span><span class="tit">Novo projeto</span><p>Na tela inicial do IntelliJ, clique em <b>New Project</b>. Na lista da esquerda, escolha <b>Flutter</b>.</p><p>Se o campo <i>Flutter SDK path</i> estiver vazio, preencha com <code>C:\flutter</code> e clique em <b>Next</b>.</p></div>
+  <div class="passo"><span class="n">2</span><span class="tit">Nomear</span><p>Em <b>Project name</b>, use um nome só com letras minúsculas e <code>_</code> &mdash; por exemplo <code>telas_login</code>. Nome com maiúscula, espaço ou acento é recusado pelo Flutter.</p><p>Clique em <b>Create</b> e espere. A primeira vez demora alguns minutos, porque o Flutter baixa as dependências do projeto.</p></div>
+  <div class="passo"><span class="n">3</span><span class="tit">Colar o código</span><p>No painel esquerdo, abra a pasta <code>lib</code> e clique duas vezes em <code>main.dart</code>. Esse arquivo vem com um app de exemplo (um contador).</p><p>Selecione tudo (<code>Ctrl+A</code>), apague, e cole o conteúdo do <code>apresentacao_auth.dart</code> no lugar. Salve com <code>Ctrl+S</code>.</p></div>
+  <div class="passo"><span class="n">4</span><span class="tit">Apagar o teste de exemplo</span><p>Ainda no painel esquerdo, ache a pasta <code>test</code>, clique com o botão direito nela e escolha <b>Delete</b>. Confirme.</p></div>
+
+  <div class="alerta">
+    <b>O passo 4 não é opcional.</b> O <code>flutter create</code> gera um teste
+    de exemplo que se refere a uma classe <code>MyApp</code> — que existia no
+    código de exemplo, mas não existe no nosso (a nossa classe se chama
+    <code>RachaApp</code>). Se esse arquivo ficar, a IDE mostra um erro em
+    vermelho permanente. <b>O app roda mesmo assim</b>, mas ninguém quer um erro
+    vermelho na tela na hora de apresentar.
+  </div>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">Parte 7</div>
+  <h2>Rodar o app</h2>
+
+  <p>No alto da janela do IntelliJ, à esquerda do botão verde de play, existe uma
+  caixinha que mostra <b>onde</b> o app vai rodar. É ali que se escolhe entre
+  Chrome, emulador e celular.</p>
+
+  <h3>Opção A &mdash; No Chrome (caminho rápido)</h3>
+  <p>Abra a caixinha de dispositivos e escolha <b>Chrome (web)</b>. Clique no
+  botão verde de <b>play</b>.</p>
+  <p>Na primeira vez demora cerca de um minuto; depois é rápido. O Chrome abre
+  sozinho com a tela de login do app.</p>
+  <p>Pelo terminal, o equivalente é:</p>
+  <pre><code>flutter run -d chrome</code></pre>
+
+  <h3>Opção B &mdash; No emulador Android</h3>
+  <p>Exige ter feito a Parte 8. Escolha o emulador na caixinha e clique em play.
+  Se o emulador não estiver ligado, o IntelliJ liga sozinho.</p>
+
+  <h3>Opção C &mdash; Num celular Android de verdade</h3>
+  <div class="passo"><span class="n">1</span><span class="tit">Ativar as opções de desenvolvedor</span><p>No celular: <i>Configurações &rarr; Sobre o telefone</i> e toque <b>sete vezes</b> em <b>Número da versão</b>. Aparece a mensagem “Você agora é um desenvolvedor”.</p></div>
+  <div class="passo"><span class="n">2</span><span class="tit">Ligar a depuração USB</span><p><i>Configurações &rarr; Sistema &rarr; Opções do desenvolvedor</i> e ative <b>Depuração USB</b>.</p></div>
+  <div class="passo"><span class="n">3</span><span class="tit">Conectar</span><p>Ligue o cabo USB no computador. O celular pergunta se autoriza a depuração: marque <b>Sempre permitir</b> e confirme. O aparelho aparece na caixinha de dispositivos do IntelliJ.</p><p>Se não aparecer, troque o cabo &mdash; muitos cabos são só de carga e não transmitem dados.</p></div>
+
+  <div class="dica">
+    <b>Recarregar sem reiniciar:</b> com o app rodando, salvar o arquivo
+    (<code>Ctrl+S</code>) aplica a mudança na hora, sem perder a tela em que você
+    está. É o <i>hot reload</i>, e é ótimo para demonstrar: mude uma cor ou um
+    texto na frente do professor e mostre aparecendo na hora.
+  </div>
+
+  <div class="check">
+    <b>Confira antes de apresentar:</b>
+    <ul>
+      <li>O app abre direto na tela de login</li>
+      <li>Clicar em “Não tenho conta — cadastrar” abre a tela de cadastro</li>
+      <li>Criar uma conta volta para o login com o email já preenchido</li>
+      <li>Entrar com essa conta leva para a tela inicial com o nome</li>
+      <li>O botão de sair volta para o login</li>
+      <li>Não há nenhum erro em vermelho no painel da IDE</li>
+    </ul>
+  </div>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">Parte 8 &mdash; só para o caminho completo</div>
+  <h2>Android Studio, SDK e emulador</h2>
+
+  <div class="nota">
+    <b>Pule esta parte se você escolheu o caminho rápido.</b> Ela só é necessária
+    para rodar o app num emulador ou celular Android. São vários GB de download.
+  </div>
+
+  <div class="passo"><span class="n">1</span><span class="tit">Instalar o Android Studio</span><p>Baixe em <code>developer.android.com/studio</code> e instale com as opções padrão. Ele traz o Android SDK, que é o que o Flutter precisa &mdash; mesmo que você vá programar no IntelliJ.</p></div>
+  <div class="passo"><span class="n">2</span><span class="tit">Abrir uma vez</span><p>Abra o Android Studio e deixe o assistente inicial terminar de baixar os componentes. <b>Não pule essa primeira abertura</b>: é nela que o SDK é de fato instalado.</p></div>
+  <div class="passo"><span class="n">3</span><span class="tit">Instalar as ferramentas de linha de comando</span><p>No Android Studio: <i>Settings &rarr; Languages &amp; Frameworks &rarr; Android SDK</i>, aba <b>SDK Tools</b>. Marque <b>Android SDK Command-line Tools (latest)</b> e aplique.</p><p>Sem isso, o <code>flutter doctor</code> reclama de <code>cmdline-tools component is missing</code>.</p></div>
+  <div class="passo"><span class="n">4</span><span class="tit">Aceitar as licenças e criar o emulador</span><p>No Prompt de Comando:</p><pre><code>flutter doctor --android-licenses</code></pre><p>Responda <code>y</code> em todas as perguntas.</p><p>Depois, no Android Studio, abra o <b>Device Manager</b> (ícone de celular na lateral direita), clique em <b>+</b> &rarr; <b>Create Virtual Device</b>, escolha um Pixel, baixe a imagem de sistema sugerida e finalize.</p></div>
+
+  <div class="alerta">
+    <b>O emulador precisa de virtualização ligada.</b> Se ele não iniciar ou ficar
+    travado numa tela preta, quase sempre é isso. A opção fica na BIOS do
+    computador, com nome <b>Intel VT-x</b>, <b>AMD-V</b> ou <b>SVM Mode</b>. Em
+    notebook de faculdade, muitas vezes vem desligada de fábrica.
+  </div>
+
+  <div class="dica">
+    <b>Emulador pesado demais?</b> Um celular Android ligado por USB (Opção C da
+    Parte 7) funciona melhor e não consome memória do computador. E o Chrome
+    resolve sem nenhum dos dois.
+  </div>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">Parte 9</div>
+  <h2>Problemas comuns</h2>
+
+  <p>Quase tudo que dá errado numa instalação de Flutter está nesta tabela.
+  Quando surgir um erro que não está aqui, o primeiro comando a rodar é sempre
+  <code>flutter doctor -v</code>.</p>
+
+  <table class="probs">
+    <thead><tr><th>O que aparece</th><th>O que fazer</th></tr></thead>
+    <tbody>
+      <tr><td><code>'flutter' não é reconhecido como um comando</code></td><td>O PATH não foi configurado, ou o terminal foi aberto antes da mudança. Revise a Parte 3, feche <b>todos</b> os terminais e a IDE, e abra de novo. Confirme também que o arquivo <code>C:\flutter\bin\flutter.bat</code> existe de verdade.</td></tr>
+      <tr><td><code>The name 'MyApp' isn't a class</code></td><td>Faltou apagar a pasta <code>test</code> depois de colar o código (Parte 6, passo 4). O app roda mesmo assim, mas o erro fica na tela.</td></tr>
+      <tr><td><code>Unable to locate Android SDK</code></td><td>O Android Studio não está instalado, ou foi instalado mas nunca aberto. Abra-o uma vez e deixe o assistente inicial terminar (Parte 8).</td></tr>
+      <tr><td><code>cmdline-tools component is missing</code></td><td>Falta marcar <b>Android SDK Command-line Tools</b> no SDK Manager (Parte 8, passo 3).</td></tr>
+      <tr><td><code>Android license status unknown</code></td><td>Rode <code>flutter doctor --android-licenses</code> e responda <code>y</code> em tudo.</td></tr>
+      <tr><td><code>Visual Studio not installed</code></td><td><b>Pode ignorar.</b> Só afeta gerar app de desktop Windows, que não é o nosso caso.</td></tr>
+      <tr><td><code>No supported devices connected</code></td><td>Nenhum dispositivo foi escolhido. Abra a caixinha ao lado do play e selecione <b>Chrome (web)</b>, ou ligue o emulador.</td></tr>
+      <tr><td>A IDE não mostra o botão de play</td><td>O plugin do Flutter não está instalado ou a IDE não foi reiniciada depois de instalá-lo (Parte 5, passo 3).</td></tr>
+      <tr><td>O projeto não compila e os erros citam caminhos estranhos</td><td>O Flutter foi extraído numa pasta com espaço, acento ou dentro do OneDrive. Mova para <code>C:\flutter</code> e refaça a Parte 3.</td></tr>
+      <tr><td>Tudo fica muito lento, ou o build trava</td><td>Antivírus verificando cada arquivo gerado. Adicione as pastas <code>C:\flutter</code> e a do projeto como exceção no antivírus.</td></tr>
+      <tr><td><code>Gradle task assembleDebug failed</code></td><td>Quase sempre é a versão do Java. O Android Studio já traz um Java próprio e o Flutter costuma achá-lo sozinho; se a máquina tiver um Java antigo instalado à parte, ele atrapalha. Rode <code>flutter doctor -v</code> para ver qual Java está sendo usado.</td></tr>
+      <tr><td>O emulador abre preto ou não inicia</td><td>Virtualização desligada na BIOS (Intel VT-x / AMD-V / SVM Mode). Veja o alerta da Parte 8.</td></tr>
+      <tr><td>Nada funciona e você quer recomeçar</td><td>Rode <code>flutter clean</code> dentro da pasta do projeto e depois <code>flutter pub get</code>. Isso apaga o que foi gerado e refaz, sem tocar no seu código.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Apêndice</div>
+  <h2>macOS e Linux</h2>
+
+  <p>Os passos são os mesmos; muda a forma de instalar e de configurar o PATH.
+  Esta parte não foi testada na máquina em que o guia foi escrito &mdash; em caso
+  de dúvida, vale seguir a página oficial em
+  <code>docs.flutter.dev/get-started/install</code>.</p>
+
+  <h3>macOS</h3>
+  <p>Com o <b>Homebrew</b> instalado, o caminho mais curto é:</p>
+  <pre><code>brew install --cask flutter</code></pre>
+  <p>Sem Homebrew, baixe o <code>.zip</code> do site, extraia numa pasta do seu
+  usuário (por exemplo <code>~/development/flutter</code>) e acrescente o PATH ao
+  arquivo <code>~/.zshrc</code>:</p>
+  <pre><code>export PATH="$PATH:$HOME/development/flutter/bin"</code></pre>
+  <p>Depois rode <code>source ~/.zshrc</code> ou abra um terminal novo.</p>
+  <p>No Mac há uma vantagem: o app também roda no <b>Safari/Chrome</b> pelo
+  caminho rápido, e quem tiver o Xcode instalado pode usar o simulador de iPhone.</p>
+
+  <h3>Linux</h3>
+  <p>Baixe o <code>.tar.xz</code> do site oficial, extraia em
+  <code>~/development/flutter</code> e adicione ao <code>~/.bashrc</code>:</p>
+  <pre><code>export PATH="$PATH:$HOME/development/flutter/bin"</code></pre>
+  <p>Algumas distribuições precisam de pacotes extras antes:</p>
+  <pre><code>sudo apt install git curl unzip xz-utils zip libglu1-mesa</code></pre>
+  <p>Evite instalar o Flutter pelo <code>snap</code>: costuma dar problema de
+  permissão com o Android SDK.</p>
+
+  <div class="nota">
+    <b>Em qualquer sistema</b>, o teste final é o mesmo: <code>flutter doctor</code>
+    com a linha do Flutter verde, e pelo menos um dispositivo disponível.
+  </div>
+</section>
+
+</body>
+</html>

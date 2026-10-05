@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Racha App — Telas de Login e Cadastro</title>
+<style>
+@page { size: A4; margin: 16mm 14mm; }
+* { box-sizing: border-box; }
+body {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 11.5pt; line-height: 1.55; color: #1a1a1a;
+  margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+h1 { font-size: 26pt; line-height: 1.15; margin: 0 0 4pt; letter-spacing: -0.4pt; }
+h2 {
+  font-size: 17pt; margin: 0 0 10pt; padding-bottom: 5pt;
+  border-bottom: 2.5pt solid #2E7D32; color: #1B5E20; letter-spacing: -0.2pt;
+}
+h3 { font-size: 12.5pt; margin: 16pt 0 5pt; color: #1B5E20; }
+p { margin: 0 0 8pt; }
+code {
+  font-family: 'Consolas', 'DejaVu Sans Mono', monospace;
+  font-size: 0.87em; background: #eef2ee; padding: 0.5pt 3pt;
+  border-radius: 2.5pt; color: #14421a;
+}
+pre {
+  background: #1e2430; color: #e6edf3; padding: 9pt 11pt;
+  border-radius: 4pt; overflow: visible; margin: 0 0 10pt;
+  font-size: 8.2pt; line-height: 1.45; white-space: pre-wrap;
+  word-break: break-word;
+}
+pre code {
+  background: none; padding: 0; color: inherit; font-size: inherit;
+}
+.capa {
+  text-align: center; padding-top: 58mm; page-break-after: always;
+}
+.capa .sub { font-size: 13pt; color: #444; margin-top: 8pt; }
+.capa .meta {
+  margin-top: 30mm; font-size: 10pt; color: #666; line-height: 1.9;
+}
+.capa .tag {
+  display: inline-block; background: #2E7D32; color: #fff;
+  padding: 3pt 11pt; border-radius: 11pt; font-size: 9.5pt;
+  font-family: Arial, sans-serif; letter-spacing: 0.3pt;
+}
+.parte { page-break-before: always; }
+.rotulo {
+  font-family: Arial, sans-serif; font-size: 8.5pt; letter-spacing: 1.4pt;
+  color: #2E7D32; text-transform: uppercase; margin-bottom: 3pt;
+}
+.oque {
+  background: #f4f8f4; border-left: 3pt solid #2E7D32;
+  padding: 8pt 11pt; margin: 0 0 13pt;
+}
+.oque p:last-child { margin-bottom: 0; }
+.codigo-titulo, .pontos-titulo {
+  font-family: Arial, sans-serif; font-size: 9pt; font-weight: bold;
+  letter-spacing: 0.8pt; color: #555; text-transform: uppercase;
+  margin: 15pt 0 5pt;
+}
+ul.pontos { margin: 0; padding-left: 0; list-style: none; }
+ul.pontos > li {
+  margin-bottom: 8pt; padding-left: 11pt; border-left: 1.5pt solid #d5ded5;
+}
+ul.pontos b { color: #1B5E20; }
+table { border-collapse: collapse; width: 100%; font-size: 10pt; }
+th, td {
+  border: 0.75pt solid #ccc; padding: 5pt 7pt; text-align: left;
+  vertical-align: top;
+}
+th { background: #eef2ee; font-family: Arial, sans-serif; font-size: 9pt; }
+td:first-child { width: 38%; font-weight: bold; color: #1B5E20; }
+.diagrama { margin: 10pt 0 14pt; }
+.fluxo {
+  margin-bottom: 5pt; font-family: Arial, sans-serif; font-size: 9.5pt;
+}
+.tela {
+  display: inline-block; background: #2E7D32; color: #fff;
+  padding: 2.5pt 8pt; border-radius: 3pt; font-weight: bold;
+}
+.seta { color: #555; padding: 0 4pt; }
+.nota {
+  background: #fffbe8; border: 0.75pt solid #e8d98a; padding: 8pt 11pt;
+  margin: 13pt 0; font-size: 10.5pt;
+}
+.nota b { color: #8a6d00; }
+</style>
+</head>
+<body>
+<div class="capa">
+  <div class="tag">FLUTTER &middot; APRESENTAÇÃO</div>
+  <h1>Racha App</h1>
+  <div class="sub">Telas de Login e Cadastro<br>Código completo e explicado</div>
+  <div class="meta">
+    Arquivo: <code>apresentacao_auth.dart</code> &middot; 571 linhas<br>
+    Três telas &middot; Flutter puro, sem pacotes externos
+  </div>
+</div>
+
+<section class="parte">
+  <div class="rotulo">Antes de começar</div>
+  <h2>Como usar este material</h2>
+  <div class="oque">
+      <p>Este material tem o <strong>código completo</strong> das três telas e a
+      explicação de cada parte, lado a lado. Serve para estudar sem precisar de
+      computador — no celular mesmo.</p>
+      <p>A ordem aqui é a mesma do arquivo. Cada parte mostra primeiro o código
+      como ele está, e logo abaixo o que aquele trecho faz e os pontos que
+      costumam virar pergunta.</p>
+    </div>
+  <div class="pontos-titulo">O essencial</div>
+  <ul class="pontos">
+    <li><b>Como rodar</b><br>Num projeto Flutter novo, cole o conteúdo por cima de <code>lib/main.dart</code> e aperte o play. Não precisa mexer no <code>pubspec.yaml</code> nem rodar <code>flutter pub get</code>.</li>
+    <li><b>Por que não precisa de pacote</b><br>A única importação do arquivo inteiro é <code>package:flutter/material.dart</code>, que já vem em todo projeto Flutter. Não há Firebase, banco de dados nem internet.</li>
+    <li><b>O que o <code>material.dart</code> traz</b><br>Todos os widgets usados aqui: <code>Scaffold</code>, <code>AppBar</code>, <code>Column</code>, <code>Row</code>, <code>TextFormField</code>, <code>FilledButton</code>, <code>Navigator</code> e o resto.</li>
+  </ul>
+  <div class="codigo-titulo">O topo do arquivo</div>
+  <pre><code>// =============================================================================
+// RACHA APP — TELAS DE LOGIN E CADASTRO
+// =============================================================================
+//
+// Arquivo único e executável. Duas formas de rodar:
+//
+//   1. Num projeto Flutter novo, cole este arquivo por cima de lib/main.dart
+//      e rode normal (o botão de play do IntelliJ). É o caminho mais simples.
+//   2. Dentro do projeto racha_app, onde ele convive com o app de verdade:
+//      flutter run -t lib/apresentacao_auth.dart
+//
+// Só Flutter puro. A única importação é `package:flutter/material.dart` —
+// nenhum pacote externo, nenhum banco de dados, nenhuma internet. Por isso
+// não é preciso mexer no pubspec.yaml nem rodar `flutter pub get`.
+//
+// O QUE TEM AQUI:
+//   - Três telas (login, cadastro e uma tela inicial)
+//   - Formulários com validação (Form, TextFormField, validator)
+//   - Navegação entre telas (Navigator.push, pop e pushReplacement)
+//   - Estado de tela com StatefulWidget e setState
+//
+// Os usuários cadastrados ficam numa lista na memória do aparelho. Some tudo
+// quando o app fecha — é só para as telas funcionarem de verdade durante a
+// apresentação, e está explicado na PARTE 2.
+// =============================================================================
+
+import 'package:flutter/material.dart';</code></pre>
+  <div class="nota">
+    <b>Atenção ao estudar:</b> o código abaixo já vem cheio de comentários
+    explicando cada trecho. Eles fazem parte do arquivo e valem tanto quanto a
+    explicação em prosa — vale ler os dois.
+  </div>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">PARTE 1</div>
+  <h2>Ponto de Entrada</h2>
+  <div class="oque">
+          <p><code>main()</code> é a primeira função que roda em qualquer programa
+          Dart. <code>runApp</code> recebe um widget e o coloca na tela como raiz
+          de tudo.</p>
+          <p>O <code>MaterialApp</code> envolve o app inteiro e fornece o que vale
+          para todas as telas: o tema, o título e a navegação. Sem ele,
+          <code>Navigator.push</code> nem funcionaria.</p>
+        </div>
+  <div class="codigo-titulo">O código</div>
+  <pre><code>// =============================================================================
+// PARTE 1 — PONTO DE ENTRADA
+// =============================================================================
+
+void main() {
+  runApp(const RachaApp());
+}
+
+class RachaApp extends StatelessWidget {
+  const RachaApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Racha App',
+
+      // Tira a faixa vermelha de "DEBUG" do canto da tela.
+      debugShowCheckedModeBanner: false,
+
+      theme: ThemeData(
+        useMaterial3: true,
+
+        // A partir de UMA cor, o Flutter gera a paleta inteira do app
+        // (botões, campos, textos). O verde é o do racha.
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E7D32)),
+
+        // Faz TODOS os campos de texto do app terem borda, sem precisar
+        // repetir isso em cada TextFormField.
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(),
+        ),
+      ),
+
+      // A primeira tela que aparece quando o app abre.
+      home: const LoginScreen(),
+    );
+  }
+}</code></pre>
+  <div class="pontos-titulo">Pontos que podem ser perguntados</div>
+  <ul class="pontos">
+    <li><b>Por que <code>StatelessWidget</code> aqui</b><br>O <code>RachaApp</code> só desenha e nunca muda depois de criado — não tem nada para guardar. Quando algo na tela muda, aí sim usa-se <code>StatefulWidget</code> (Partes 3 e 4).</li>
+    <li><b><code>ColorScheme.fromSeed</code></b><br>A partir de <strong>uma única cor</strong>, o Flutter gera a paleta inteira do app: botões, campos, textos, todos combinando. É por isso que em nenhum lugar do arquivo se escreve a cor de um botão.</li>
+    <li><b><code>inputDecorationTheme</code></b><br>Faz <strong>todos</strong> os campos de texto terem borda. Sem isso, seria preciso repetir <code>border: OutlineInputBorder()</code> nos sete <code>TextFormField</code> do arquivo.</li>
+    <li><b><code>home:</code></b><br>Define a primeira tela que aparece quando o app abre — aqui, a <code>LoginScreen</code>.</li>
+    <li><b><code>Theme.of(context)</code></b><br>Usado nas telas para pegar uma cor ou um tamanho de texto já definido aqui, em vez de escolher um número na mão. Ele sobe pela árvore de widgets até achar este <code>MaterialApp</code>. Mudar a cor aqui muda o app inteiro de uma vez.</li>
+  </ul>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">PARTE 2</div>
+  <h2>O Modelo e a Lista de Usuários</h2>
+  <div class="oque">
+          <p>Esta parte é Dart puro — nada de Flutter. A classe <code>Usuario</code>
+          mantém os dados juntos, para não ficar passando nome, email, idade e peso
+          soltos de uma tela para outra.</p>
+          <p>A lista <code>usuariosCadastrados</code> é onde os cadastros ficam
+          guardados, e as três funções abaixo dela são o que as telas usam para
+          consultar e formatar esses dados.</p>
+        </div>
+  <div class="codigo-titulo">O código</div>
+  <pre><code>// =============================================================================
+// PARTE 2 — O MODELO E A LISTA DE USUÁRIOS
+// =============================================================================
+
+/// Um jogador cadastrado no app.
+///
+/// É uma classe comum de Dart: só guarda os dados juntos, para não ficar
+/// passando nome, email, idade e peso soltos de uma tela para outra.
+class Usuario {
+  final String nome;
+  final String email;
+  final String senha;
+  final int idade;
+  final double peso;
+
+  const Usuario({
+    required this.nome,
+    required this.email,
+    required this.senha,
+    required this.idade,
+    required this.peso,
+  });
+}
+
+/// "Banco de dados" da apresentação: uma lista guardada na memória do app.
+///
+/// ATENÇÃO — duas coisas que valem saber explicar, porque podem ser
+/// perguntadas:
+///
+///   1. A lista some quando o app fecha. Não existe banco de dados nem
+///      servidor aqui; isso é o assunto de uma etapa seguinte do projeto.
+///   2. A senha está guardada como texto puro. Num app de verdade isso nunca
+///      se faz — a senha vai para um serviço de autenticação que guarda só um
+///      hash dela. Aqui é assim para a tela de login poder ser demonstrada
+///      sem depender de internet.
+final List&lt;Usuario&gt; usuariosCadastrados = [];
+
+/// Procura um usuário que tenha esse email E essa senha.
+/// Devolve `null` quando não acha — é o que a tela de login usa para saber se
+/// deixa entrar ou mostra a mensagem de erro.
+Usuario? procurarUsuario(String email, String senha) {
+  for (final usuario in usuariosCadastrados) {
+    if (usuario.email == email &amp;&amp; usuario.senha == senha) {
+      return usuario;
+    }
+  }
+  return null;
+}
+
+/// Diz se já existe alguém cadastrado com esse email. Usado pela tela de
+/// cadastro para não criar duas contas iguais.
+bool emailJaCadastrado(String email) {
+  for (final usuario in usuariosCadastrados) {
+    if (usuario.email == email) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Deixa a primeira letra de cada palavra maiúscula e o resto minúscula —
+/// "gustavo dias" vira "Gustavo Dias". Serve para o nome aparecer sempre do
+/// mesmo jeito, independente de como a pessoa digitou.
+String capitalizarNome(String nome) {
+  return nome
+      .trim()
+      .split(' ')
+      .where((palavra) =&gt; palavra.isNotEmpty)
+      .map((palavra) =&gt;
+          palavra[0].toUpperCase() + palavra.substring(1).toLowerCase())
+      .join(' ');
+}</code></pre>
+  <div class="pontos-titulo">Pontos que podem ser perguntados</div>
+  <ul class="pontos">
+    <li><b>Campos <code>final</code> e <code>required</code></b><br><code>final</code> significa que o valor não muda depois de criado. <code>required</code> obriga quem cria um <code>Usuario</code> a informar todos os campos — esquecer um vira erro na hora de compilar, não na hora de rodar.</li>
+    <li><b>Os dados somem quando o app fecha</b><br>A lista vive só na memória do aparelho enquanto o app está aberto. Não existe banco de dados nem servidor — isso é assunto de uma etapa seguinte do projeto. Vale dizer isso de forma direta: mostra que a limitação é conhecida e proposital.</li>
+    <li><b>A senha está em texto puro</b><br>Num app de verdade isso nunca se faz: a senha vai para um serviço de autenticação que guarda só um <em>hash</em> dela, e o app nunca vê a senha. Aqui é assim para a tela de login poder ser demonstrada sem depender de internet.</li>
+    <li><b><code>procurarUsuario</code> devolve <code>null</code></b><br>Quando não acha ninguém com aquele email e senha. É isso que permite a tela de login escrever <code>if (usuario == null)</code> para decidir entre entrar e mostrar erro.</li>
+    <li><b><code>emailJaCadastrado</code></b><br>É consultada dentro do <code>validator</code> do email, na tela de cadastro. Mostra que o <code>validator</code> aceita qualquer regra, não só verificar o formato do texto.</li>
+  </ul>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">PARTE 3</div>
+  <h2>Tela de Login</h2>
+  <div class="oque">
+          <p>A primeira tela do app. Ela tem dois campos, valida o que foi digitado,
+          procura o usuário na lista da Parte 2 e — se achar — leva para a tela
+          inicial. Se não achar, mostra uma mensagem em vermelho.</p>
+          <p>É também de onde se chega à tela de cadastro, e para onde o cadastro
+          devolve o usuário recém-criado.</p>
+        </div>
+  <div class="codigo-titulo">O código</div>
+  <pre><code>// =============================================================================
+// PARTE 3 — TELA DE LOGIN
+// =============================================================================
+
+/// É StatefulWidget (e não Stateless) porque esta tela PRECISA GUARDAR COISAS
+/// que mudam enquanto ela está aberta: o texto digitado nos campos e a
+/// mensagem de erro. Um StatelessWidget não guarda nada.
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State&lt;LoginScreen&gt; createState() =&gt; _LoginScreenState();
+}
+
+class _LoginScreenState extends State&lt;LoginScreen&gt; {
+  /// Chave que dá acesso ao estado do Form. É por ela que o botão consegue
+  /// mandar validar todos os campos de uma vez só.
+  final _formKey = GlobalKey&lt;FormState&gt;();
+
+  /// Cada controller fica "grudado" num campo e permite ler o que foi
+  /// digitado nele (`_emailController.text`).
+  final _emailController = TextEditingController();
+  final _senhaController = TextEditingController();
+
+  /// Mensagem mostrada em vermelho quando o email ou a senha estão errados.
+  /// Fica nula enquanto não há erro nenhum.
+  String? _erro;
+
+  /// Chamado automaticamente pelo Flutter quando a tela sai de cena.
+  /// Os controllers seguram espaço na memória; sem liberá-los aqui, esse
+  /// espaço nunca é devolvido (é o que se chama de vazamento de memória).
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _senhaController.dispose();
+    super.dispose();
+  }
+
+  void _entrar() {
+    // Dispara o `validator` de TODOS os campos do Form de uma vez.
+    // Se algum devolver uma mensagem, o próprio Form mostra o texto em
+    // vermelho embaixo do campo e a gente para aqui.
+    if (!_formKey.currentState!.validate()) return;
+
+    final usuario = procurarUsuario(
+      _emailController.text.trim().toLowerCase(),
+      _senhaController.text,
+    );
+
+    if (usuario == null) {
+      // setState avisa o Flutter: "algo mudou, desenhe a tela de novo".
+      // Sem o setState, a variável até mudaria, mas a tela continuaria
+      // mostrando o conteúdo antigo.
+      setState(() =&gt; _erro = 'Email ou senha inválidos.');
+      return;
+    }
+
+    // pushReplacement TROCA a tela atual pela nova, em vez de empilhar por
+    // cima. É o certo aqui: depois de entrar, o botão "voltar" do Android não
+    // deve trazer a pessoa de volta para a tela de login.
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) =&gt; HomeScreen(usuario: usuario)),
+    );
+  }
+
+  Future&lt;void&gt; _irParaCadastro() async {
+    // push EMPILHA a tela de cadastro por cima desta.
+    //
+    // O `await` espera essa tela ser fechada. O `&lt;Usuario&gt;` diz que, quando
+    // ela fechar, pode vir um Usuario de volta — é o que a tela de cadastro
+    // manda no Navigator.pop (ver PARTE 4).
+    final novoUsuario = await Navigator.push&lt;Usuario&gt;(
+      context,
+      MaterialPageRoute(builder: (context) =&gt; const CadastroScreen()),
+    );
+
+    // Se voltou null, a pessoa apertou o botão de voltar sem se cadastrar.
+    if (novoUsuario == null) return;
+
+    // Já preenche o email de quem acabou de se cadastrar, para ela não
+    // precisar digitar de novo.
+    setState(() {
+      _emailController.text = novoUsuario.email;
+      _erro = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // SafeArea afasta o conteúdo do entalhe da câmera e da barra do
+      // sistema, para nada ficar escondido embaixo deles.
+      body: SafeArea(
+        child: Center(
+          // Sem o SingleChildScrollView, quando o teclado sobe ele cobre
+          // metade da tela e o Flutter reclama que o conteúdo não cabe.
+          // Com ele, a tela simplesmente rola.
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                // stretch = os filhos ocupam toda a largura disponível.
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                // min = a Column ocupa só a altura necessária, em vez da
+                // tela inteira. É o que mantém tudo centralizado.
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.sports_soccer,
+                    size: 64,
+                    // Pega a cor principal definida lá no tema (PARTE 1),
+                    // em vez de repetir o código da cor aqui.
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Racha App',
+                    textAlign: TextAlign.center,
+                    // Mesma ideia: pega um tamanho de texto já definido no
+                    // tema, em vez de escolher um número na mão.
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+
+                  // SizedBox usado só como espaçador entre os widgets.
+                  const SizedBox(height: 32),
+
+                  TextFormField(
+                    controller: _emailController,
+                    // Faz o teclado do celular já abrir com "@" e ".com".
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    // O validator devolve NULL quando está tudo certo, ou a
+                    // mensagem de erro quando não está.
+                    validator: (valor) {
+                      if (valor == null || !valor.contains('@')) {
+                        return 'Email inválido';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  TextFormField(
+                    controller: _senhaController,
+                    // Esconde os caracteres, mostrando bolinhas.
+                    obscureText: true,
+                    decoration: const InputDecoration(labelText: 'Senha'),
+                    validator: (valor) {
+                      if (valor == null || valor.isEmpty) {
+                        return 'Informe a senha';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  // Este bloco só entra na tela quando existe erro.
+                  // O "if" dentro de uma lista de widgets é um recurso do
+                  // Dart: se a condição for falsa, nada é adicionado.
+                  if (_erro != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      _erro!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: _entrar,
+                    child: const Text('Entrar'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: _irParaCadastro,
+                    child: const Text('Não tenho conta — cadastrar'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+  <div class="pontos-titulo">Pontos que podem ser perguntados</div>
+  <ul class="pontos">
+    <li><b>Por que <code>StatefulWidget</code> e não <code>Stateless</code></b><br>Porque esta tela precisa <strong>guardar coisas que mudam</strong> enquanto está aberta: o texto digitado nos campos e a mensagem de erro. Um <code>StatelessWidget</code> não guarda nada. A regra prática: se algo na tela muda depois que ela apareceu, é <code>Stateful</code>.</li>
+    <li><b>Por que duas classes</b><br><code>LoginScreen</code> é o widget; <code>_LoginScreenState</code> guarda o estado. O Flutter separa assim porque o widget é descartado e recriado o tempo todo, enquanto o estado sobrevive.</li>
+    <li><b><code>GlobalKey&lt;FormState&gt;</code></b><br>Dá acesso ao <code>Form</code>, para o botão conseguir validar todos os campos de uma vez com <code>_formKey.currentState!.validate()</code>.</li>
+    <li><b><code>TextEditingController</code></b><br>Fica grudado num campo e permite ler o que foi digitado, com <code>_emailController.text</code>.</li>
+    <li><b>O <code>validator</code></b><br>Devolve <code>null</code> quando está tudo certo, ou o texto da mensagem quando está errado. O <code>Form</code> mostra esse texto em vermelho embaixo do campo, sozinho.</li>
+    <li><b><code>setState</code> — provavelmente a pergunta mais provável</b><br>Avisa o Flutter: “alguma coisa mudou, desenhe a tela de novo”. Sem ele, a variável <code>_erro</code> até mudaria de valor, mas a tela continuaria mostrando o conteúdo antigo.</li>
+    <li><b><code>dispose</code></b><br>O Flutter chama esse método sozinho quando a tela sai de cena. Os controllers seguram espaço na memória; sem liberá-los aqui, esse espaço nunca é devolvido — é o que se chama de <strong>vazamento de memória</strong>. O <code>super.dispose()</code> no fim chama a versão da classe mãe.</li>
+    <li><b>O <code>if</code> dentro da lista de widgets</b><br><code>if (_erro != null) ...[ ... ]</code> só entra na tela quando existe erro. É um recurso do Dart: um <code>if</code> dentro de uma lista simplesmente não adiciona nada quando a condição é falsa. Os três pontos espalham vários widgets de uma vez.</li>
+    <li><b><code>SafeArea</code> e <code>SingleChildScrollView</code></b><br><code>SafeArea</code> afasta o conteúdo do entalhe da câmera e da barra do sistema. <code>SingleChildScrollView</code> faz a tela rolar — sem ele, quando o teclado sobe e cobre metade da tela, o Flutter mostra a faixa listrada de “conteúdo não cabe”.</li>
+    <li><b><code>obscureText: true</code></b><br>Esconde os caracteres da senha, mostrando bolinhas.</li>
+  </ul>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">PARTE 4</div>
+  <h2>Tela de Cadastro</h2>
+  <div class="oque">
+          <p>A tela de criar conta. A estrutura é a mesma do login —
+          <code>StatefulWidget</code>, <code>Form</code>, <code>GlobalKey</code>,
+          controllers, <code>dispose</code> — só que com cinco campos em vez de
+          dois.</p>
+          <p>No fim ela adiciona o novo usuário na lista da Parte 2 e fecha,
+          devolvendo esse usuário para a tela de login.</p>
+        </div>
+  <div class="codigo-titulo">O código</div>
+  <pre><code>// =============================================================================
+// PARTE 4 — TELA DE CADASTRO
+// =============================================================================
+
+class CadastroScreen extends StatefulWidget {
+  const CadastroScreen({super.key});
+
+  @override
+  State&lt;CadastroScreen&gt; createState() =&gt; _CadastroScreenState();
+}
+
+class _CadastroScreenState extends State&lt;CadastroScreen&gt; {
+  final _formKey = GlobalKey&lt;FormState&gt;();
+  final _nomeController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _senhaController = TextEditingController();
+  final _idadeController = TextEditingController();
+  final _pesoController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _emailController.dispose();
+    _senhaController.dispose();
+    _idadeController.dispose();
+    _pesoController.dispose();
+    super.dispose();
+  }
+
+  void _cadastrar() {
+    if (!_formKey.currentState!.validate()) return;
+
+    final usuario = Usuario(
+      nome: capitalizarNome(_nomeController.text),
+      email: _emailController.text.trim().toLowerCase(),
+      senha: _senhaController.text,
+      // Aqui pode usar `parse` (que quebra se o texto não for número)
+      // porque o validator do campo JÁ garantiu que é. Ver o comentário
+      // sobre parse/tryParse no campo de idade, mais abaixo.
+      idade: int.parse(_idadeController.text),
+      // Brasileiro digita "72,5"; o Dart só entende "72.5".
+      peso: double.parse(_pesoController.text.replaceAll(',', '.')),
+    );
+
+    usuariosCadastrados.add(usuario);
+
+    // SnackBar é a tarjinha que sobe do rodapé da tela.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Conta criada! Bem-vindo, ${usuario.nome}.')),
+    );
+
+    // pop FECHA esta tela e volta para a anterior (o login).
+    //
+    // O segundo argumento é o que vai ser DEVOLVIDO para quem abriu esta
+    // tela — é exatamente o valor que o `await Navigator.push&lt;Usuario&gt;` da
+    // tela de login está esperando (ver PARTE 3).
+    Navigator.pop(context, usuario);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // A AppBar já vem com o botão de voltar sozinha, porque esta tela foi
+      // aberta com push (tem uma tela embaixo dela). Esse botão faz um
+      // Navigator.pop sem devolver nada — daí o `null` lá na PARTE 3.
+      appBar: AppBar(title: const Text('Criar conta')),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const CircleAvatar(
+                  radius: 48,
+                  child: Icon(Icons.person, size: 48),
+                ),
+                const SizedBox(height: 24),
+
+                TextFormField(
+                  controller: _nomeController,
+                  decoration: const InputDecoration(labelText: 'Nome'),
+                  validator: (valor) {
+                    if (valor == null || valor.trim().isEmpty) {
+                      return 'Informe o nome';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                  validator: (valor) {
+                    if (valor == null || !valor.contains('@')) {
+                      return 'Email inválido';
+                    }
+                    // O validator não serve só para o formato: dá para usar
+                    // para qualquer regra. Aqui ele impede duas contas com
+                    // o mesmo email.
+                    if (emailJaCadastrado(valor.trim().toLowerCase())) {
+                      return 'Já existe uma conta com esse email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                TextFormField(
+                  controller: _senhaController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Senha'),
+                  validator: (valor) {
+                    if (valor == null || valor.length &lt; 6) {
+                      return 'Mínimo de 6 caracteres';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // Row coloca os widgets lado a lado (na horizontal).
+                // Expanded faz cada campo ocupar metade da largura — sem
+                // ele, os campos tentariam ter largura infinita dentro do
+                // Row e o app mostraria a faixa amarela e preta de erro.
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _idadeController,
+                        // Teclado só de números.
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Idade'),
+                        validator: (valor) {
+                          // tryParse devolve null quando o texto não é um
+                          // número, em vez de quebrar o app como o parse
+                          // faria. É isso que permite usá-lo como teste.
+                          if (int.tryParse(valor ?? '') == null) {
+                            return 'Idade inválida';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _pesoController,
+                        // Teclado de números COM vírgula, diferente do campo
+                        // de idade.
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration:
+                            const InputDecoration(labelText: 'Peso (kg)'),
+                        validator: (valor) {
+                          final texto = (valor ?? '').replaceAll(',', '.');
+                          if (double.tryParse(texto) == null) {
+                            return 'Peso inválido';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: _cadastrar,
+                  child: const Text('Cadastrar'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+  <div class="pontos-titulo">Pontos que podem ser perguntados</div>
+  <ul class="pontos">
+    <li><b>O <code>validator</code> não serve só para formato</b><br>O campo de email tem <strong>duas</strong> regras: verificar se tem <code>@</code> e consultar <code>emailJaCadastrado</code> para não criar duas contas iguais. Vale mostrar isso se perguntarem para que serve o <code>validator</code>.</li>
+    <li><b><code>parse</code> e <code>tryParse</code></b><br><code>tryParse</code> devolve <code>null</code> quando o texto não é número, em vez de quebrar o app — é isso que permite usá-lo como teste dentro do <code>validator</code>. Já o <code>parse</code> pode ser usado no <code>_cadastrar</code> sem risco, porque naquele ponto o <code>validator</code> já garantiu que o texto é um número.</li>
+    <li><b>A vírgula do campo de peso</b><br>Brasileiro digita <code>72,5</code>; o Dart só entende <code>72.5</code>. O <code>replaceAll(',', '.')</code> aparece <strong>duas vezes</strong> — no <code>validator</code> e no <code>_cadastrar</code> — e precisa ser igual nos dois, senão o campo passa na validação e quebra na hora de salvar.</li>
+    <li><b>Teclados diferentes</b><br>Idade usa <code>TextInputType.number</code> (só dígitos) e peso usa <code>TextInputType.numberWithOptions(decimal: true)</code> (com vírgula).</li>
+    <li><b><code>Row</code> + <code>Expanded</code></b><br><code>Row</code> coloca idade e peso lado a lado; cada <code>Expanded</code> faz um ocupar metade da largura. <strong>Sem o <code>Expanded</code></strong>, os campos tentariam ter largura infinita dentro do <code>Row</code> e apareceria a faixa amarela e preta de overflow. É uma das perguntas mais comuns sobre layout.</li>
+    <li><b><code>SnackBar</code></b><br>É a tarjinha que sobe do rodapé da tela. O <code>ScaffoldMessenger.of(context)</code> acha o <code>Scaffold</code> mais próximo na árvore — mesma ideia do <code>Theme.of(context)</code>.</li>
+    <li><b>Interpolação de string</b><br>O <code>${usuario.nome}</code> dentro das aspas coloca o valor da variável no meio do texto.</li>
+    <li><b><code>Navigator.pop(context, usuario)</code></b><br>Fecha esta tela e <strong>devolve o usuário</strong> para quem a abriu. Detalhado na Parte 5.</li>
+  </ul>
+</section>
+
+
+<section class="parte">
+  <div class="rotulo">PARTE 5</div>
+  <h2>Tela Inicial</h2>
+  <div class="oque">
+          <p>A tela que aparece depois de entrar. Ela só mostra os dados do usuário
+          que recebeu pronto da tela de login — por isso é
+          <code>StatelessWidget</code>, e não <code>Stateful</code>: não há nada
+          nela que mude.</p>
+          <p>É também onde fica o botão de sair.</p>
+        </div>
+  <div class="codigo-titulo">O código</div>
+  <pre><code>// =============================================================================
+// PARTE 5 — TELA INICIAL
+// =============================================================================
+
+/// Esta é StatelessWidget porque não guarda nada que mude: ela só mostra o
+/// usuário que recebeu pronto da tela de login.
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key, required this.usuario});
+
+  /// O dado que veio da tela anterior, passado pelo construtor.
+  final Usuario usuario;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Racha App'),
+        // A AppBar NÃO mostra botão de voltar aqui, porque esta tela entrou
+        // com pushReplacement: não há nada empilhado embaixo dela.
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sair',
+            // Sair é o caminho inverso: troca esta tela pela de login.
+            onPressed: () =&gt; Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) =&gt; const LoginScreen()),
+            ),
+          ),
+        ],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircleAvatar(
+              radius: 56,
+              child: Icon(Icons.person, size: 56),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Bem-vindo, ${usuario.nome}!',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(usuario.email),
+            // toStringAsFixed(1) mostra o peso com uma casa decimal:
+            // 72.0 em vez de 72.
+            Text('${usuario.idade} anos · ${usuario.peso.toStringAsFixed(1)} kg'),
+          ],
+        ),
+      ),
+    );
+  }
+}</code></pre>
+  <div class="pontos-titulo">Pontos que podem ser perguntados</div>
+  <ul class="pontos">
+    <li><b>Como o dado chega aqui</b><br>Pelo <strong>construtor</strong>. O <code>required this.usuario</code> obriga quem cria a tela a passar o usuário, e o campo <code>final Usuario usuario</code> guarda o valor. É a forma mais simples de passar dados entre telas no Flutter.</li>
+    <li><b>Por que não tem botão de voltar</b><br>Porque esta tela entrou com <code>pushReplacement</code> — não há nada empilhado embaixo dela. A <code>AppBar</code> cria esse botão sozinha só quando existe uma tela anterior.</li>
+    <li><b><code>toStringAsFixed(1)</code></b><br>Mostra o peso com uma casa decimal: <code>72.0</code> em vez de <code>72</code>.</li>
+  </ul>
+</section>
+
+<section class="parte"><div class="rotulo">Tema central</div>
+<h2>A navegação entre as telas</h2>
+<p>Esta é a parte que o professor pediu especificamente, então vale ser a mais
+bem estudada. O arquivo usa <strong>três</strong> formas de navegar, e cada
+escolha tem um motivo.</p>
+
+<div class="diagrama">
+  <div class="fluxo">
+    <span class="tela">LoginScreen</span>
+    <span class="seta">— push &rarr;</span>
+    <span class="tela">CadastroScreen</span>
+  </div>
+  <div class="fluxo">
+    <span class="tela">CadastroScreen</span>
+    <span class="seta">— pop devolvendo o Usuario &rarr;</span>
+    <span class="tela">LoginScreen</span>
+  </div>
+  <div class="fluxo">
+    <span class="tela">LoginScreen</span>
+    <span class="seta">— pushReplacement &rarr;</span>
+    <span class="tela">HomeScreen</span>
+  </div>
+  <div class="fluxo">
+    <span class="tela">HomeScreen</span>
+    <span class="seta">— pushReplacement (sair) &rarr;</span>
+    <span class="tela">LoginScreen</span>
+  </div>
+</div>
+
+<h3>A pilha de telas</h3>
+<p>O <code>Navigator</code> funciona como uma <strong>pilha</strong>: cada tela
+nova entra por cima da anterior, e voltar significa tirar a de cima. É por isso
+que os nomes são <code>push</code> (empilhar) e <code>pop</code>
+(desempilhar).</p>
+
+<h3>1. <code>push</code> — empilhar por cima</h3>
+<pre><code>final novoUsuario = await Navigator.push&lt;Usuario&gt;(
+  context,
+  MaterialPageRoute(builder: (context) =&gt; const CadastroScreen()),
+);</code></pre>
+<p>O <code>MaterialPageRoute</code> dá a animação padrão de entrada da tela. O
+<code>builder</code> é uma função que constrói a tela nova — ela só é criada no
+momento em que a navegação acontece, não antes.</p>
+<p>Como o login continua na pilha embaixo do cadastro, a <code>AppBar</code> do
+cadastro ganha o <strong>botão de voltar sozinha</strong>, sem ninguém
+programá-lo.</p>
+
+<h3>2. <code>pop</code> devolvendo um dado</h3>
+<p>Esta é a parte mais interessante do arquivo, porque muita gente não sabe que
+dá para fazer:</p>
+<pre><code>// Na tela de cadastro:
+Navigator.pop(context, usuario);</code></pre>
+<p>O segundo argumento do <code>pop</code> é <strong>devolvido para quem abriu a
+tela</strong>. É exatamente o valor que o <code>await Navigator.push&lt;Usuario&gt;</code>
+estava esperando lá no login:</p>
+<pre><code>// De volta na tela de login:
+if (novoUsuario == null) return;
+setState(() {
+  _emailController.text = novoUsuario.email;
+});</code></pre>
+<p>O <code>await</code> faz o código do login <strong>esperar</strong> a tela de
+cadastro fechar antes de continuar. O <code>&lt;Usuario&gt;</code> diz que tipo
+de valor pode voltar.</p>
+<p>E se voltar <code>null</code>? Significa que a pessoa apertou o botão de
+voltar da <code>AppBar</code> em vez de se cadastrar — esse botão faz um
+<code>pop</code> sem devolver nada. Por isso a verificação na primeira linha.</p>
+<p>O resultado prático: quem acaba de se cadastrar volta para o login com o
+email <strong>já preenchido</strong>.</p>
+
+<h3>3. <code>pushReplacement</code> — trocar em vez de empilhar</h3>
+<pre><code>Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(builder: (context) =&gt; HomeScreen(usuario: usuario)),
+);</code></pre>
+<p>Ele <strong>troca</strong> a tela atual pela nova, em vez de empilhar por
+cima.</p>
+<p>Por que aqui e não <code>push</code>? Porque depois de entrar no app, o botão
+“voltar” do Android não deve trazer a pessoa de volta para a tela de login. Com
+<code>pushReplacement</code>, o login sai da pilha — e é por isso que a
+<code>HomeScreen</code> não tem botão de voltar na <code>AppBar</code>.</p>
+<p>O mesmo vale no caminho inverso: o botão de sair também usa
+<code>pushReplacement</code> para voltar ao login.</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Revisão final</div>
+  <h2>Perguntas prováveis</h2>
+  <p>As respostas estão curtas de propósito: são para responder em voz alta, não
+  para ler.</p>
+  <table>
+    <thead><tr><th>Pergunta</th><th>Resposta curta</th></tr></thead>
+    <tbody>
+      <tr><td>Qual a diferença entre <code>StatelessWidget</code> e <code>StatefulWidget</code>?</td><td>Stateless só desenha e não guarda nada. Stateful guarda coisas que mudam enquanto a tela está aberta. Login e cadastro são Stateful (têm campos digitáveis); a home é Stateless.</td></tr>
+      <tr><td>Para que serve o <code>setState</code>?</td><td>Avisa o Flutter que algo mudou e a tela precisa ser redesenhada. Sem ele o valor muda, mas a tela continua mostrando o conteúdo antigo.</td></tr>
+      <tr><td>O que acontece quando clico em Entrar?</td><td>O <code>_entrar</code> valida o formulário, chama <code>procurarUsuario</code> na lista, e ou mostra erro com <code>setState</code> ou vai para a home com <code>pushReplacement</code>.</td></tr>
+      <tr><td>Qual a diferença entre <code>push</code> e <code>pushReplacement</code>?</td><td><code>push</code> empilha a tela nova por cima (dá para voltar). <code>pushReplacement</code> troca a atual pela nova (não dá para voltar) — usado depois do login para o botão voltar não retornar à tela de senha.</td></tr>
+      <tr><td>Como um dado volta de uma tela para outra?</td><td><code>Navigator.pop(context, usuario)</code> devolve o valor; quem abriu com <code>await Navigator.push&lt;Usuario&gt;</code> recebe. É assim que o email vem preenchido depois do cadastro.</td></tr>
+      <tr><td>Por que a home não tem botão de voltar?</td><td>Porque entrou com <code>pushReplacement</code> — não há tela empilhada embaixo dela. A <code>AppBar</code> cria esse botão sozinha só quando existe.</td></tr>
+      <tr><td>Para que serve a <code>GlobalKey&lt;FormState&gt;</code>?</td><td>Dá acesso ao <code>Form</code> para o botão validar todos os campos de uma vez com <code>_formKey.currentState!.validate()</code>.</td></tr>
+      <tr><td>O que o <code>validator</code> devolve?</td><td><code>null</code> quando está certo, ou o texto da mensagem quando está errado. O <code>Form</code> mostra esse texto embaixo do campo.</td></tr>
+      <tr><td>Para que serve o <code>dispose</code>?</td><td>Liberar os <code>TextEditingController</code> quando a tela sai de cena. Sem isso há vazamento de memória.</td></tr>
+      <tr><td>E se eu digitar email sem <code>@</code>?</td><td>O <code>validator</code> devolve a mensagem, o <code>Form</code> mostra em vermelho e o método para na primeira linha.</td></tr>
+      <tr><td>Qual a diferença entre <code>parse</code> e <code>tryParse</code>?</td><td><code>tryParse</code> devolve <code>null</code> se não for número (usado no <code>validator</code>); <code>parse</code> quebra o app (usado depois, onde o validator já garantiu o formato).</td></tr>
+      <tr><td>Por que <code>Expanded</code> dentro do <code>Row</code>?</td><td>Para cada campo ocupar metade da largura. Sem ele os campos teriam largura infinita e apareceria a faixa de overflow.</td></tr>
+      <tr><td>Onde os usuários ficam guardados?</td><td>Numa lista na memória (Parte 2). Somem quando o app fecha — banco de dados é a próxima etapa do projeto.</td></tr>
+      <tr><td>Por que a senha está visível no código?</td><td>Porque não há servidor. Num app real ela vai para um serviço de autenticação que guarda só o hash, e o app nunca vê a senha.</td></tr>
+      <tr><td>Como os botões ficaram verdes sem ninguém pintar?</td><td>Pelo <code>ColorScheme.fromSeed</code> no tema (Parte 1): a partir de uma cor, o Flutter gera a paleta inteira.</td></tr>
+    </tbody>
+  </table>
+  <h3>Antes da apresentação</h3>
+  <ul class="pontos">
+    <li><b>Cada pessoa deve conseguir percorrer um caminho inteiro</b><br>
+    Não basta decorar uma parte. O mais provável de ser cobrado é: botão
+    Cadastrar &rarr; <code>validate()</code> &rarr; cria o <code>Usuario</code>
+    &rarr; adiciona na lista &rarr; <code>pop</code> devolvendo &rarr; o login
+    recebe e preenche o email.</li>
+    <li><b>Rodem o app antes</b><br>
+    Façam o caminho completo: cadastrar, voltar, entrar, sair. Ver a tela
+    funcionando com o código aberto do lado ajuda muito mais a explicar do que
+    reler o arquivo.</li>
+    <li><b>Se alguma parte continuar confusa, vale apagar</b><br>
+    Código que ninguém do grupo sabe explicar pesa mais contra do que a falta
+    dele.</li>
+  </ul>
+</section>
+
+</body>
+</html>

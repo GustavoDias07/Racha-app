@@ -1,0 +1,303 @@
+rules_version = '2';
+
+// Regras do Firestore para o racha_app. Espelham a autorização que já
+// existe no app (Flutter) — ver docs/estrutura.md e lib/providers/*.dart —
+// porque sem essas regras qualquer cliente autenticado conseguiria ler ou
+// escrever em qualquer documento direto, ignorando toda a lógica de admin/
+// participante da UI.
+//
+// Limitação conhecida: este projeto não tem backend (Cloud Functions). Os
+// documentos de `rankings` são recalculados e gravados pelo cliente de
+// quem quer que tenha disparado a ação (ex: ao avaliar um companheiro, é o
+// cliente de quem avaliou que atualiza o ranking do avaliado). Não dá pra
+// garantir 100% a integridade desses valores só com regras — só limitar o
+// formato/faixa. Uma versão futura com Cloud Functions resolveria isso de
+// vez, movendo o cálculo pro servidor.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isRachaAdmin(rachaId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/rachas/$(rachaId)).data.adminId == request.auth.uid;
+    }
+
+    // Grupo a que um racha pertence, ou nulo se for avulso. Usada pra
+    // impedir que alguém grave uma avaliação/estatística carimbada com o
+    // grupo errado — o `grupoId` copiado nesses documentos é o que alimenta
+    // o ranking do grupo, então um valor forjado poluiria o ranking de outra
+    // galera. Custa uma leitura por escrita; a alternativa seria confiar no
+    // cliente, que é justamente o que as regras existem pra não fazer.
+    function grupoDoRacha(rachaId) {
+      return get(/databases/$(database)/documents/rachas/$(rachaId))
+        .data.get('grupoId', null);
+    }
+
+    // Anotador: jogador a quem o admin delegou a chamada daquela rodada (os
+    // "caras da planilha"). A lista mora no próprio racha, copiada do grupo
+    // quando a rodada nasce — assim isto resolve com uma leitura, em vez de
+    // buscar o racha e depois o grupo a cada presença registrada.
+    function isAnotador(rachaId) {
+      return isSignedIn() && request.auth.uid in
+        get(/databases/$(database)/documents/rachas/$(rachaId))
+          .data.get('anotadores', []);
+    }
+
+    function isGrupoAdmin(grupoId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/grupos/$(grupoId)).data.adminId == request.auth.uid;
+    }
+
+    // Regras "collection group": uma regra aninhada em
+    // /rachas/{rachaId}/X/{id} só autoriza leitura de um racha por vez —
+    // ela NÃO cobre uma query collectionGroup(X) que varre todos os rachas
+    // de uma vez. O Firestore exige uma regra própria com prefixo
+    // `{path=**}` pra autorizar esse tipo de query entre coleções. Usadas
+    // por: `meusConvitesProvider` (sino de convites, em `participantes`),
+    // `AvaliacaoRepository.buscarRecebidasPor`/`reatribuirParaUser` (recalcular
+    // Ranking, em `avaliacoes`) e `EstatisticaRepository` (idem, em
+    // `estatisticas`).
+    match /{path=**}/participantes/{participanteId} {
+      allow read: if isSignedIn();
+    }
+    match /{path=**}/avaliacoes/{avaliacaoId} {
+      allow read: if isSignedIn();
+    }
+    match /{path=**}/estatisticas/{jogadorId} {
+      allow read: if isSignedIn();
+    }
+
+    // users/{userId} — jogador cadastrado (docs/estrutura.md, entidade User).
+    match /users/{userId} {
+      // Leitura aberta a qualquer logado: nomes/fotos aparecem em listas de
+      // participantes, times, ranking etc., de qualquer racha.
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && request.resource.data.nome is string
+        && request.resource.data.email is string
+        && request.resource.data.idade is int
+        && request.resource.data.peso is number;
+
+      // Só o próprio dono edita, e não pela porta dos fundos: email e data
+      // de criação são imutáveis por aqui (só o cadastro define email).
+      allow update: if isSignedIn() && request.auth.uid == userId
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if false;
+
+      // avisos/{avisoId} — recado curto deixado pra este jogador quando algo
+      // aconteceu fora da tela dele (ver AvisoModel). Só o dono lê e
+      // dispensa; qualquer logado pode deixar um recado, porque quem escreve
+      // é o cliente de outra pessoa (o admin que apagou o grupo, por
+      // exemplo). Mesma limitação de arquitetura descrita no topo do arquivo:
+      // sem backend, não há como carimbar o autor de forma confiável. O
+      // limite de tamanho evita que isso vire canal de spam.
+      match /avisos/{avisoId} {
+        allow read, delete: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn()
+          && request.resource.data.mensagem is string
+          && request.resource.data.mensagem.size() > 0
+          && request.resource.data.mensagem.size() <= 300
+          && request.resource.data.criadoEm is timestamp;
+        allow update: if false;
+      }
+    }
+
+    // grupos/{grupoId} — racha recorrente (docs/estrutura.md, entidade Grupo).
+    match /grupos/{grupoId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.adminId == request.auth.uid;
+      // Duas escritas possíveis: o admin editando a configuração (sem poder
+      // passar a posse do grupo pra outro) e o próprio jogador saindo da
+      // lista de membros fixos ("Sair do grupo", GrupoRepository.sair).
+      allow update: if isSignedIn() && (
+        (
+          resource.data.adminId == request.auth.uid
+          && request.resource.data.adminId == resource.data.adminId
+        ) || saindoDoGrupo()
+      );
+      // Só o admin apaga, e só o Grupo em si — as rodadas (rachas) já
+      // geradas a partir dele continuam existindo (rachas não têm delete),
+      // só deixam de aparecer na Home porque `meusGruposProvider` não acha
+      // mais o Grupo dono.
+      allow delete: if isSignedIn() && resource.data.adminId == request.auth.uid;
+
+      // Saída do próprio jogador: a escrita só pode tocar `membrosFixos`, a
+      // lista nova tem que ser um subconjunto da antiga com exatamente um
+      // item a menos e sem quem está escrevendo — o que só é satisfeito se o
+      // item removido for ele mesmo. Assim um membro não consegue expulsar
+      // outro nem alterar qualquer outro campo do grupo por essa porta.
+      function saindoDoGrupo() {
+        return isSignedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['membrosFixos'])
+          && request.auth.uid in resource.data.membrosFixos
+          && !(request.auth.uid in request.resource.data.membrosFixos)
+          && resource.data.membrosFixos.hasAll(request.resource.data.membrosFixos)
+          && request.resource.data.membrosFixos.size() == resource.data.membrosFixos.size() - 1;
+      }
+
+      // solicitacoes/{solicitacaoId} — pedido de entrada de um User
+      // cadastrado achado via aba "Rachas Próximos" (grupo com
+      // `abertoParaNovosMembros == true`). Só o próprio solicitante cria (pra
+      // si mesmo, sempre pendente); só o admin do grupo aprova/recusa, e sem
+      // poder trocar quem pediu ou em qual grupo.
+      match /solicitacoes/{solicitacaoId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.grupoId == grupoId
+          && request.resource.data.solicitanteId == request.auth.uid
+          && request.resource.data.status == 'pendente';
+        allow update: if isGrupoAdmin(grupoId)
+          && request.resource.data.solicitanteId == resource.data.solicitanteId
+          && request.resource.data.grupoId == resource.data.grupoId;
+        // O admin apaga os pedidos junto com o grupo: sem o grupo eles não
+        // significam mais nada, e ficariam órfãos pra sempre no Firestore.
+        allow delete: if isGrupoAdmin(grupoId);
+      }
+    }
+
+    // rachas/{rachaId} — uma rodada, avulsa ou vinda de um Grupo.
+    match /rachas/{rachaId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.adminId == request.auth.uid;
+      // Só o admin edita o racha (nome/local/data/status/mvpUserId etc.);
+      // admin e grupoId são imutáveis depois de criado.
+      allow update: if isSignedIn() && resource.data.adminId == request.auth.uid
+        && request.resource.data.adminId == resource.data.adminId
+        && request.resource.data.grupoId == resource.data.grupoId;
+      // Só racha avulso (sem Grupo) pode ser apagado — uma rodada de Grupo
+      // some junto quando o Grupo é apagado (ver regra de `grupos`), nunca
+      // sozinha, pra não quebrar a rodada aberta que o grupo espera achar.
+      allow delete: if isSignedIn() && resource.data.adminId == request.auth.uid
+        && resource.data.grupoId == null;
+
+      // participantes/{participanteId} — um User dentro deste racha.
+      match /participantes/{participanteId} {
+        allow read: if isSignedIn();
+
+        // Qualquer jogador logado pode convidar outro (a tela "Convidar"
+        // não é restrita ao admin do racha). Convite sempre nasce
+        // pendente — ninguém se autoconfirma na criação de um convite —
+        // com uma exceção: alguém pode se autocriar já confirmado, desde
+        // que seja pra si mesmo (`userId == request.auth.uid`). Cobre o
+        // admin se juntando à própria rodada que acabou de criar
+        // (GrupoController.criar) E quem entra por código/link
+        // (RachaController.entrarComCodigo) — quem sabe o id do racha
+        // "tem o convite" nesse modelo, igual um link compartilhável.
+        allow create: if isSignedIn()
+          && request.resource.data.rachaId == rachaId
+          && request.resource.data.userId is string
+          && (
+            request.resource.data.statusConfirmacao == 'pendente' ||
+            (
+              request.resource.data.statusConfirmacao == 'confirmado' &&
+              request.resource.data.userId == request.auth.uid
+            )
+          );
+
+        // O admin do racha controla tudo (aprovação, posições, time). O
+        // próprio participante só mexe no status de presença e nas
+        // próprias posições — nunca no `time`, que é exclusivo do
+        // algoritmo de balanceamento (ação só do admin).
+        allow update: if isSignedIn() && (
+          isRachaAdmin(rachaId) ||
+          // Anotador mexe só na presença — não no time, nem nas posições,
+          // nem na confirmação de ninguém.
+          (
+            isAnotador(rachaId) &&
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['presenca'])
+          ) ||
+          (
+            resource.data.userId == request.auth.uid &&
+            request.resource.data.userId == resource.data.userId &&
+            request.resource.data.rachaId == resource.data.rachaId &&
+            request.resource.data.time == resource.data.time &&
+            // Presença é registrada por quem faz a chamada, nunca pelo
+            // próprio jogador — senão o sistema de pontualidade não vale nada.
+            request.resource.data.get('presenca', null)
+              == resource.data.get('presenca', null)
+          )
+        );
+        // Só o admin tira alguém do racha (o próprio participante sai
+        // recusando presença, não apagando o próprio convite).
+        allow delete: if isRachaAdmin(rachaId);
+      }
+
+      // convidados/{convidadoId} — perfil temporário, sem login.
+      match /convidados/{convidadoId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.rachaId == rachaId
+          && request.resource.data.statusAprovacao == 'pendente';
+        // Convidado não tem conta própria — só o admin aprova/recusa e
+        // define o time.
+        allow update: if isRachaAdmin(rachaId);
+        allow delete: if isRachaAdmin(rachaId);
+      }
+
+      // avaliacoes/{avaliacaoId} — nota pós-jogo. Não existe tela de edição
+      // de nota (só criação), mas o admin pode reatribuir uma avaliação de
+      // um Convidado pro User oficial quando ele se cadastra de verdade
+      // (Fluxo 3.1 — `ConvidadoController.oficializar`). Essa é a única
+      // forma de update permitida: `avaliadorId`, `nota` e `rachaId` ficam
+      // travados no valor original, só `avaliadoId`/`avaliadoTipo` mudam.
+      match /avaliacoes/{avaliacaoId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.rachaId == rachaId
+          && request.resource.data.avaliadorId == request.auth.uid
+          && request.resource.data.get('grupoId', null) == grupoDoRacha(rachaId)
+          && request.resource.data.nota is number
+          && request.resource.data.nota >= 1
+          && request.resource.data.nota <= 5;
+        // Reatribuição de convidado oficializado: muda só quem foi avaliado.
+        // Nota, autor e grupo continuam sendo os mesmos.
+        allow update: if isRachaAdmin(rachaId)
+          && request.resource.data.rachaId == resource.data.rachaId
+          && request.resource.data.avaliadorId == resource.data.avaliadorId
+          && request.resource.data.nota == resource.data.nota
+          && request.resource.data.get('grupoId', null)
+             == resource.data.get('grupoId', null)
+          && request.resource.data.avaliadoTipo == 'user';
+        allow delete: if false;
+      }
+
+      // estatisticas/{jogadorId} — o id do doc é o próprio jogadorId
+      // (userId real do User, ou id do Convidado — ver EstatisticaRepository).
+      match /estatisticas/{jogadorId} {
+        allow read: if isSignedIn();
+        allow create, update: if isSignedIn()
+          && request.resource.data.rachaId == rachaId
+          && request.resource.data.jogadorId == jogadorId
+          && request.resource.data.get('grupoId', null) == grupoDoRacha(rachaId)
+          && (isRachaAdmin(rachaId) || request.auth.uid == jogadorId)
+          && request.resource.data.gols >= 0
+          && request.resource.data.assistencias >= 0
+          && request.resource.data.cartoesAmarelos >= 0
+          && request.resource.data.cartoesVermelhos >= 0;
+        allow delete: if false;
+      }
+    }
+
+    // rankings/{userId} — acumulado (média de avaliação, MVPs, gols,
+    // assistências). Ver limitação de arquitetura no comentário do topo.
+    match /rankings/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.resource.data.mediaAvaliacoes is number
+        && request.resource.data.mediaAvaliacoes >= 0
+        && request.resource.data.mediaAvaliacoes <= 5
+        && request.resource.data.totalMvps >= 0
+        && request.resource.data.totalGols >= 0
+        && request.resource.data.totalAssistencias >= 0
+        && request.resource.data.totalRachas >= 0;
+      allow delete: if false;
+    }
+  }
+}
