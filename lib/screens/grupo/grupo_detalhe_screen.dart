@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/avatar_jogador.dart';
 import '../../core/widgets/info_tile.dart';
 import '../../models/enums.dart';
 import '../../models/grupo_model.dart';
@@ -11,6 +12,7 @@ import '../../models/user_model.dart';
 import '../../providers/firebase_providers.dart';
 import '../../providers/grupo_controller.dart';
 import '../../providers/solicitacao_controller.dart';
+import '../../widgets/foto_racha.dart';
 import '../racha/racha_tabs_section.dart';
 
 enum _AcaoGrupo { editar, apagar, sair }
@@ -96,57 +98,79 @@ class GrupoDetalheScreen extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Column(
-                children: [
-                  InfoTile(
-                      icone: Icons.place, label: 'Local', valor: grupoAtual.localPadrao),
-                  InfoTile(
-                    icone: Icons.event_repeat,
-                    label: 'Quando',
-                    valor: '${grupoAtual.diaSemana.label}, ${grupoAtual.horario}',
-                  ),
-                  InfoTile(
-                    icone: Icons.sports_soccer,
-                    label: 'Tipo de campo',
-                    valor:
-                        '${grupoAtual.tipoCampoPadrao.label} • ${grupoAtual.qtdJogadoresLinhaPadrao} jogadores de linha',
-                  ),
-                  const SizedBox(height: 8),
-                  _MembrosFixosSection(grupo: grupoAtual, isAdmin: isAdmin),
-                  if (isAdmin) ...[
-                    _SolicitacoesSection(grupo: grupoAtual),
-                    _RecusadasSection(grupo: grupoAtual),
+        child: Builder(builder: (context) {
+          final cabecalho = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              CapaDoRacha(
+                fotoBase64: grupoAtual.fotoBase64,
+                podeEditar: isAdmin,
+                onEditar: () => _trocarFotoDoRacha(context, ref, grupoAtual),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Column(
+                  children: [
+                    InfoTile(
+                        icone: Icons.place,
+                        label: 'Local',
+                        valor: grupoAtual.localPadrao),
+                    InfoTile(
+                      icone: Icons.event_repeat,
+                      label: 'Quando',
+                      valor: '${grupoAtual.diaSemana.label}, ${grupoAtual.horario}',
+                    ),
+                    InfoTile(
+                      icone: Icons.sports_soccer,
+                      label: 'Tipo de campo',
+                      valor:
+                          '${grupoAtual.tipoCampoPadrao.label} \u2022 ${grupoAtual.qtdJogadoresLinhaPadrao} jogadores de linha',
+                    ),
+                    const SizedBox(height: 8),
+                    _MembrosFixosSection(grupo: grupoAtual, isAdmin: isAdmin),
+                    if (isAdmin) ...[
+                      _SolicitacoesSection(grupo: grupoAtual),
+                      _RecusadasSection(grupo: grupoAtual),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: rachaAsync.when(
-                data: (racha) {
-                  if (racha == null) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                          'Nenhuma rodada aberta no momento.',
-                          style: TextStyle(color: AppColors.textoSecundario),
-                        ),
-                      ),
-                    );
-                  }
-                  return RachaTabsSection(racha: racha);
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Erro ao carregar rodada: $e')),
-              ),
-            ),
-          ],
-        ),
+              const Divider(height: 1),
+            ],
+          );
+
+          // Em todos os estados o cabeçalho continua visível: enquanto a
+          // rodada carrega, ou quando não há rodada aberta, a pessoa ainda
+          // precisa ver local, horário e membros do grupo.
+          Widget comCabecalho(Widget resto) => ListView(
+                padding: EdgeInsets.zero,
+                children: [cabecalho, resto],
+              );
+
+          return rachaAsync.when(
+            data: (racha) {
+              if (racha == null) {
+                return comCabecalho(const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Nenhuma rodada aberta no momento.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textoSecundario),
+                  ),
+                ));
+              }
+              return RachaTabsSection(racha: racha, cabecalho: cabecalho);
+            },
+            loading: () => comCabecalho(const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            )),
+            error: (e, _) => comCabecalho(Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('Erro ao carregar rodada: $e'),
+            )),
+          );
+        }),
       ),
     );
   }
@@ -229,6 +253,31 @@ Future<void> _confirmarESairDoGrupo(
   Navigator.of(context).pop();
 }
 
+/// Abre o seletor e grava a nova foto do racha (ou a remove).
+///
+/// A tela não precisa ser avisada do resultado: ela observa o grupo por
+/// stream, então a capa nova aparece sozinha assim que a escrita termina.
+Future<void> _trocarFotoDoRacha(
+  BuildContext context,
+  WidgetRef ref,
+  GrupoModel grupo,
+) async {
+  final escolha =
+      await escolherFotoDoRacha(context, temFoto: grupo.fotoBase64 != null);
+  if (escolha == null) return;
+
+  await ref
+      .read(grupoControllerProvider.notifier)
+      .atualizarFoto(grupo.id, escolha.base64);
+
+  if (!context.mounted) return;
+  if (ref.read(grupoControllerProvider).hasError) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Não foi possível salvar a foto. Tente de novo.')),
+    );
+  }
+}
+
 /// Lista de membros fixos do grupo (convidados automaticamente toda vez
 /// que uma nova rodada nasce — ver Fluxo 5, docs/estrutura.md) + busca por
 /// email pra adicionar/remover.
@@ -276,7 +325,8 @@ class _MembrosFixosSection extends ConsumerWidget {
             const Padding(
               padding: EdgeInsets.only(left: 32, top: 4, bottom: 4),
               child: Text(
-                'O ícone de prancheta libera o jogador a fazer a chamada do dia.',
+                'O ícone de prancheta libera o jogador a fazer a chamada e conferir '
+                'as estatísticas do dia.',
                 style: TextStyle(fontSize: 11, color: AppColors.textoSecundario),
               ),
             ),
@@ -303,9 +353,15 @@ class _MembroFixoTile extends ConsumerWidget {
     final anotador = grupo.auxiliares.contains(userId);
 
     return Padding(
-      padding: const EdgeInsets.only(left: 32),
+      padding: const EdgeInsets.only(left: 32, top: 2, bottom: 2),
       child: Row(
         children: [
+          AvatarJogador(
+            nome: userAsync.valueOrNull?.nome ?? '',
+            fotoBase64: userAsync.valueOrNull?.fotoPerfilBase64,
+            raio: 15,
+          ),
+          const SizedBox(width: 10),
           Expanded(child: Text(userAsync.valueOrNull?.nome ?? 'Carregando...')),
           if (isAdmin)
             IconButton(
@@ -315,8 +371,8 @@ class _MembroFixoTile extends ConsumerWidget {
                 color: anotador ? AppColors.confirmado : AppColors.neutro,
               ),
               tooltip: anotador
-                  ? 'Tirar a permissão de fazer a chamada'
-                  : 'Deixar fazer a chamada',
+                  ? 'Tirar a permissão de chamada e conferência'
+                  : 'Deixar fazer a chamada e conferir estatísticas',
               onPressed: () => ref
                   .read(grupoControllerProvider.notifier)
                   .alternarAnotador(grupo, userId),
@@ -561,6 +617,12 @@ class _SolicitacaoTile extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          AvatarJogador(
+            nome: userAsync.valueOrNull?.nome ?? '',
+            fotoBase64: userAsync.valueOrNull?.fotoPerfilBase64,
+            raio: 18,
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -668,7 +730,6 @@ class _ResumoDoJogador extends StatelessWidget {
     );
   }
 }
-
 
 /// Pedidos que o admin já recusou. Ficam à mão porque a recusa é definitiva
 /// do lado do jogador — ele não consegue pedir de novo — então reabrir aqui é

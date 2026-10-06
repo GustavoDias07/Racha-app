@@ -21,6 +21,7 @@ class GrupoController extends AsyncNotifier<void> {
     required int qtdJogadoresLinhaPadrao,
     GeoPoint? localizacao,
     bool abertoParaNovosMembros = false,
+    String? fotoBase64,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -36,6 +37,7 @@ class GrupoController extends AsyncNotifier<void> {
         adminId: adminId,
         localizacao: localizacao,
         abertoParaNovosMembros: abertoParaNovosMembros,
+        fotoBase64: fotoBase64,
       );
       final grupoId = await ref.read(grupoRepositoryProvider).criar(grupo);
 
@@ -138,6 +140,16 @@ class GrupoController extends AsyncNotifier<void> {
             localizacao: localizacao,
             abertoParaNovosMembros: abertoParaNovosMembros,
           );
+    });
+  }
+
+  /// Troca ou remove (com `null`) a foto do grupo. Só o admin chega aqui:
+  /// a tela só oferece a ação a ele, e a regra do Firestore recusaria
+  /// qualquer outro.
+  Future<void> atualizarFoto(String grupoId, String? fotoBase64) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() {
+      return ref.read(grupoRepositoryProvider).atualizarFoto(grupoId, fotoBase64);
     });
   }
 

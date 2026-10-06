@@ -1,0 +1,2981 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Racha App — Código Explicado</title>
+<style>
+@page { size: A4; margin: 16mm 14mm; }
+* { box-sizing: border-box; }
+body {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 11.5pt; line-height: 1.55; color: #1a1a1a; background: #fff;
+  margin: 0 auto; max-width: 820px; padding: 0 16px;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+@media print { body { max-width: none; padding: 0; } }
+h1 { font-size: 26pt; line-height: 1.15; margin: 0 0 4pt; letter-spacing: -0.4pt; }
+h2 {
+  font-size: 17pt; margin: 0 0 10pt; padding-bottom: 5pt;
+  border-bottom: 2.5pt solid #2E7D32; color: #1B5E20; letter-spacing: -0.2pt;
+}
+h3 {
+  font-size: 13pt; margin: 22pt 0 6pt; color: #1B5E20;
+  font-family: Arial, sans-serif; letter-spacing: -0.1pt;
+  page-break-after: avoid;
+}
+h3 .num { color: #888; font-weight: normal; margin-right: 4pt; }
+h4 {
+  font-family: Arial, sans-serif; font-size: 9.5pt; font-weight: bold;
+  letter-spacing: 0.6pt; color: #555; text-transform: uppercase;
+  margin: 13pt 0 4pt; page-break-after: avoid;
+}
+p { margin: 0 0 8pt; }
+a { color: #1B5E20; }
+code {
+  font-family: 'Consolas', 'DejaVu Sans Mono', monospace;
+  font-size: 0.87em; background: #eef2ee; padding: 0.5pt 3pt;
+  border-radius: 2.5pt; color: #14421a; word-break: break-word;
+}
+pre {
+  background: #1e2430; color: #e6edf3; padding: 9pt 11pt;
+  border-radius: 4pt; margin: 0 0 10pt;
+  font-size: 8.2pt; line-height: 1.45; white-space: pre-wrap;
+  word-break: break-word; page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+pre .c { color: #8b98a8; font-style: italic; }
+.capa { text-align: center; padding-top: 50mm; page-break-after: always; }
+.capa .sub { font-size: 13pt; color: #444; margin-top: 8pt; }
+.capa .meta { margin-top: 26mm; font-size: 10pt; color: #666; line-height: 1.9; }
+.capa .tag {
+  display: inline-block; background: #2E7D32; color: #fff;
+  padding: 3pt 11pt; border-radius: 11pt; font-size: 9.5pt;
+  font-family: Arial, sans-serif; letter-spacing: 0.3pt;
+}
+.parte { page-break-before: always; padding-top: 4pt; }
+.rotulo {
+  font-family: Arial, sans-serif; font-size: 8.5pt; letter-spacing: 1.4pt;
+  color: #2E7D32; text-transform: uppercase; margin-bottom: 3pt;
+}
+.oque {
+  background: #f4f8f4; border-left: 3pt solid #2E7D32;
+  padding: 8pt 11pt; margin: 0 0 12pt;
+}
+.oque p:last-child { margin-bottom: 0; }
+.ja {
+  background: #f3f4f7; border-left: 3pt solid #7a8699; color: #333;
+  padding: 6pt 10pt; margin: 0 0 10pt; font-size: 10.3pt;
+}
+.ja b { color: #444; }
+.nota {
+  background: #fffbe8; border: 0.75pt solid #e8d98a; padding: 8pt 11pt;
+  margin: 10pt 0; font-size: 10.5pt;
+}
+.nota b { color: #8a6d00; }
+.arquivo {
+  font-family: Consolas, monospace; font-size: 9pt; color: #666;
+  margin: -3pt 0 8pt;
+}
+ul, ol { margin: 0 0 8pt; padding-left: 18pt; }
+li { margin-bottom: 4pt; }
+ul.pontos { margin: 0 0 8pt; padding-left: 0; list-style: none; }
+ul.pontos > li {
+  margin-bottom: 7pt; padding-left: 11pt; border-left: 1.5pt solid #d5ded5;
+}
+ul.pontos b { color: #1B5E20; }
+table { border-collapse: collapse; width: 100%; font-size: 10pt; margin: 0 0 10pt; }
+th, td {
+  border: 0.75pt solid #ccc; padding: 4pt 7pt; text-align: left; vertical-align: top;
+}
+th { background: #eef2ee; font-family: Arial, sans-serif; font-size: 9pt; }
+.fluxo {
+  font-family: Arial, sans-serif; font-size: 9.5pt; margin: 6pt 0 12pt;
+  line-height: 2.2;
+}
+.caixa {
+  display: inline-block; background: #2E7D32; color: #fff;
+  padding: 2pt 8pt; border-radius: 3pt; font-weight: bold;
+}
+.caixa.cinza { background: #5b6675; }
+.seta { color: #555; padding: 0 3pt; }
+.toc { columns: 2; column-gap: 18pt; font-size: 10pt; }
+.toc div { break-inside: avoid; margin-bottom: 8pt; }
+.toc b { font-family: Arial, sans-serif; font-size: 9pt; color: #1B5E20; }
+.toc a { text-decoration: none; color: #222; display: block; line-height: 1.5; }
+.pergunta { margin: 0 0 10pt; page-break-inside: avoid; }
+.pergunta .q { font-weight: bold; color: #1B5E20; }
+td:first-child code { white-space: nowrap; word-break: normal; }
+@media print { body { font-size: 11pt; } pre { font-size: 7.9pt; } }
+
+</style>
+</head>
+<body>
+<div class="capa">
+  <div class="tag">FLUTTER &middot; FIREBASE &middot; MATERIAL DE ESTUDO</div>
+  <h1>Racha App</h1>
+  <div class="sub">O código do app inteiro, explicado arquivo por arquivo</div>
+  <div class="meta">
+    Pasta <code>lib/</code> &middot; 83 arquivos &middot; ~12.500 linhas<br>
+    Versão de 05/10/2026 &middot; Flutter 3.47 &middot; Riverpod &middot; Firebase
+  </div>
+</div>
+
+<section class="parte">
+  <div class="rotulo">Sumário</div>
+  <h2>O que tem aqui</h2>
+  <div class="toc">
+    <div><b>PARTE 0 — ANTES DE COMEÇAR</b>
+      <a href="#s0-1">0.1 Como usar este material</a>
+      <a href="#s0-2">0.2 O mapa do app</a>
+      <a href="#s0-3">0.3 Conceitos que aparecem em todo lugar</a>
+    </div>
+    <div><b>PARTE 1 — ENTRADA, ROTAS E TEMA</b>
+      <a href="#f-main">1.1 main.dart</a>
+      <a href="#f-router">1.2 app_router.dart</a>
+      <a href="#f-tema">1.3 app_theme.dart</a>
+      <a href="#f-options">1.4 firebase_options.dart</a>
+    </div>
+    <div><b>PARTE 2 — MODELOS</b>
+      <a href="#f-enums">2.1 enums.dart</a>
+      <a href="#f-user">2.2 user_model.dart</a>
+      <a href="#f-grupo">2.3 grupo_model.dart</a>
+      <a href="#f-racha">2.4 racha_model.dart</a>
+      <a href="#f-participante">2.5 participante_model.dart</a>
+      <a href="#f-convidado">2.6 convidado_model.dart</a>
+      <a href="#f-avaliacao">2.7 avaliacao_model.dart</a>
+      <a href="#f-estatistica">2.8 estatistica_model.dart</a>
+      <a href="#f-ranking">2.9 ranking_model.dart</a>
+      <a href="#f-solicitacao">2.10 solicitacao e aviso</a>
+      <a href="#f-alvo">2.11 alvo_avaliacao.dart</a>
+    </div>
+    <div><b>PARTE 3 — SERVICES</b>
+      <a href="#f-auth-service">3.1 auth_service.dart</a>
+      <a href="#f-storage">3.2 storage_service.dart</a>
+      <a href="#f-location">3.3 location_service.dart</a>
+      <a href="#f-geocoding">3.4 geocoding_service.dart</a>
+      <a href="#f-notif">3.5 notificações</a>
+    </div>
+    <div><b>PARTE 4 — REPOSITORIES</b>
+      <a href="#f-user-repo">4.1 user_repository.dart</a>
+      <a href="#f-grupo-repo">4.2 grupo_repository.dart</a>
+      <a href="#f-racha-repo">4.3 racha_repository.dart</a>
+      <a href="#f-part-repo">4.4 participante_repository.dart</a>
+      <a href="#f-outros-repo">4.5 os demais repositories</a>
+    </div>
+    <div><b>PARTE 5 — PROVIDERS E CONTROLLERS</b>
+      <a href="#f-providers">5.1 firebase_providers.dart</a>
+      <a href="#f-auth-ctrl">5.2 auth_controller.dart</a>
+      <a href="#f-perfil-ctrl">5.3 perfil_controller.dart</a>
+      <a href="#f-criar-admin">5.4 criar_racha_com_admin.dart</a>
+      <a href="#f-racha-ctrl">5.5 racha_controller.dart</a>
+      <a href="#f-grupo-ctrl">5.6 grupo_controller.dart</a>
+      <a href="#f-part-ctrl">5.7 participante e convidado</a>
+      <a href="#f-solic-ctrl">5.8 solicitacao_controller.dart</a>
+      <a href="#f-times-ctrl">5.9 times_controller.dart</a>
+      <a href="#f-aval-ctrl">5.10 avaliação e ranking</a>
+      <a href="#f-estat-ctrl">5.11 estatistica_controller.dart</a>
+      <a href="#f-notif-ctrl">5.12 notification_controller.dart</a>
+    </div>
+    <div><b>PARTE 6 — LÓGICA PURA</b>
+      <a href="#f-elegivel">6.1 jogador_elegivel e pesos</a>
+      <a href="#f-setores">6.2 setores.dart</a>
+      <a href="#f-balanceador">6.3 balanceador_times.dart</a>
+      <a href="#f-agregador">6.4 agregador_ranking.dart</a>
+      <a href="#f-mvp">6.5 mvp_calculator.dart</a>
+      <a href="#f-utils">6.6 utilitários</a>
+    </div>
+    <div><b>PARTE 7 — WIDGETS REAPROVEITADOS</b>
+      <a href="#f-avatar">7.1 avatar_jogador.dart</a>
+      <a href="#f-widgets-core">7.2 widgets pequenos</a>
+      <a href="#f-foto-perfil">7.3 foto_perfil_picker.dart</a>
+      <a href="#f-foto-racha">7.4 foto_racha.dart</a>
+    </div>
+    <div><b>PARTE 8 — TELAS</b>
+      <a href="#f-login">8.1 login_screen.dart</a>
+      <a href="#f-cadastro">8.2 cadastro_screen.dart</a>
+      <a href="#f-perfil">8.3 perfil e editar perfil</a>
+      <a href="#f-home">8.4 home_screen.dart</a>
+      <a href="#f-criar-racha">8.5 criar_racha_screen.dart</a>
+      <a href="#f-criar-grupo">8.6 criar_grupo_screen.dart</a>
+      <a href="#f-editar">8.7 editar racha e grupo</a>
+      <a href="#f-mapa">8.8 localizacao_picker_screen.dart</a>
+      <a href="#f-proximos">8.9 rachas_proximos_screen.dart</a>
+      <a href="#f-grupo-detalhe">8.10 grupo_detalhe_screen.dart</a>
+      <a href="#f-racha-detalhe">8.11 racha_detalhe_screen.dart</a>
+      <a href="#f-abas">8.12 racha_tabs_section.dart</a>
+      <a href="#f-convidar">8.13 convidar_jogador_screen.dart</a>
+      <a href="#f-avaliacao-tela">8.14 avaliacao_screen.dart</a>
+      <a href="#f-ranking-tela">8.15 ranking e histórico</a>
+    </div>
+    <div><b>PARTE 9</b>
+      <a href="#s9">Perguntas que o professor pode fazer</a>
+    </div>
+  </div>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 0 — Antes de começar</div>
+  <h2 id="s0-1">0.1 Como usar este material</h2>
+  <div class="oque">
+    <p>Cada arquivo da pasta <code>lib/</code> tem uma seção aqui, na ordem em que
+    faz sentido aprender: primeiro a base (modelos, banco), depois a lógica,
+    por último as telas, que usam tudo o que veio antes.</p>
+    <p><b>Nada é explicado duas vezes.</b> Quando um arquivo repete algo que já
+    apareceu em outro, a seção mostra uma caixa cinza assim:</p>
+  </div>
+  <div class="ja"><b>Já explicado em <a href="#f-login">8.1 login_screen.dart</a>:</b>
+    <code>Form</code>, <code>TextFormField</code>, <code>validator</code> e o
+    botão com carregamento.</div>
+  <p>e só explica o que aquele arquivo tem de <b>novo</b>. Então, se a pergunta
+  do professor cair num trecho que parece "pulado", siga o link da caixa
+  cinza — a explicação está lá.</p>
+  <p>O código mostrado aqui são <b>os trechos que importam</b>, não o arquivo
+  inteiro. Os comentários do próprio código (em cinza itálico) também valem
+  como explicação — no projeto eles explicam o <b>porquê</b> de cada decisão.</p>
+  <div class="nota"><b>Dica de estudo:</b> leia a Parte 0 inteira primeiro.
+  Ela explica os conceitos que aparecem em praticamente todo arquivo
+  (<code>ref.watch</code>, <code>async/await</code>, <code>AsyncValue</code>…), e
+  o resto do material parte do princípio de que você já sabe o que eles
+  são.</div>
+
+  <h2 id="s0-2" style="margin-top:22pt">0.2 O mapa do app</h2>
+  <p>O código é dividido em <b>camadas</b>. Cada uma tem uma responsabilidade e
+  só conversa com a camada vizinha:</p>
+  <table>
+    <tr><th>Pasta</th><th>O que faz</th><th>Conhece o Firebase?</th></tr>
+    <tr><td><code>screens/</code></td><td>As telas. Mostram dados e chamam ações.</td><td>Não (no máximo o tipo <code>GeoPoint</code>)</td></tr>
+    <tr><td><code>widgets/</code>, <code>core/widgets/</code></td><td>Pedaços de tela reaproveitados (avatar, seletor de foto).</td><td>Não</td></tr>
+    <tr><td><code>providers/</code></td><td>Liga tudo: entrega dados para as telas e executa as ações (os "controllers").</td><td>Só para criar as instâncias</td></tr>
+    <tr><td><code>repositories/</code></td><td>Lê e grava no Firestore. Uma classe por coleção.</td><td><b>Sim</b></td></tr>
+    <tr><td><code>services/</code></td><td>Fala com o mundo de fora: login, GPS, busca de endereço, notificação.</td><td><b>Sim</b></td></tr>
+    <tr><td><code>models/</code></td><td>As "fichas" de cada coisa: usuário, racha, grupo, participante…</td><td>Só tipos (Timestamp, GeoPoint)</td></tr>
+    <tr><td><code>core/</code></td><td>Lógica pura: balancear times, calcular ranking e MVP, tema, rotas.</td><td>Não (no máximo o tipo <code>GeoPoint</code>)</td></tr>
+  </table>
+  <p>O caminho de <b>qualquer ação</b> do app é sempre o mesmo. Exemplo: o jogador
+  aperta "Confirmar presença":</p>
+  <div class="fluxo">
+    <span class="caixa">Tela</span><span class="seta">→</span>
+    <span class="caixa">Controller</span><span class="seta">→</span>
+    <span class="caixa">Repository</span><span class="seta">→</span>
+    <span class="caixa cinza">Firestore</span><span class="seta">→</span>
+    <span class="caixa cinza">Stream avisa</span><span class="seta">→</span>
+    <span class="caixa">Tela se redesenha</span>
+  </div>
+  <p>A tela <b>não</b> atualiza a si mesma depois de gravar. Ela está "ouvindo" o
+  banco (um <i>stream</i>), e quando o dado muda lá, ela se redesenha sozinha.
+  Isso é o que faz o app mostrar a mudança no celular de todo mundo ao mesmo
+  tempo.</p>
+  <p><b>Por que separar assim?</b> Porque a lógica importante (balancear times,
+  calcular ranking) fica em <code>core/</code>, sem nada de Firebase, e por isso dá
+  para testar com <code>flutter test</code> sem internet e sem banco. São 62
+  testes, todos dessa parte.</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 0 — Antes de começar</div>
+  <h2 id="s0-3">0.3 Conceitos que aparecem em todo lugar</h2>
+  <p>Estes conceitos aparecem em quase todos os arquivos. Quando um arquivo
+  usar um deles, ele aponta para cá (C1, C2…).</p>
+
+  <h3 id="c1"><span class="num">C1</span>Widget, StatelessWidget e StatefulWidget</h3>
+  <p>No Flutter, <b>tudo que aparece na tela é um widget</b>: texto, botão,
+  coluna, a tela inteira. Todo widget tem um método <code>build</code>, que
+  devolve o que desenhar.</p>
+  <ul>
+    <li><b>StatelessWidget</b> — não guarda nada que mude. Recebe dados e desenha.</li>
+    <li><b>StatefulWidget</b> — tem uma classe <code>State</code> separada que guarda
+    valores que mudam (o que foi digitado, se está carregando). Para mudar um
+    valor e redesenhar, chama <code>setState(() { ... })</code>.</li>
+  </ul>
+  <pre><code>class _CriarRachaScreenState extends ConsumerState&lt;CriarRachaScreen&gt; {
+  DateTime? _data;                         // valor que muda
+
+  Future&lt;void&gt; _escolherData() async {
+    final data = await showDatePicker(...);
+    if (data != null) setState(() =&gt; _data = data);   // muda e redesenha
+  }
+}
+</code></pre>
+  <p>O <code>_</code> no começo do nome (<code>_data</code>, <code>_CriarRachaScreenState</code>)
+  significa <b>privado</b>: só esse arquivo enxerga.</p>
+
+  <h3 id="c2"><span class="num">C2</span>const, final, late e parâmetros nomeados</h3>
+  <ul>
+    <li><code>final</code> — recebe valor uma vez e nunca mais muda.</li>
+    <li><code>const</code> — o valor é conhecido já na compilação. Num widget,
+    <code>const Text('Olá')</code> deixa o Flutter reaproveitar o mesmo objeto em vez
+    de criar outro a cada redesenho.</li>
+    <li><code>late</code> — "vou dar valor depois, antes de usar". Usado quando o
+    valor depende de algo que só existe no <code>initState</code>.</li>
+    <li><code>{required this.nome}</code> — parâmetro <b>nomeado</b>: quem chama escreve
+    <code>UserModel(nome: 'Ana')</code>. <code>required</code> obriga a passar.</li>
+    <li><code>super.key</code> — repassa a <code>key</code> para a classe mãe. A key
+    ajuda o Flutter a reconhecer o mesmo widget entre redesenhos. Todo widget
+    tem por padrão.</li>
+  </ul>
+
+  <h3 id="c3"><span class="num">C3</span>Null safety: ?, !, ?? e ?.</h3>
+  <ul>
+    <li><code>String?</code> — pode ser nulo. <code>String</code> sem <code>?</code> nunca é nulo.</li>
+    <li><code>valor!</code> — "eu garanto que não é nulo aqui". Se for, o app quebra.</li>
+    <li><code>a ?? b</code> — usa <code>a</code>; se for nulo, usa <code>b</code>.
+    Ex.: <code>user?.nome ?? 'Carregando...'</code>.</li>
+    <li><code>a?.b</code> — só acessa <code>b</code> se <code>a</code> não for nulo; senão o resultado é nulo.</li>
+  </ul>
+
+  <h3 id="c4"><span class="num">C4</span>Future, async/await e Stream</h3>
+  <ul>
+    <li><b>Future</b> — um valor que chega <b>depois</b> (uma leitura do banco, por
+    exemplo). <code>await</code> espera ele chegar sem travar a tela; só funciona
+    dentro de função marcada com <code>async</code>.</li>
+    <li><b>Stream</b> — uma sequência de valores ao longo do tempo. O Firestore
+    usa isso para avisar sempre que um documento muda (<code>.snapshots()</code>).</li>
+    <li><code>stream.first</code> — pega só o primeiro valor de um stream, como se
+    fosse um Future. Aparece quando o código precisa ler uma vez só.</li>
+    <li><code>Future.wait([a, b])</code> — dispara várias leituras <b>ao mesmo
+    tempo</b> e espera todas. Bem mais rápido que uma depois da outra.</li>
+  </ul>
+
+  <h3 id="c5"><span class="num">C5</span>Riverpod: os providers</h3>
+  <p>Riverpod é a biblioteca que <b>entrega dados e objetos</b> para quem precisa,
+  sem passar tudo de tela em tela. Um provider é uma variável global que sabe
+  criar um valor:</p>
+  <table>
+    <tr><th>Tipo</th><th>Para quê</th><th>Exemplo no app</th></tr>
+    <tr><td><code>Provider</code></td><td>Um objeto que não muda (um repository, um service)</td><td><code>userRepositoryProvider</code></td></tr>
+    <tr><td><code>StreamProvider</code></td><td>Dados ao vivo do banco</td><td><code>meusGruposProvider</code></td></tr>
+    <tr><td><code>FutureProvider</code></td><td>Dado lido uma vez</td><td><code>rankingDoGrupoProvider</code></td></tr>
+    <tr><td><code>.family</code></td><td>O mesmo provider com um parâmetro</td><td><code>participantesDoRachaProvider(rachaId)</code></td></tr>
+    <tr><td><code>AsyncNotifierProvider</code></td><td>Um controller com ações (ver C8)</td><td><code>authControllerProvider</code></td></tr>
+  </table>
+  <p>Para tudo isso funcionar, o app inteiro fica dentro de um
+  <code>ProviderScope</code> (ver <a href="#f-main">1.1 main.dart</a>).</p>
+
+  <h3 id="c6"><span class="num">C6</span>ConsumerWidget, ref.watch e ref.read</h3>
+  <p>Uma tela que usa providers estende <code>ConsumerWidget</code> (ou
+  <code>ConsumerStatefulWidget</code> se tiver estado). Ela recebe um
+  <code>ref</code>, que é a porta para os providers:</p>
+  <ul>
+    <li><code>ref.watch(provider)</code> — lê <b>e fica observando</b>. Quando o valor
+    muda, a tela redesenha. Usado dentro do <code>build</code>.</li>
+    <li><code>ref.read(provider)</code> — lê <b>uma vez</b>, sem observar. Usado dentro
+    de ações (o <code>onPressed</code> de um botão).</li>
+    <li><code>ref.listen(provider, (antes, depois) {...})</code> — executa algo
+    quando o valor muda, sem redesenhar.</li>
+  </ul>
+  <pre><code>final grupos = ref.watch(meusGruposProvider);          // tela observa
+...
+onPressed: () =&gt; ref.read(authControllerProvider.notifier).logout(),  // ação
+</code></pre>
+  <p><code>.notifier</code> devolve o controller em si (com os métodos), em vez do
+  estado dele.</p>
+
+  <h3 id="c7"><span class="num">C7</span>AsyncValue: carregando, erro ou dado</h3>
+  <p>Quando a tela observa um <code>StreamProvider</code> ou <code>FutureProvider</code>,
+  ela recebe um <code>AsyncValue</code>, que está sempre em um de três estados.
+  O <code>.when</code> obriga a tratar os três:</p>
+  <pre><code>return grupos.when(
+  data: (lista) =&gt; ...,                                  // chegou
+  loading: () =&gt; const CircularProgressIndicator(),      // carregando
+  error: (e, _) =&gt; Text('Erro: $e'),                     // deu erro
+);
+</code></pre>
+  <ul>
+    <li><code>maybeWhen(data: ..., orElse: ...)</code> — trata só o que interessa; o resto cai no <code>orElse</code>.</li>
+    <li><code>valueOrNull</code> — o dado, ou nulo se ainda não chegou. Usado quando não precisa mostrar carregamento.</li>
+    <li><code>.isLoading</code>, <code>.hasError</code>, <code>.error</code> — perguntas diretas sobre o estado.</li>
+  </ul>
+
+  <h3 id="c8"><span class="num">C8</span>Controller com AsyncNotifier</h3>
+  <p>Toda ação que grava algo passa por um <b>controller</b>. Todos seguem o mesmo
+  molde:</p>
+  <pre><code>class RachaController extends AsyncNotifier&lt;void&gt; {
+  @override
+  Future&lt;void&gt; build() async {}               // estado inicial: nada
+
+  Future&lt;void&gt; remover(String rachaId) async {
+    state = const AsyncLoading();              // 1. avisa "carregando"
+    state = await AsyncValue.guard(() {        // 2. executa
+      return ref.read(rachaRepositoryProvider).remover(rachaId);
+    });                                        // 3. vira dado ou erro
+  }
+}
+</code></pre>
+  <p><code>AsyncValue.guard</code> executa a função e <b>captura qualquer erro</b>,
+  guardando no <code>state</code> em vez de deixar o app quebrar. A tela observa
+  esse <code>state</code> para mostrar o botão girando (<code>isLoading</code>) ou a
+  mensagem de erro (<code>error</code>).</p>
+
+  <h3 id="c9"><span class="num">C9</span>Navegação: go_router e Navigator</h3>
+  <ul>
+    <li><code>context.push('/rachas/abc')</code> — abre a tela da rota, empilhando por cima da atual.</li>
+    <li><code>context.push('/grupos/x', extra: grupo)</code> — <code>extra</code> passa um objeto inteiro para a próxima tela.</li>
+    <li><code>context.pop()</code> ou <code>Navigator.of(context).pop()</code> — fecha a tela (ou diálogo) de cima.</li>
+    <li><code>Navigator.pop(context, valor)</code> — fecha <b>devolvendo</b> um valor para quem abriu. É assim que os diálogos de confirmação devolvem <code>true</code>/<code>false</code>.</li>
+  </ul>
+  <p>As rotas estão todas em <a href="#f-router">1.2 app_router.dart</a>.</p>
+
+  <h3 id="c10"><span class="num">C10</span>Firestore: o banco de dados</h3>
+  <ul>
+    <li><b>Coleção</b> é uma pasta de <b>documentos</b>; cada documento é um mapa de
+    campos (<code>{'nome': 'Ana', 'idade': 20}</code>). Ex.: <code>users/{uid}</code>.</li>
+    <li><b>Subcoleção</b> é uma coleção dentro de um documento. Ex.:
+    <code>rachas/{id}/participantes</code> — os participantes daquele racha.</li>
+    <li><code>.get()</code> lê uma vez (Future). <code>.snapshots()</code> fica ouvindo (Stream).</li>
+    <li><code>.where('campo', isEqualTo: x)</code> filtra.</li>
+    <li><code>collectionGroup('avaliacoes')</code> busca em <b>todas</b> as subcoleções com
+    esse nome, de todos os rachas de uma vez.</li>
+    <li><b>WriteBatch</b> — junta várias gravações e manda tudo junto: ou grava
+    tudo, ou nada. Usado sempre que uma falha no meio deixaria o banco
+    inconsistente.</li>
+  </ul>
+  <p>Quem decide quem pode ler e gravar cada coisa é o arquivo
+  <code>firestore.rules</code>, fora da pasta <code>lib/</code>.</p>
+
+  <h3 id="c11"><span class="num">C11</span>Recursos do Dart 3 que aparecem bastante</h3>
+  <ul>
+    <li><b>switch como expressão</b> — devolve um valor direto:
+    <code>final cor = switch (status) { pendente => amarelo, recusado => vermelho, ... };</code></li>
+    <li><b>Records</b> — vários valores juntos sem criar classe:
+    <code>final (rotulo, cor) = ('Confirmado', verde);</code></li>
+    <li><b>if/for dentro de listas</b> — <code>[ if (isAdmin) Botao(), for (final p in lista) Linha(p) ]</code>.</li>
+    <li><b>Spread</b> <code>...lista</code> — "espalha" os itens de uma lista dentro de outra.</li>
+    <li><b>extension</b> — adiciona métodos a um tipo que já existe. Ex.:
+    <code>TipoCampo.society.label</code> (ver <a href="#f-enums">2.1 enums.dart</a>).</li>
+  </ul>
+
+  <h3 id="c12"><span class="num">C12</span>mounted depois de await</h3>
+  <p>Depois de um <code>await</code>, a pessoa pode ter saído da tela. Usar o
+  <code>context</code> de uma tela que já fechou quebra o app. Por isso aparece
+  muito:</p>
+  <pre><code>await ref.read(authControllerProvider.notifier).login(...);
+if (!mounted) return;            // a tela ainda existe? senão, para aqui
+ScaffoldMessenger.of(context).showSnackBar(...);
+</code></pre>
+  <p>Em funções soltas (fora de um <code>State</code>) a mesma checagem é
+  <code>context.mounted</code>.</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 1 — Entrada, rotas e tema</div>
+  <h2 id="f-main">1.1 main.dart</h2>
+  <div class="arquivo">lib/main.dart</div>
+  <div class="oque">
+    <p>O ponto de partida do app: liga o Firebase, prepara as datas em
+    português e desenha o widget raiz, <code>RachaApp</code>.</p>
+  </div>
+  <pre><code>Future&lt;void&gt; main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(_aoReceberEmSegundoPlano);
+  await initializeDateFormatting('pt_BR');
+  runApp(const ProviderScope(child: RachaApp()));
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>ensureInitialized()</b><br>Precisa vir antes de qualquer
+    <code>await</code> no <code>main</code>: o Firebase usa código nativo do celular, e
+    essa linha liga a ponte entre Flutter e o sistema antes do app desenhar.</li>
+    <li><b>Firebase.initializeApp</b><br>Conecta ao projeto
+    <code>racha-app-ghad-108ab</code>. As chaves vêm de
+    <a href="#f-options">firebase_options.dart</a>.</li>
+    <li><b>initializeDateFormatting('pt_BR')</b><br>Carrega os nomes de dias e meses
+    em português. Sem isso, <code>DateFormat("EEEE", 'pt_BR')</code> mostraria
+    "Saturday" ou daria erro.</li>
+    <li><b>ProviderScope</b><br>Envolve o app inteiro. É onde o Riverpod guarda os
+    valores de todos os providers (<a href="#c5">C5</a>). Sem ele, nenhum
+    <code>ref.watch</code> funciona.</li>
+    <li><b>_aoReceberEmSegundoPlano</b><br>Função vazia exigida pelo Firebase
+    Messaging para notificações que chegam com o app fechado. Precisa ser
+    função de nível de topo (fora de classe) e ter
+    <code>@pragma('vm:entry-point')</code>, porque roda num processo separado.</li>
+  </ul>
+  <pre><code>class RachaApp extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    ref.watch(notificationSyncProvider);
+
+    return MaterialApp.router(
+      title: 'Racha App',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.dark,
+      routerConfig: router,
+    );
+  }
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>MaterialApp.router</b><br>Versão do <code>MaterialApp</code> que usa o
+    go_router para navegar (em vez de <code>home:</code> com uma tela fixa).</li>
+    <li><b>ref.watch(notificationSyncProvider)</b><br>O valor não é usado: observar
+    esse provider só serve para "ligá-lo", e ele registra o celular para
+    notificações. Ver <a href="#f-notif-ctrl">5.12</a>.</li>
+    <li><b>theme: AppTheme.dark</b><br>O tema escuro do app inteiro, em
+    <a href="#f-tema">1.3</a>.</li>
+  </ul>
+
+  <h2 id="f-router" style="margin-top:22pt">1.2 app_router.dart</h2>
+  <div class="arquivo">lib/core/router/app_router.dart</div>
+  <div class="oque">
+    <p>A lista de todas as telas do app e o endereço de cada uma, além da
+    regra que manda quem não está logado para o login.</p>
+  </div>
+  <pre><code>final routerProvider = Provider&lt;GoRouter&gt;((ref) {
+  final authState = ref.watch(authStateChangesProvider);
+
+  return GoRouter(
+    initialLocation: '/login',
+    refreshListenable: GoRouterRefreshStream(ref, authStateChangesProvider),
+    redirect: (context, state) {
+      final logado = authState.valueOrNull != null;
+      final indoParaAuth =
+          state.matchedLocation == '/login' || state.matchedLocation == '/cadastro';
+
+      if (!logado &amp;&amp; !indoParaAuth) return '/login';
+      if (logado &amp;&amp; indoParaAuth) return '/home';
+      return null;
+    },
+    routes: [
+      GoRoute(path: '/login', builder: (context, state) =&gt; const LoginScreen()),
+      GoRoute(path: '/home', builder: (context, state) =&gt; const HomeScreen()),
+      GoRoute(
+        path: '/rachas/:id',
+        builder: (context, state) =&gt;
+            RachaDetalheScreen(rachaId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/grupos/:id',
+        builder: (context, state) =&gt;
+            GrupoDetalheScreen(grupo: state.extra as GrupoModel),
+      ),
+<span class="c">      // ... mais 12 rotas no mesmo formato</span>
+    ],
+  );
+});
+</code></pre>
+  <ul class="pontos">
+    <li><b>redirect</b><br>Roda antes de toda navegação. Deslogado tentando abrir
+    qualquer tela → vai para <code>/login</code>. Logado tentando abrir login ou
+    cadastro → vai para <code>/home</code>. <code>return null</code> = "pode seguir".
+    É <b>por isso que nenhuma tela precisa navegar depois do login</b>: quando o
+    Firebase avisa que alguém entrou, o redirect manda para a Home sozinho.</li>
+    <li><b>refreshListenable</b><br>Faz o <code>redirect</code> rodar de novo toda vez
+    que o estado de login muda. <code>GoRouterRefreshStream</code>, no fim do arquivo,
+    é uma pequena ponte: escuta o provider do Riverpod e avisa o go_router.</li>
+    <li><b>:id e pathParameters</b><br><code>/rachas/:id</code> aceita qualquer valor no
+    lugar de <code>:id</code>. A tela recebe esse valor por
+    <code>state.pathParameters['id']</code>.</li>
+    <li><b>extra</b><br>Algumas rotas recebem o objeto inteiro em vez de só o id
+    (<code>state.extra as GrupoModel</code>), para a tela já abrir com os dados sem
+    precisar buscar de novo. Ver <a href="#c9">C9</a>.</li>
+  </ul>
+  <table>
+    <tr><th>Rota</th><th>Tela</th></tr>
+    <tr><td><code>/login</code>, <code>/cadastro</code></td><td>Login e cadastro</td></tr>
+    <tr><td><code>/home</code></td><td>Tela inicial</td></tr>
+    <tr><td><code>/perfil</code>, <code>/perfil/editar</code></td><td>Perfil do jogador</td></tr>
+    <tr><td><code>/proximos</code></td><td>Rachas Próximos (busca por distância)</td></tr>
+    <tr><td><code>/grupos/criar</code>, <code>/rachas/criar</code></td><td>Criar racha recorrente / avulso</td></tr>
+    <tr><td><code>/grupos/:id</code> (+ <code>/ranking</code>, <code>/historico</code>, <code>/editar</code>)</td><td>Tela do grupo e suas telas filhas</td></tr>
+    <tr><td><code>/rachas/:id</code> (+ <code>/convidar</code>, <code>/editar</code>, <code>/avaliar</code>)</td><td>Tela de uma rodada e suas telas filhas</td></tr>
+  </table>
+
+  <h2 id="f-tema" style="margin-top:22pt">1.3 app_theme.dart</h2>
+  <div class="arquivo">lib/core/theme/app_theme.dart</div>
+  <div class="oque">
+    <p>As cores e o visual de todos os componentes, num lugar só. Mudar uma
+    cor aqui muda o app inteiro.</p>
+  </div>
+  <pre><code>class AppColors {
+  AppColors._();
+
+  static const fundo = Color(0xFF121212);
+  static const superficie = Color(0xFF1E1E1E);
+  static const verde = Color(0xFF1DB954);
+  static const textoSecundario = Color(0xFFB3B3B3);
+
+<span class="c">  // Semânticas: verde deu certo, âmbar está esperando, vermelho deu errado.</span>
+  static const confirmado = verde;
+  static const pendente = Color(0xFFFBBF24);
+  static const recusado = Color(0xFFF87171);
+  static const destaque = Color(0xFFFFC107);   // troféu e estrela
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>AppColors._()</b><br>Construtor privado: ninguém consegue criar um
+    <code>AppColors()</code>. A classe só existe para agrupar as constantes.</li>
+    <li><b>static const</b><br>Acessadas direto pela classe:
+    <code>AppColors.verde</code>, sem criar objeto.</li>
+    <li><b>Color(0xFF1DB954)</b><br>Cor em hexadecimal. <code>FF</code> é a opacidade
+    (totalmente opaca), e <code>1DB954</code> é o verde em RGB.</li>
+    <li><b>Duas famílias de cor</b><br>As de marca (fundo, verde) dão a cara do app.
+    As semânticas carregam significado — a regra do projeto é nunca usar uma
+    cor semântica só por ser bonita.</li>
+  </ul>
+  <pre><code>static ThemeData get dark {
+  final base = ColorScheme.fromSeed(seedColor: AppColors.verde, brightness: Brightness.dark);
+  final colorScheme = base.copyWith(
+    primary: AppColors.verde,
+    onPrimary: Colors.black,      // texto preto sobre o verde
+    surface: AppColors.fundo,
+    ...
+  );
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: colorScheme,
+    scaffoldBackgroundColor: AppColors.fundo,
+    cardTheme: const CardThemeData(color: AppColors.superficie, elevation: 0, ...),
+    inputDecorationTheme: InputDecorationTheme(filled: true, ...),
+    filledButtonTheme: FilledButtonThemeData(...),
+<span class="c">    // ... um tema para cada tipo de componente</span>
+  );
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>ColorScheme.fromSeed</b><br>A partir de uma cor só, o Flutter gera as
+    dezenas de tons que o Material 3 precisa. Depois o <code>copyWith</code> troca à
+    mão só as que definem a identidade (o tom gerado sai mais apagado que o
+    verde desejado).</li>
+    <li><b>Um tema por componente</b><br><code>cardTheme</code>,
+    <code>inputDecorationTheme</code>, <code>filledButtonTheme</code>… Definindo aqui, todo
+    card, campo e botão do app fica igual sem repetir estilo em cada tela.</li>
+    <li><b>get</b><br><code>static ThemeData get dark</code> é um <i>getter</i>: usado
+    como propriedade (<code>AppTheme.dark</code>), mas executa código.</li>
+  </ul>
+
+  <h2 id="f-options" style="margin-top:22pt">1.4 firebase_options.dart</h2>
+  <div class="arquivo">lib/firebase_options.dart</div>
+  <p>Arquivo <b>gerado automaticamente</b> pelo comando
+  <code>flutterfire configure</code>. Contém os identificadores do projeto no
+  Firebase (para Android e para a web). Não se edita à mão. Essas chaves são
+  públicas por natureza — vão dentro de todo app instalado; quem protege os
+  dados são as regras do Firestore.</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 2 — Modelos</div>
+  <h2>O que é um modelo</h2>
+  <div class="oque">
+    <p>Um modelo é a "ficha" de uma coisa do app: um usuário, um racha, um
+    participante. É uma classe só com dados, sem tela e sem banco. Ela sabe
+    duas coisas: <b>virar mapa</b> para ser gravada no Firestore, e <b>ser
+    montada a partir de um mapa</b> lido de lá.</p>
+  </div>
+
+  <h3 id="f-enums"><span class="num">2.1</span>enums.dart</h3>
+  <div class="arquivo">lib/models/enums.dart</div>
+  <p>Um <code>enum</code> é uma lista fechada de opções. Em vez de gravar
+  <code>'society'</code> como texto solto (e alguém digitar <code>'Society'</code> errado),
+  o código usa <code>TipoCampo.society</code>, e o compilador não deixa usar uma
+  opção que não existe.</p>
+  <pre><code>enum TipoCampo { campao, society, futsal, minicampo }
+
+extension TipoCampoX on TipoCampo {
+  String get label =&gt; switch (this) {
+        TipoCampo.campao =&gt; 'Campão',
+        TipoCampo.society =&gt; 'Society',
+        TipoCampo.futsal =&gt; 'Futsal',
+        TipoCampo.minicampo =&gt; 'Minicampo',
+      };
+
+  int get qtdJogadoresLinhaPadrao =&gt; switch (this) {
+        TipoCampo.campao =&gt; 10,
+        TipoCampo.futsal =&gt; 4,
+        TipoCampo.society =&gt; 6,
+        TipoCampo.minicampo =&gt; 7,
+      };
+
+  bool get qtdConfiguravel =&gt;
+      this == TipoCampo.society || this == TipoCampo.minicampo;
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>extension</b><br>Adiciona propriedades ao enum (<a href="#c11">C11</a>).
+    <code>tipo.label</code> dá o nome bonito para a tela; <code>tipo.qtdJogadoresLinhaPadrao</code>
+    preenche o campo de jogadores sozinho quando o admin escolhe o tipo de campo.</li>
+    <li><b>qtdConfiguravel</b><br>Campão e futsal têm formação fixa; society e
+    minicampo deixam o admin mudar. As telas de criar racha usam isso para
+    habilitar ou travar o campo de quantidade.</li>
+  </ul>
+  <table>
+    <tr><th>Enum</th><th>Opções</th><th>Usado para</th></tr>
+    <tr><td><code>Posicao</code></td><td>goleiro, zagueiro, lateral, volante, meia, atacante</td><td>Onde o jogador joga</td></tr>
+    <tr><td><code>RachaStatus</code></td><td>aberto, emAndamento, finalizado</td><td>Ciclo de vida da rodada</td></tr>
+    <tr><td><code>TimeRacha</code></td><td>A, B</td><td>Time sorteado pelo balanceamento</td></tr>
+    <tr><td><code>StatusConfirmacao</code></td><td>pendente, confirmado, recusado</td><td>O que o jogador <b>disse</b> que ia fazer</td></tr>
+    <tr><td><code>PresencaFinal</code></td><td>compareceu, atrasou, faltou</td><td>O que ele <b>fez</b> no dia (chamada)</td></tr>
+    <tr><td><code>StatusAprovacao</code></td><td>pendente, aprovado, recusado</td><td>Convidado e pedido de entrada</td></tr>
+    <tr><td><code>TipoJogador</code></td><td>user, convidado</td><td>Saber em qual coleção está o jogador</td></tr>
+    <tr><td><code>DiaSemana</code></td><td>segunda … domingo</td><td>Dia fixo do racha recorrente</td></tr>
+  </table>
+  <p><b>Por que StatusConfirmacao e PresencaFinal são separados?</b> Quem
+  recusou com antecedência e quem confirmou e não apareceu são situações bem
+  diferentes para quem organiza — o primeiro avisou a tempo. Com um campo só,
+  as duas ficavam iguais depois do jogo.</p>
+
+  <h3 id="f-user"><span class="num">2.2</span>user_model.dart — o padrão de todo modelo</h3>
+  <div class="arquivo">lib/models/user_model.dart</div>
+  <p>Este é o modelo explicado em detalhe. <b>Todos os outros modelos seguem
+  exatamente o mesmo formato</b>, então nas próximas seções só aparece o que
+  for diferente.</p>
+  <pre><code>class UserModel {
+  final String id;
+  final String nome;
+  final String email;
+  final String? fotoPerfilBase64;
+  final int idade;
+  final double peso;
+  final DateTime createdAt;
+  final String? fcmToken;
+
+  const UserModel({
+    required this.id,
+    required this.nome,
+    required this.email,
+    this.fotoPerfilBase64,
+    required this.idade,
+    required this.peso,
+    required this.createdAt,
+    this.fcmToken,
+  });
+</code></pre>
+  <ul class="pontos">
+    <li><b>Tudo final</b><br>Um modelo nunca muda depois de criado. Para "mudar",
+    cria-se uma cópia com o valor novo (o <code>copyWith</code>, abaixo). Isso evita
+    bugs de uma tela alterar o objeto que outra está mostrando.</li>
+    <li><b>String? fotoPerfilBase64</b><br>Opcional: quem não tirou foto fica
+    com nulo (<a href="#c3">C3</a>). A foto é guardada como texto base64 dentro
+    do documento (ver <a href="#f-storage">3.2</a>).</li>
+    <li><b>Não tem senha</b><br>De propósito: a senha fica com o Firebase
+    Authentication, que guarda com segurança. Guardar de novo aqui seria
+    redundante e menos seguro.</li>
+  </ul>
+  <h4>fromMap — do banco para o objeto</h4>
+  <pre><code>factory UserModel.fromMap(String id, Map&lt;String, dynamic&gt; map) {
+  return UserModel(
+    id: id,
+    nome: map['nome'] as String,
+    email: map['email'] as String,
+    fotoPerfilBase64: map['fotoPerfilBase64'] as String?,
+    idade: map['idade'] as int,
+    peso: (map['peso'] as num).toDouble(),
+    createdAt: (map['createdAt'] as Timestamp).toDate(),
+    fcmToken: map['fcmToken'] as String?,
+  );
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>factory</b><br>Um construtor que pode ter lógica antes de criar o
+    objeto. Aqui ele lê o mapa que veio do Firestore e monta o
+    <code>UserModel</code>.</li>
+    <li><b>Map&lt;String, dynamic&gt;</b><br>Um documento do Firestore chega assim:
+    chave em texto, valor de qualquer tipo. O <code>as String</code> diz qual tipo
+    esperar.</li>
+    <li><b>(map['peso'] as num).toDouble()</b><br>O Firestore devolve
+    <code>70</code> como inteiro e <code>70.5</code> como decimal. <code>num</code> aceita os
+    dois, e o <code>toDouble()</code> padroniza.</li>
+    <li><b>Timestamp → DateTime</b><br>O Firestore guarda datas no tipo dele,
+    <code>Timestamp</code>; <code>.toDate()</code> converte para o <code>DateTime</code> do Dart.</li>
+    <li><b>O id vem separado</b><br>O id é o nome do documento, não um campo
+    dentro dele. Por isso é passado à parte.</li>
+  </ul>
+  <h4>toMap — do objeto para o banco</h4>
+  <pre><code>String get nomeBusca =&gt; nome.toLowerCase();
+
+Map&lt;String, dynamic&gt; toMap() {
+  return {
+    'nome': nome,
+    'nomeBusca': nomeBusca,
+    'email': email,
+    'fotoPerfilBase64': fotoPerfilBase64,
+    'idade': idade,
+    'peso': peso,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'fcmToken': fcmToken,
+  };
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>O caminho inverso</b><br>Transforma o objeto num mapa para gravar. Não
+    inclui o <code>id</code>, que vira o nome do documento.</li>
+    <li><b>nomeBusca</b><br>O nome em minúsculas, gravado só para a busca de
+    jogadores funcionar (o Firestore não tem "contém"; ver
+    <a href="#f-user-repo">4.1</a>). Como sai de um getter dentro do
+    <code>toMap</code>, nunca fica desatualizado.</li>
+  </ul>
+  <h4>copyWith — cópia com alterações</h4>
+  <pre><code>UserModel copyWith({String? nome, int? idade, double? peso, String? fotoPerfilBase64, ...}) {
+  return UserModel(
+    id: id,
+    nome: nome ?? this.nome,
+    idade: idade ?? this.idade,
+    ...
+  );
+}
+</code></pre>
+  <p>Cria um novo objeto igual ao atual, trocando só o que foi passado. O
+  <code>nome ?? this.nome</code> significa "o novo nome, se veio; senão o antigo".
+  Usado na edição de perfil: <code>atual.copyWith(nome: 'Ana')</code>.</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 2 — Modelos</div>
+  <div class="ja"><b>Já explicado em <a href="#f-user">2.2 user_model.dart</a>:</b>
+  campos <code>final</code>, construtor com <code>required</code>, <code>fromMap</code>,
+  <code>toMap</code> e <code>copyWith</code>. As seções abaixo mostram só o que cada
+  modelo tem de diferente.</div>
+
+  <h3 id="f-grupo"><span class="num">2.3</span>grupo_model.dart</h3>
+  <p>O <b>racha recorrente</b> ("Racha da Quarta"): a configuração fixa que gera
+  uma rodada nova toda semana.</p>
+  <pre><code>final DiaSemana diaSemana;
+final String horario;            // "HH:mm"
+final List&lt;String&gt; membrosFixos; // convidados toda semana
+final GeoPoint? localizacao;     // ponto no mapa
+final bool abertoParaNovosMembros;
+final List&lt;String&gt; auxiliares;   // quem pode fazer chamada e conferir estatísticas
+final String? fotoBase64;        // foto do campo
+
+<span class="c">// no fromMap:</span>
+membrosFixos: List&lt;String&gt;.from(map['membrosFixos'] as List? ?? const []),
+abertoParaNovosMembros: map['abertoParaNovosMembros'] as bool? ?? false,
+</code></pre>
+  <ul class="pontos">
+    <li><b>Enum gravado como texto</b><br>No <code>toMap</code>: <code>diaSemana.name</code>
+    (vira <code>'sabado'</code>). No <code>fromMap</code>: <code>DiaSemana.values.byName(...)</code>
+    faz o caminho de volta. Todos os modelos gravam enums assim.</li>
+    <li><b>?? const [] e ?? false</b><br>Campos que foram criados depois que já
+    existiam grupos no banco. Um grupo antigo não tem o campo, então o
+    <code>fromMap</code> usa um valor padrão em vez de quebrar.</li>
+    <li><b>GeoPoint</b><br>Tipo do Firestore para latitude e longitude. Usado na
+    busca por distância (<a href="#f-proximos">8.9</a>).</li>
+    <li><b>auxiliares</b><br>Os "anotadores": membros a quem o admin deu permissão
+    de fazer a chamada e conferir estatísticas. Não é co-administração.</li>
+  </ul>
+
+  <h3 id="f-racha"><span class="num">2.4</span>racha_model.dart</h3>
+  <p>Uma <b>rodada</b>: um jogo numa data específica. Pode ser avulsa
+  (<code>grupoId</code> nulo) ou ter nascido de um grupo.</p>
+  <pre><code>final String? grupoId;
+final DateTime dataHora;
+final RachaStatus status;
+final String? mvpUserId;
+final List&lt;String&gt; anotadores;   // copiado dos auxiliares do grupo
+
+int get totalVagas =&gt; qtdJogadoresLinha + 1;
+
+bool podeFazerChamada(String? userId) =&gt;
+    userId != null &amp;&amp; (userId == adminId || anotadores.contains(userId));
+
+bool podeConferirEstatistica(String? userId, String jogadorId) =&gt;
+    podeFazerChamada(userId) &amp;&amp; (userId == adminId || userId != jogadorId);
+</code></pre>
+  <ul class="pontos">
+    <li><b>totalVagas</b><br>Jogadores de linha mais o goleiro: o tamanho de
+    <b>um</b> time.</li>
+    <li><b>podeFazerChamada</b><br>Admin ou anotador. Fica no modelo porque várias
+    telas fazem essa mesma pergunta.</li>
+    <li><b>podeConferirEstatistica</b><br>A mesma gente da chamada, menos o
+    anotador nos próprios números — senão ele conferiria os próprios gols e
+    voltaria a ser autodeclaração. O admin pode, porque já pode editar a
+    estatística de qualquer um.</li>
+    <li><b>anotadores copiados do grupo</b><br>Guardar a lista no próprio racha
+    deixa a regra de segurança do Firestore decidir a permissão lendo um
+    documento só, em vez de dois.</li>
+  </ul>
+
+  <h3 id="f-participante"><span class="num">2.5</span>participante_model.dart</h3>
+  <p>Um <b>usuário dentro de uma rodada</b>. O mesmo jogador tem um participante
+  diferente em cada racha.</p>
+  <pre><code>final String userId;
+final Posicao? posicaoMain;
+final Posicao? posicaoUsual;
+final TimeRacha? time;                      // nulo até gerar os times
+final StatusConfirmacao statusConfirmacao;
+final PresencaFinal? presenca;              // nulo até a chamada
+
+bool get confirmado =&gt; statusConfirmacao == StatusConfirmacao.confirmado;
+</code></pre>
+  <ul class="pontos">
+    <li><b>posicaoMain e posicaoUsual</b><br>A principal decide o setor do jogador
+    no balanceamento; a usual (secundária) só é usada se faltar gente em outro
+    setor (<a href="#f-setores">6.2</a>).</li>
+    <li><b>presenca nula</b><br>Nula numa rodada finalizada quer dizer "ninguém fez
+    a chamada", não "faltou".</li>
+    <li><b>Getter confirmado</b><br>Atalho legível: <code>p.confirmado</code> em vez de
+    comparar o enum toda vez.</li>
+  </ul>
+
+  <h3 id="f-convidado"><span class="num">2.6</span>convidado_model.dart</h3>
+  <p>Um jogador <b>sem conta</b>, cadastrado por outro para uma rodada só.
+  Idade e peso são aproximados. Diferenças em relação ao participante:</p>
+  <ul class="pontos">
+    <li><b>statusAprovacao</b><br>O admin precisa aprovar o convidado para ele
+    entrar nos times.</li>
+    <li><b>oficializadoComoUserId</b><br>Se o convidado criar conta depois, o admin
+    "oficializa": o histórico dele (notas, gols) passa para a conta nova. Este
+    campo guarda para qual conta foi.</li>
+  </ul>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 2 — Modelos</div>
+  <h3 id="f-avaliacao"><span class="num">2.7</span>avaliacao_model.dart</h3>
+  <p>A nota (1 a 5) que um jogador dá a outro depois do jogo.</p>
+  <pre><code>final String avaliadorId;      // sempre um usuário
+final String avaliadoId;       // usuário OU convidado
+final TipoJogador avaliadoTipo;
+final double nota;
+final String? grupoId;
+</code></pre>
+  <ul class="pontos">
+    <li><b>avaliadoTipo</b><br>O id sozinho não diz se é usuário ou convidado
+    (estão em coleções diferentes). Este campo diz onde procurar.</li>
+    <li><b>grupoId copiado</b><br>O racha já sabe o grupo, mas copiar aqui deixa o
+    ranking do grupo buscar todas as avaliações numa consulta só, em vez de
+    percorrer rodada por rodada.</li>
+  </ul>
+
+  <h3 id="f-estatistica"><span class="num">2.8</span>estatistica_model.dart</h3>
+  <p>Gols, assistências e cartões de um jogador numa rodada.</p>
+  <pre><code>final int gols;
+final int assistencias;
+final int cartoesAmarelos;
+final int cartoesVermelhos;
+final bool confirmada;         // alguém conferiu?
+final String? conferidaPor;
+
+<span class="c">// no fromMap:</span>
+confirmada: map['confirmada'] as bool? ?? true,
+</code></pre>
+  <ul class="pontos">
+    <li><b>confirmada</b><br>O jogador lança os próprios números, que ficam
+    pendentes até o admin ou um anotador conferir. Só estatística conferida
+    entra no ranking. Sem isso, bastava digitar 10 gols para virar artilheiro.</li>
+    <li><b>?? true no fromMap</b><br>Estatísticas antigas, de antes da conferência
+    existir, não têm o campo. Elas contam como conferidas para não sumir do
+    ranking um histórico que ninguém mais tem como conferir.</li>
+  </ul>
+
+  <h3 id="f-ranking"><span class="num">2.9</span>ranking_model.dart</h3>
+  <p>O <b>acumulado</b> de um jogador: média de notas, MVPs, gols,
+  assistências, rodadas. Não é digitado por ninguém — é sempre
+  <b>calculado</b> a partir das avaliações e estatísticas
+  (<a href="#f-agregador">6.4</a>). O id do documento é o próprio
+  <code>userId</code>.</p>
+
+  <h3 id="f-solicitacao"><span class="num">2.10</span>solicitacao_model.dart e aviso_model.dart</h3>
+  <ul class="pontos">
+    <li><b>SolicitacaoModel</b><br>Um usuário pedindo para entrar num grupo aberto
+    (achado em "Rachas Próximos"). Diferente do convidado: aqui é alguém com
+    conta, e aprovar o torna membro fixo do grupo.</li>
+    <li><b>AvisoModel</b><br>Um recado curto (mensagem e data) que aparece no sino
+    da Home. Existe para contar à pessoa algo que aconteceu longe da tela dela —
+    ex.: o grupo em que ela pediu para entrar foi apagado. Ler = apagar.</li>
+  </ul>
+
+  <h3 id="f-alvo"><span class="num">2.11</span>alvo_avaliacao.dart</h3>
+  <p>Diferente dos outros: <b>não vai para o banco</b>. São duas classes só para
+  a tela de avaliação saber quem mostrar.</p>
+  <ul class="pontos">
+    <li><b>AlvoAvaliacao</b><br>Alguém a ser avaliado: o id (de usuário ou de
+    convidado), o tipo e, se for convidado, o nome.</li>
+    <li><b>ContextoAvaliacao</b><br>Tudo que a tela precisa: se a pessoa já
+    avaliou, em que time ela está, a lista de companheiros e a de
+    adversários.</li>
+  </ul>
+  <div class="nota"><b>Detalhe que costuma cair:</b> o id usado na avaliação é o
+  <code>userId</code> do jogador, nunca o id do documento de participante. O
+  participante muda a cada rodada; se fosse ele, as notas de rodadas diferentes
+  não se somariam no ranking.</div>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 3 — Services</div>
+  <h2>O que é um service</h2>
+  <div class="oque">
+    <p>Um service é uma classe que <b>conversa com algo de fora do app</b>: o
+    login do Firebase, o GPS, um site de busca de endereço, as notificações do
+    celular. Cada uma "embrulha" uma biblioteca externa, para o resto do app
+    não depender dela diretamente.</p>
+  </div>
+
+  <h3 id="f-auth-service"><span class="num">3.1</span>auth_service.dart</h3>
+  <div class="arquivo">lib/services/auth_service.dart</div>
+  <pre><code>class AuthService {
+  AuthService(this._firebaseAuth);
+
+  final FirebaseAuth _firebaseAuth;
+
+  Stream&lt;User?&gt; get authStateChanges =&gt; _firebaseAuth.authStateChanges();
+
+  Future&lt;UserCredential&gt; cadastrar({required String email, required String senha}) {
+    return _firebaseAuth.createUserWithEmailAndPassword(email: email, password: senha);
+  }
+
+  Future&lt;UserCredential&gt; login({required String email, required String senha}) {
+    return _firebaseAuth.signInWithEmailAndPassword(email: email, password: senha);
+  }
+
+  Future&lt;void&gt; recuperarSenha({required String email}) {
+    return _firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
+  Future&lt;void&gt; logout() =&gt; _firebaseAuth.signOut();
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>AuthService(this._firebaseAuth)</b><br>O <code>FirebaseAuth</code> é
+    <b>recebido</b> pelo construtor, não criado aqui dentro. Isso se chama
+    injeção de dependência: quem cria o service (o provider em
+    <a href="#f-providers">5.1</a>) decide qual instância passar.</li>
+    <li><b>authStateChanges</b><br>Um Stream (<a href="#c4">C4</a>) que avisa toda vez
+    que alguém entra ou sai. Nulo = ninguém logado. É ele que faz o router
+    trocar de tela sozinho (<a href="#f-router">1.2</a>).</li>
+    <li><b>Os outros métodos</b><br>Só repassam para o Firebase, com nomes em
+    português. A camada é fina de propósito: não sabe nada de Firestore nem de
+    modelos.</li>
+  </ul>
+
+  <h3 id="f-storage"><span class="num">3.2</span>storage_service.dart</h3>
+  <div class="arquivo">lib/services/storage_service.dart</div>
+  <pre><code>class StorageService {
+  Future&lt;String&gt; uploadFotoPerfil({
+    required String userId,
+    required Uint8List bytes,
+  }) async {
+    return base64Encode(bytes);
+  }
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Por que base64?</b><br>O lugar certo para fotos seria o Firebase
+    Storage, mas ele exige o plano pago. Enquanto isso, a foto é convertida em
+    texto (base64) e gravada dentro do próprio documento do usuário.</li>
+    <li><b>Por que o nome "upload"?</b><br>Para o dia em que o Storage for ligado:
+    basta trocar o corpo deste método para enviar a foto e devolver a URL.
+    Quem chama não precisa mudar nada.</li>
+    <li><b>Uint8List</b><br>A foto em bytes crus. Usar bytes (e não um
+    <code>File</code>) faz funcionar também no navegador, onde não existe caminho de
+    arquivo.</li>
+  </ul>
+
+  <h3 id="f-location"><span class="num">3.3</span>location_service.dart</h3>
+  <div class="arquivo">lib/services/location_service.dart</div>
+  <pre><code>class LocationService {
+  Future&lt;PosicaoAtual&gt; obterPosicaoAtual() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw Exception('Ative a localização (GPS) do aparelho e tente de novo.');
+    }
+
+    var permissao = await Geolocator.checkPermission();
+    if (permissao == LocationPermission.denied) {
+      permissao = await Geolocator.requestPermission();
+    }
+    if (permissao == LocationPermission.denied ||
+        permissao == LocationPermission.deniedForever) {
+      throw Exception('Permissão de localização negada.');
+    }
+
+    final posicao = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+    );
+    return PosicaoAtual(
+      ponto: GeoPoint(posicao.latitude, posicao.longitude),
+      precisaoMetros: posicao.accuracy,
+    );
+  }
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>A ordem das checagens</b><br>GPS ligado? → tem permissão? se não, pede →
+    negou? lança erro. Só então lê a posição. A tela que chama mostra a
+    mensagem do <code>Exception</code> para a pessoa.</li>
+    <li><b>throw Exception(...)</b><br>Interrompe a função e manda o erro para quem
+    chamou, que trata com <code>try/catch</code>.</li>
+    <li><b>LocationAccuracy.high</b><br>Liga o GPS de verdade. Mais lento, mas
+    acerta a rua em vez da região.</li>
+    <li><b>PosicaoAtual</b><br>Classe do mesmo arquivo que guarda o ponto <b>e a
+    precisão</b> em metros. No computador o navegador estima a posição pelo
+    Wi-Fi e erra por quilômetros; com a precisão, a tela consegue avisar isso
+    (<code>imprecisa</code> = mais de 1 km).</li>
+  </ul>
+
+  <h3 id="f-geocoding"><span class="num">3.4</span>geocoding_service.dart</h3>
+  <div class="arquivo">lib/services/geocoding_service.dart</div>
+  <p>Transforma um <b>endereço ou CEP em coordenadas</b>, para o admin achar o
+  campo no mapa sem precisar arrastar. Usa dois serviços gratuitos pela
+  internet (pacote <code>http</code>):</p>
+  <div class="fluxo">
+    <span class="caixa cinza">CEP</span><span class="seta">→</span>
+    <span class="caixa">ViaCEP</span><span class="seta">→</span>
+    <span class="caixa cinza">endereço</span><span class="seta">→</span>
+    <span class="caixa">Nominatim (OpenStreetMap)</span><span class="seta">→</span>
+    <span class="caixa cinza">latitude/longitude</span>
+  </div>
+  <pre><code>Future&lt;List&lt;EnderecoEncontrado&gt;&gt; buscar(String termo) async {
+  final limpo = termo.trim();
+  if (limpo.length &lt; 3) return const [];
+
+  final digitos = limpo.replaceAll(RegExp(r'\D'), '');
+  if (digitos.length == 8 &amp;&amp; RegExp(r'^[\d\s-]+$').hasMatch(limpo)) {
+    final endereco = await _enderecoDoCep(digitos);
+    if (endereco != null) {
+      final achados = await _coordenadasDe(endereco);
+      if (achados.isNotEmpty) return achados;
+    }
+  }
+  return _coordenadasDe(limpo);
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Como sabe que é CEP</b><br><code>RegExp(r'\D')</code> casa tudo que <b>não</b>
+    é dígito; trocando por vazio, sobram só os números. Oito dígitos (com ou sem
+    hífen) = CEP.</li>
+    <li><b>Por que dois serviços</b><br>O ViaCEP devolve rua e bairro, mas não
+    coordenadas. O Nominatim devolve coordenadas a partir do texto.</li>
+    <li><b>jsonDecode</b><br>Nos métodos privados, a resposta vem em JSON (texto) e
+    <code>jsonDecode</code> transforma em mapas e listas do Dart.</li>
+    <li><b>countrycodes: 'br'</b><br>Limita a busca ao Brasil — sem isso, "Rua das
+    Flores" trazia Portugal primeiro.</li>
+    <li><b>Busca só ao confirmar</b><br>O Nominatim pede no máximo uma consulta por
+    segundo, então a tela só busca quando a pessoa aperta enter, nunca a cada
+    letra.</li>
+  </ul>
+
+  <h3 id="f-notif"><span class="num">3.5</span>notification_service.dart e local_notification_service.dart</h3>
+  <div class="arquivo">lib/services/</div>
+  <ul class="pontos">
+    <li><b>NotificationService (push)</b><br>Pede permissão de notificação e pega o
+    <b>token</b> do celular — o "endereço" para onde uma notificação seria
+    enviada. O token é gravado no usuário. <b>Nada dispara push ainda</b>: isso
+    exigiria Cloud Functions, que é plano pago. Na web devolve nulo.</li>
+    <li><b>LocalNotificationService (lembrete)</b><br>Não depende de servidor: o
+    próprio celular agenda um lembrete <b>2 horas antes</b> do racha para quem
+    confirmou presença, e cancela se a pessoa recusar.</li>
+  </ul>
+  <pre><code>Future&lt;void&gt; agendarLembrete(RachaModel racha) async {
+  final horarioLembrete = racha.dataHora.subtract(_antecedencia);
+  if (horarioLembrete.isBefore(DateTime.now())) return;
+
+  await _plugin.zonedSchedule(
+    id: _idNotificacao(racha.id),
+    title: 'Racha chegando',
+    body: '${racha.nome} começa às ${DateFormat('HH:mm').format(racha.dataHora)}',
+    scheduledDate: tz.TZDateTime.from(horarioLembrete, tz.local),
+    ...
+  );
+}
+
+int _idNotificacao(String rachaId) =&gt; rachaId.hashCode &amp; 0x7fffffff;
+</code></pre>
+  <ul class="pontos">
+    <li><b>Se já passou, não agenda</b><br>Não faz sentido avisar de algo que já
+    aconteceu.</li>
+    <li><b>Fuso horário (tz)</b><br>O agendamento precisa do fuso do aparelho; o
+    <code>inicializar()</code> descobre qual é.</li>
+    <li><b>_idNotificacao</b><br>O Android exige um número inteiro como id. O
+    <code>hashCode</code> do id do racha vira esse número — o mesmo racha sempre dá
+    o mesmo número, e é assim que dá para cancelar depois. O <code>&amp; 0x7fffffff</code>
+    garante que seja positivo e caiba em 32 bits.</li>
+  </ul>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 4 — Repositories</div>
+  <h2>O que é um repository</h2>
+  <div class="oque">
+    <p>Um repository é a <b>única porta para uma coleção do banco</b>. Toda
+    leitura e gravação de usuários passa pelo <code>UserRepository</code>; de rachas,
+    pelo <code>RachaRepository</code>, e assim por diante. A tela nunca escreve
+    <code>FirebaseFirestore</code> — ela pede ao controller, que pede ao
+    repository.</p>
+  </div>
+
+  <h3 id="f-user-repo"><span class="num">4.1</span>user_repository.dart — o padrão de todo repository</h3>
+  <div class="arquivo">lib/repositories/user_repository.dart</div>
+  <pre><code>class UserRepository {
+  UserRepository(this._firestore);
+
+  final FirebaseFirestore _firestore;
+
+  CollectionReference&lt;Map&lt;String, dynamic&gt;&gt; get _collection =&gt;
+      _firestore.collection(FirestorePaths.users);
+
+  Future&lt;void&gt; criar(UserModel user) {
+    return _collection.doc(user.id).set(user.toMap());
+  }
+
+  Future&lt;UserModel?&gt; buscarPorId(String id) async {
+    final doc = await _collection.doc(id).get();
+    if (!doc.exists) return null;
+    return UserModel.fromMap(doc.id, doc.data()!);
+  }
+
+  Stream&lt;UserModel?&gt; observar(String id) {
+    return _collection.doc(id).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return UserModel.fromMap(doc.id, doc.data()!);
+    });
+  }
+
+  Future&lt;void&gt; atualizar(UserModel user) {
+    return _collection.doc(user.id).update(user.toMap());
+  }
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>_collection</b><br>Atalho para a coleção <code>users</code>. O nome vem de
+    <code>FirestorePaths</code> (<a href="#f-utils">6.6</a>), para não espalhar textos
+    soltos pelo código.</li>
+    <li><b>set x update</b><br><code>set</code> grava o documento inteiro (cria se não
+    existe). <code>update</code> muda só os campos passados e falha se o documento
+    não existir.</li>
+    <li><b>doc(user.id)</b><br>O documento do usuário tem como nome o mesmo id do
+    login (uid). Assim, achar o perfil de quem está logado é direto.</li>
+    <li><b>get() x snapshots()</b><br><code>buscarPorId</code> lê uma vez;
+    <code>observar</code> fica ouvindo e entrega um <code>UserModel</code> novo a cada
+    mudança (<a href="#c10">C10</a>). O <code>.map</code> converte cada documento em
+    modelo com o <code>fromMap</code>.</li>
+  </ul>
+  <h4>A busca de jogadores por nome</h4>
+  <pre><code>Future&lt;List&lt;UserModel&gt;&gt; buscarPorNomeOuEmail(String termo) async {
+  final termoBusca = termo.trim().toLowerCase();
+  final limiteSuperior = termoBusca + String.fromCharCode(0xF8FF);
+  final resultados = await Future.wait([
+    _collection.where('email', isEqualTo: termoBusca).limit(10).get(),
+    _collection
+        .where('nomeBusca', isGreaterThanOrEqualTo: termoBusca)
+        .where('nomeBusca', isLessThan: limiteSuperior)
+        .limit(10)
+        .get(),
+  ]);
+<span class="c">  // junta as duas listas sem repetir ninguém (Set "vistos")</span>
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>O truque do "começa com"</b><br>O Firestore não tem "contém" nem "começa
+    com". Mas buscar tudo entre <code>"gus"</code> e <code>"gus" + o maior caractere
+    possível</code> pega exatamente os nomes que começam com "gus". É por isso que
+    existe o campo <code>nomeBusca</code> em minúsculas.</li>
+    <li><b>Duas buscas ao mesmo tempo</b><br>Não dá para saber se a pessoa digitou
+    nome ou email, então busca pelos dois em paralelo (<code>Future.wait</code>,
+    <a href="#c4">C4</a>) e junta.</li>
+  </ul>
+  <p><code>buscarVarios</code> busca vários usuários de uma vez, também em paralelo
+  — usado na geração de times, que precisa do cadastro de todos os confirmados.</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 4 — Repositories</div>
+  <div class="ja"><b>Já explicado em <a href="#f-user-repo">4.1 user_repository.dart</a>:</b>
+  construtor que recebe o Firestore, <code>_collection</code>, <code>set</code>,
+  <code>update</code>, <code>get</code>, <code>snapshots</code> e a conversão com
+  <code>fromMap</code>. Abaixo só o que é novo.</div>
+
+  <h3 id="f-grupo-repo"><span class="num">4.2</span>grupo_repository.dart</h3>
+  <pre><code>Future&lt;String&gt; criar(GrupoModel grupo) async {
+  final docRef = _collection.doc();
+  await docRef.set(grupo.toMap());
+  return docRef.id;
+}
+
+Stream&lt;List&lt;GrupoModel&gt;&gt; observarPorMembro(String userId) {
+  return _collection
+      .where('membrosFixos', arrayContains: userId)
+      .snapshots()
+      .map((snap) =&gt; snap.docs.map((d) =&gt; GrupoModel.fromMap(d.id, d.data())).toList());
+}
+
+Future&lt;void&gt; atualizarFoto(String grupoId, String? fotoBase64) {
+  return _collection.doc(grupoId).update({
+    'fotoBase64': fotoBase64 ?? FieldValue.delete(),
+  });
+}
+
+Future&lt;void&gt; sair(String grupoId, String userId) {
+  return _collection.doc(grupoId).update({
+    'membrosFixos': FieldValue.arrayRemove([userId]),
+  });
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>_collection.doc() sem id</b><br>O Firestore gera um id aleatório. O método
+    devolve esse id para quem chamou poder criar a primeira rodada do grupo.</li>
+    <li><b>Consultas que devolvem lista</b><br><code>snap.docs</code> são todos os
+    documentos encontrados; cada um vira um modelo.</li>
+    <li><b>arrayContains</b><br>"Grupos em que a lista <code>membrosFixos</code> contém
+    este usuário" — é como a Home acha os grupos em que a pessoa participa.</li>
+    <li><b>FieldValue.delete()</b><br>Apaga o campo do documento (usado para remover
+    a foto).</li>
+    <li><b>FieldValue.arrayRemove</b><br>Tira um item da lista <b>direto no
+    servidor</b>, sem regravar a lista inteira — se o admin adicionou alguém no
+    mesmo segundo, essa adição não se perde.</li>
+  </ul>
+
+  <h3 id="f-racha-repo"><span class="num">4.3</span>racha_repository.dart</h3>
+  <pre><code>DocumentReference&lt;Map&lt;String, dynamic&gt;&gt; novoDocRef() =&gt; _collection.doc();
+
+void criarEmLote(WriteBatch batch, DocumentReference&lt;Map&lt;String, dynamic&gt;&gt; ref, RachaModel racha) {
+  batch.set(ref, racha.toMap());
+}
+
+Stream&lt;RachaModel?&gt; observarAtualPorGrupo(String grupoId) {
+  return _collection
+      .where('grupoId', isEqualTo: grupoId)
+      .where('status', isEqualTo: RachaStatus.aberto.name)
+      .orderBy('dataHora')
+      .limit(1)
+      .snapshots()
+      .map((snap) =&gt; snap.docs.isEmpty ? null : RachaModel.fromMap(...));
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Métodos "EmLote"</b><br>Não gravam na hora: só colocam a gravação dentro
+    de um <code>WriteBatch</code> (<a href="#c10">C10</a>). Quem chamou faz o
+    <code>commit()</code> no fim, e tudo é gravado junto.</li>
+    <li><b>novoDocRef</b><br>Reserva um id antes de gravar. Necessário no batch:
+    para convidar os participantes da rodada nova, é preciso saber o id dela
+    antes de ela existir.</li>
+    <li><b>observarAtualPorGrupo</b><br>"A rodada aberta mais próxima deste grupo":
+    filtra por grupo e status, ordena por data, pega só a primeira. Consultas
+    com mais de um filtro precisam de um índice no Firestore
+    (<code>firestore.indexes.json</code>).</li>
+    <li><b>atualizar</b><br>Faz <code>update</code> só dos campos do formulário de
+    edição, de propósito: o <code>status</code> e o MVP têm fluxo próprio e não podem
+    ser sobrescritos por quem só editou o horário.</li>
+  </ul>
+
+  <h3 id="f-part-repo"><span class="num">4.4</span>participante_repository.dart</h3>
+  <pre><code>CollectionReference&lt;Map&lt;String, dynamic&gt;&gt; _collection(String rachaId) =&gt;
+    _firestore
+        .collection(FirestorePaths.rachas)
+        .doc(rachaId)
+        .collection(FirestorePaths.participantes);
+
+Stream&lt;List&lt;ParticipanteModel&gt;&gt; observarMeusConvites(String userId) {
+  return _firestore
+      .collectionGroup(FirestorePaths.participantes)
+      .where('userId', isEqualTo: userId)
+      .snapshots()
+      .map(...);
+}
+
+Future&lt;void&gt; convidar({required String rachaId, required String userId, ...}) async {
+  final existente = await buscarPorUserId(rachaId, userId);
+  if (existente != null) return;
+  await _collection(rachaId).add(participante.toMap());
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Subcoleção</b><br><code>_collection</code> agora é uma <b>função</b> que recebe o
+    racha: os participantes ficam em <code>rachas/{id}/participantes</code>.</li>
+    <li><b>collectionGroup</b><br>Procura em <b>todas</b> as subcoleções
+    <code>participantes</code> de todos os rachas. É assim que a Home descobre todas
+    as rodadas para as quais a pessoa foi convidada.</li>
+    <li><b>Sem convite duplicado</b><br>Antes de convidar, verifica se a pessoa já
+    está no racha.</li>
+    <li><b>add x set</b><br><code>add</code> cria um documento com id gerado
+    automaticamente, como o <code>doc()</code> + <code>set</code> do grupo.</li>
+  </ul>
+  <p>Os demais métodos (<code>atualizarStatus</code>, <code>registrarPresenca</code>,
+  <code>definirPosicoes</code>, <code>definirTimeEmLote</code>) são <code>update</code> de um
+  ou dois campos.</p>
+
+  <h3 id="f-outros-repo"><span class="num">4.5</span>Os demais repositories</h3>
+  <table>
+    <tr><th>Arquivo</th><th>O que tem de novo</th></tr>
+    <tr><td><code>convidado_repository</code></td><td>Mesmo formato do de participante (subcoleção <code>convidados</code>). Nada novo.</td></tr>
+    <tr><td><code>avaliacao_repository</code></td><td><code>avaliarEmLote</code>: grava todas as notas de uma pessoa num batch. Se falhasse no meio, ela ficaria marcada como "já avaliou" com metade das notas. <code>reatribuirParaUser</code>: troca o avaliado de convidado para a conta nova (oficialização).</td></tr>
+    <tr><td><code>estatistica_repository</code></td><td>O id do documento é o próprio <code>jogadorId</code>, então salvar de novo <b>substitui</b> em vez de duplicar. <code>confirmar</code>: marca várias estatísticas como conferidas num batch.</td></tr>
+    <tr><td><code>ranking_repository</code></td><td><code>buscarVarios</code> em paralelo e <code>salvar</code> com <code>set</code>.</td></tr>
+    <tr><td><code>solicitacao_repository</code></td><td>Pedidos de entrada (<code>grupos/{id}/solicitacoes</code>). Ordena no próprio app em vez de no banco, para não exigir índice por causa de uma lista de 1 ou 2 itens.</td></tr>
+    <tr><td><code>aviso_repository</code></td><td>Recados em <code>users/{id}/avisos</code>. <code>dispensar</code> apaga o documento.</td></tr>
+  </table>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 5 — Providers e controllers</div>
+  <h2>A cola entre telas e banco</h2>
+  <div class="oque">
+    <p>Esta pasta tem dois tipos de coisa: <b>providers de dados</b>, que as telas
+    observam para mostrar informação, e <b>controllers</b>, que executam as ações
+    (criar, confirmar, finalizar…). Os conceitos de Riverpod estão em
+    <a href="#c5">C5</a>–<a href="#c8">C8</a>.</p>
+  </div>
+
+  <h3 id="f-providers"><span class="num">5.1</span>firebase_providers.dart</h3>
+  <div class="arquivo">lib/providers/firebase_providers.dart</div>
+  <h4>Parte 1: criando os objetos (injeção de dependência)</h4>
+  <pre><code>final firebaseAuthProvider = Provider&lt;FirebaseAuth&gt;((ref) =&gt; FirebaseAuth.instance);
+final firestoreProvider = Provider&lt;FirebaseFirestore&gt;((ref) =&gt; FirebaseFirestore.instance);
+
+final authServiceProvider = Provider&lt;AuthService&gt;((ref) {
+  return AuthService(ref.watch(firebaseAuthProvider));
+});
+
+final userRepositoryProvider = Provider&lt;UserRepository&gt;((ref) {
+  return UserRepository(ref.watch(firestoreProvider));
+});
+<span class="c">// ... um provider para cada service e repository</span>
+</code></pre>
+  <p>É aqui que cada service e repository é criado, recebendo o Firebase que
+  precisa. É o <b>único lugar</b> onde <code>FirebaseAuth.instance</code> e
+  <code>FirebaseFirestore.instance</code> aparecem. Qualquer parte do app que
+  precisar do repository de usuários faz
+  <code>ref.read(userRepositoryProvider)</code>.</p>
+
+  <h4>Parte 2: quem está logado</h4>
+  <pre><code>final authStateChangesProvider = StreamProvider&lt;User?&gt;((ref) {
+  return ref.watch(authServiceProvider).authStateChanges;
+});
+
+final uidLogadoProvider = Provider&lt;String?&gt;((ref) {
+  return ref.watch(authStateChangesProvider).value?.uid;
+});
+</code></pre>
+  <ul class="pontos">
+    <li><b>authStateChangesProvider</b><br>Transforma o stream de login
+    (<a href="#f-auth-service">3.1</a>) num provider. O router e várias telas
+    observam ele.</li>
+    <li><b>uidLogadoProvider — importante</b><br>O id de quem está logado.
+    <b>Todo provider que lê o banco observa este.</b> Motivo: quando alguém sai
+    e outra pessoa entra, os providers precisam ser recriados. Sem isso, a
+    leitura da conta anterior dava erro de permissão durante o logout, e a tela
+    ficava travada nesse erro mesmo depois de a nova conta entrar.</li>
+  </ul>
+
+  <h4>Parte 3: os dados que as telas observam</h4>
+  <pre><code>final meusGruposProvider = StreamProvider&lt;List&lt;GrupoModel&gt;&gt;((ref) {
+  final uid = ref.watch(authStateChangesProvider).value?.uid;
+  if (uid == null) return Stream.value(const []);
+  return ref.watch(grupoRepositoryProvider).observarPorAdmin(uid);
+});
+
+final participantesDoRachaProvider =
+    StreamProvider.family&lt;List&lt;ParticipanteModel&gt;, String&gt;((ref, rachaId) {
+  if (ref.watch(uidLogadoProvider) == null) return Stream.value(const []);
+  return ref.watch(participanteRepositoryProvider).observarPorRacha(rachaId);
+});
+</code></pre>
+  <ul class="pontos">
+    <li><b>Deslogado = lista vazia</b><br><code>Stream.value(const [])</code> é um stream
+    que entrega uma lista vazia e acaba. Evita consultar o banco sem ninguém
+    logado (as regras recusariam).</li>
+    <li><b>.family</b><br><code>participantesDoRachaProvider('abc')</code> e
+    <code>participantesDoRachaProvider('xyz')</code> são dois providers separados, um
+    por racha. O Riverpod guarda cada um e reaproveita se outra tela pedir o
+    mesmo.</li>
+  </ul>
+  <p>O arquivo tem uns 25 providers nesse formato. Os que fazem algo a mais:</p>
+  <table>
+    <tr><th>Provider</th><th>O que faz além de repassar</th></tr>
+    <tr><td><code>gruposQueParticipoProvider</code></td><td>Grupos em que a pessoa é membro, tirando os que ela mesma administra (esses já aparecem em "Meus rachas").</td></tr>
+    <tr><td><code>proximasRodadasProvider</code></td><td>Pega todos os convites, busca o racha de cada um em paralelo e descarta os que já passaram (com 1h de tolerância), os finalizados e os que a pessoa organiza. Ordena do mais próximo ao mais distante.</td></tr>
+    <tr><td><code>fichaDoJogadorProvider</code></td><td>Para o admin decidir um pedido de entrada: nota média, MVPs e a posição em que a pessoa mais joga.</td></tr>
+    <tr><td><code>contextoAvaliacaoProvider</code></td><td>Monta o <code>ContextoAvaliacao</code> (<a href="#f-alvo">2.11</a>): em que time a pessoa está, companheiros e adversários. Só conta quem continua confirmado.</td></tr>
+    <tr><td><code>rankingDoGrupoProvider</code></td><td>Busca rodadas, avaliações e estatísticas do grupo (3 consultas em paralelo) e passa tudo para <code>agregarRanking</code> (<a href="#f-agregador">6.4</a>).</td></tr>
+    <tr><td><code>historicoDoGrupoProvider</code></td><td>Só as rodadas finalizadas, da mais recente para a mais antiga.</td></tr>
+  </table>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 5 — Providers e controllers</div>
+  <h3 id="f-auth-ctrl"><span class="num">5.2</span>auth_controller.dart — o padrão de todo controller</h3>
+  <div class="arquivo">lib/providers/auth_controller.dart</div>
+  <div class="ja"><b>Já explicado em <a href="#c8">C8</a>:</b> o molde
+  <code>AsyncNotifier</code> com <code>state = AsyncLoading()</code> e
+  <code>AsyncValue.guard</code>. Aqui o foco é o que o cadastro faz.</div>
+  <pre><code>Future&lt;void&gt; cadastrar({
+  required String nome, required String email, required String senha,
+  required int idade, required double peso, Uint8List? fotoPerfil,
+}) async {
+  state = const AsyncLoading();
+  state = await AsyncValue.guard(() async {
+    try {
+      final emailNormalizado = email.trim().toLowerCase();
+      final credential =
+          await authService.cadastrar(email: emailNormalizado, senha: senha);
+      final uid = credential.user!.uid;
+
+      String? fotoBase64;
+      if (fotoPerfil != null) {
+        fotoBase64 = await storageService.uploadFotoPerfil(userId: uid, bytes: fotoPerfil);
+      }
+
+      final user = UserModel(id: uid, nome: nome, email: emailNormalizado,
+          fotoPerfilBase64: fotoBase64, idade: idade, peso: peso,
+          createdAt: DateTime.now());
+      await userRepository.criar(user);
+    } on FirebaseAuthException {
+      throw Exception('Não foi possível criar a conta. Verifique os dados e tente novamente.');
+    }
+  });
+}
+
+final authControllerProvider =
+    AsyncNotifierProvider&lt;AuthController, void&gt;(AuthController.new);
+</code></pre>
+  <ul class="pontos">
+    <li><b>Três passos em ordem</b><br>1) cria a conta no Firebase Auth (devolve o
+    <code>uid</code>); 2) converte a foto; 3) grava o documento do usuário no
+    Firestore com o mesmo <code>uid</code> como id.</li>
+    <li><b>Email em minúsculas</b><br>A busca de jogadores compara em minúsculas;
+    sem isso, "Fulano@Gmail.com" nunca seria encontrado.</li>
+    <li><b>Mensagem de erro genérica</b><br>Se o email já tem conta, o Firebase diz
+    isso. O app esconde e mostra uma mensagem genérica, para ninguém usar o
+    cadastro para descobrir quem tem conta no app.</li>
+    <li><b>on FirebaseAuthException</b><br>Captura só esse tipo de erro e troca por
+    outro. Qualquer outro erro passa direto e cai no <code>guard</code>.</li>
+    <li><b>AuthController.new</b><br>Forma curta de passar o construtor da classe
+    para o provider criar o controller.</li>
+  </ul>
+  <p><b>login</b> e <b>logout</b> só chamam o service. <b>recuperarSenha</b> engole
+  o erro de propósito: a tela sempre diz "se existir uma conta, o link foi
+  enviado", exista ou não — mesmo cuidado do cadastro.</p>
+  <p><b>Depois do login ninguém navega</b>: o <code>authStateChanges</code> muda e o
+  redirect do router (<a href="#f-router">1.2</a>) leva para a Home.</p>
+
+  <div class="ja"><b>Daqui em diante, todo controller segue o molde acima</b>
+  (<code>state = AsyncLoading()</code> + <code>AsyncValue.guard</code> + chamar um ou mais
+  repositories). Só as regras de negócio de cada um são explicadas.</div>
+
+  <h3 id="f-perfil-ctrl"><span class="num">5.3</span>perfil_controller.dart</h3>
+  <p>Busca o usuário atual, troca a foto se veio uma nova, e grava com
+  <code>copyWith</code> (<a href="#f-user">2.2</a>) só nome, idade, peso e foto.
+  Email e senha não mudam aqui: são do Firebase Auth.</p>
+
+  <h3 id="f-criar-admin"><span class="num">5.4</span>criar_racha_com_admin.dart</h3>
+  <pre><code>Future&lt;String&gt; criarRachaComAdmin(Ref ref, RachaModel racha) async {
+  final rachaRepo = ref.read(rachaRepositoryProvider);
+  final batch = ref.read(firestoreProvider).batch();
+
+  final docRef = rachaRepo.novoDocRef();
+  rachaRepo.criarEmLote(batch, docRef, racha);
+  ref.read(participanteRepositoryProvider).convidarEmLote(
+        batch, rachaId: docRef.id, userId: racha.adminId);
+
+  await batch.commit();
+  return docRef.id;
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Função compartilhada</b><br>Criar racha avulso e criar grupo faziam a
+    mesma coisa (gravar o racha e convidar o admin). Ficou num lugar só.</li>
+    <li><b>Batch</b><br>Ou nasce o racha com o admin convidado, ou não nasce nada.</li>
+    <li><b>O admin entra como pendente</b><br>Quem organiza nem sempre joga, então
+    confirma presença como todo mundo.</li>
+  </ul>
+
+  <h3 id="f-racha-ctrl"><span class="num">5.5</span>racha_controller.dart</h3>
+  <p><b>criar</b>, <b>atualizar</b> e <b>remover</b> só repassam. O que tem regra:</p>
+  <h4>finalizar — encerra a rodada e cria a próxima</h4>
+  <pre><code>Future&lt;void&gt; finalizar(RachaModel racha) async {
+  state = const AsyncLoading();
+  state = await AsyncValue.guard(() async {
+    final estatisticas = await ref.read(estatisticaRepositoryProvider)
+        .observarPorRacha(racha.id).first;
+    final pendentes = estatisticas.where((e) =&gt; !e.confirmada).length;
+    if (pendentes &gt; 0) {
+      throw Exception('$pendentes estatística(s) ainda esperando conferência...');
+    }
+
+    final batch = ref.read(firestoreProvider).batch();
+    rachaRepo.atualizarStatusEmLote(batch, rachaId: racha.id, status: RachaStatus.finalizado);
+
+    final grupoId = racha.grupoId;
+    if (grupoId != null) {
+      final grupo = await ref.read(grupoRepositoryProvider).buscarPorId(grupoId);
+      if (grupo != null) {
+        final proximaRef = rachaRepo.novoDocRef();
+        final proxima = RachaModel(
+          id: proximaRef.id,
+          grupoId: grupo.id,
+          dataHora: proximaOcorrencia(grupo.diaSemana, grupo.horario),
+          anotadores: grupo.auxiliares,
+          ...
+        );
+        rachaRepo.criarEmLote(batch, proximaRef, proxima);
+        for (final userId in {grupo.adminId, ...grupo.membrosFixos}) {
+          participanteRepo.convidarEmLote(batch, rachaId: proximaRef.id, userId: userId);
+        }
+      }
+    }
+    await batch.commit();
+  });
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Primeiro: estatísticas conferidas</b><br>Não finaliza se alguma
+    estatística ainda espera conferência — depois de finalizada ela ficaria
+    de fora do ranking sem ninguém perceber.</li>
+    <li><b>Racha de grupo gera o próximo</b><br>Lê a configuração do grupo, calcula
+    a próxima data (<code>proximaOcorrencia</code>, <a href="#f-utils">6.6</a>), cria a
+    rodada e convida o admin e todos os membros fixos.</li>
+    <li><b>{grupo.adminId, ...grupo.membrosFixos}</b><br>Chaves criam um
+    <code>Set</code>, que não aceita repetidos: se o admin também estiver na lista de
+    membros, ele não é convidado duas vezes.</li>
+    <li><b>Tudo num batch</b><br>Encerrar uma e criar a outra acontecem juntos. Se
+    caísse no meio, o grupo poderia ficar sem nenhuma rodada aberta.</li>
+  </ul>
+  <h4>entrarComCodigo</h4>
+  <p>O "código" do racha é o próprio id do documento. Quem digita o código entra
+  já <b>confirmado</b> (foi a própria pessoa que quis entrar). Bloqueia racha
+  finalizado e não duplica quem já está lá. Devolve o id para a tela abrir o
+  racha.</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 5 — Providers e controllers</div>
+  <h3 id="f-grupo-ctrl"><span class="num">5.6</span>grupo_controller.dart</h3>
+  <table>
+    <tr><th>Método</th><th>Regra</th></tr>
+    <tr><td><code>criar</code></td><td>Grava o grupo e já cria a primeira rodada com <code>criarRachaComAdmin</code> (<a href="#f-criar-admin">5.4</a>).</td></tr>
+    <tr><td><code>removerMembroFixo</code></td><td>Tira da lista de membros e, por padrão, também da rodada aberta. Com <code>removerDaRodadaAberta: false</code>, a pessoa joga a rodada que já confirmou.</td></tr>
+    <tr><td><code>alternarAnotador</code></td><td>Liga/desliga a prancheta: grava no grupo (próximas rodadas) <b>e</b> na rodada aberta, senão só valeria na semana seguinte.</td></tr>
+    <tr><td><code>sair</code></td><td>O próprio membro saindo (usa <code>arrayRemove</code>, <a href="#f-grupo-repo">4.2</a>).</td></tr>
+    <tr><td><code>remover</code></td><td>Apaga o grupo e os pedidos de entrada, e deixa um aviso para quem esperava resposta — tudo num batch.</td></tr>
+    <tr><td><code>atualizarFoto</code></td><td>Troca ou remove a foto do racha.</td></tr>
+  </table>
+
+  <h3 id="f-part-ctrl"><span class="num">5.7</span>participante_controller.dart e convidado_controller.dart</h3>
+  <p>O de participante só repassa (convidar, mudar status, registrar presença,
+  definir posições, remover). No de convidado, o método com regra é
+  <b>oficializar</b>:</p>
+  <pre><code>await ref.read(avaliacaoRepositoryProvider)
+    .reatribuirParaUser(convidadoId: convidadoId, userId: userId);
+await ref.read(estatisticaRepositoryProvider)
+    .copiarParaUser(convidadoId: convidadoId, userId: userId);
+await ref.read(convidadoRepositoryProvider).marcarOficializado(...);
+await ref.read(rankingControllerProvider.notifier).recalcularRanking(userId);
+</code></pre>
+  <p>Quando um convidado cria conta, as notas que ele recebeu passam para a
+  conta nova, as estatísticas são copiadas, e o ranking é recalculado com esse
+  histórico.</p>
+
+  <h3 id="f-solic-ctrl"><span class="num">5.8</span>solicitacao_controller.dart</h3>
+  <pre><code>enum ResultadoSolicitacao { enviada, jaEraMembro, jaSolicitou, recusadoAntes, erro }
+
+Future&lt;ResultadoSolicitacao&gt; solicitar(GrupoModel grupo) async {
+  ...
+  if (grupo.membrosFixos.contains(uid)) { resultado = ResultadoSolicitacao.jaEraMembro; return; }
+  final ultima = await repo.buscarUltimaSolicitacao(grupo.id, uid);
+  if (ultima?.status == StatusAprovacao.pendente) { resultado = ...jaSolicitou; return; }
+  if (ultima?.status == StatusAprovacao.recusado) { resultado = ...recusadoAntes; return; }
+  await repo.criar(SolicitacaoModel(...));
+  await _avisar(userId: grupo.adminId, mensagem: '... pediu para entrar no ${grupo.nome}.');
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Devolve um resultado</b><br>Diferente dos outros controllers, este diz
+    <b>o que aconteceu</b>, para a tela mostrar a mensagem certa ("você já tem um
+    pedido pendente", "você já é membro"…).</li>
+    <li><b>Recusa não expira</b><br>Quem foi recusado não consegue pedir de novo
+    sozinho. Só o admin reabre (<code>reabrir</code>), seja um dia ou um ano depois.</li>
+    <li><b>aprovar</b><br>Torna a pessoa membro fixo e, se houver rodada aberta, já
+    convida para ela.</li>
+    <li><b>_avisar engole erro</b><br>O aviso é extra. Se o pedido foi gravado e só
+    o aviso falhou, melhor manter o pedido do que dizer que ele não foi enviado.</li>
+  </ul>
+
+  <h3 id="f-times-ctrl"><span class="num">5.9</span>times_controller.dart</h3>
+  <p>Prepara os dados e chama o algoritmo de balanceamento
+  (<a href="#f-balanceador">6.3</a>), depois grava o time de cada um.</p>
+  <pre><code>final participantes = (await participanteRepo.observarPorRacha(racha.id).first)
+    .where((p) =&gt; p.confirmado).toList();
+final convidados = (await convidadoRepo.observarPorRacha(racha.id).first)
+    .where((c) =&gt; c.aprovado).toList();
+
+final users = await userRepo.buscarVarios(userIds);
+final rankings = await ref.read(rankingRepositoryProvider).buscarVarios(userIds);
+
+for (final p in participantes) {
+  elegiveis.add(JogadorElegivel(
+    id: p.id, tipo: TipoJogador.user, nome: user.nome,
+    posicaoMain: p.posicaoMain, posicaoUsual: p.posicaoUsual,
+    nota: _notaDe(rankings[p.userId]),
+    idade: user.idade, peso: user.peso,
+    golsPorJogo: _golsPorJogoDe(rankings[p.userId]),
+  ));
+}
+<span class="c">// convidados entram com nota neutra (3,0) e idade/peso aproximados</span>
+
+final resultado = const BalanceadorTimes()
+    .gerar(elegiveis, qtdJogadoresLinha: racha.qtdJogadoresLinha);
+<span class="c">// grava time A/B de todo mundo num batch</span>
+</code></pre>
+  <ul class="pontos">
+    <li><b>Só quem conta</b><br>Participantes confirmados e convidados aprovados.</li>
+    <li><b>Junta dois tipos num só</b><br>Participante e convidado viram
+    <code>JogadorElegivel</code> (<a href="#f-elegivel">6.1</a>): o algoritmo trata os
+    dois igual.</li>
+    <li><b>_notaDe</b><br>A média real de avaliação do jogador. Média zero quer dizer
+    "nunca foi avaliado", então usa a nota neutra (3,0) em vez de tratá-lo como
+    o pior do racha.</li>
+    <li><b>_golsPorJogoDe</b><br>Total de gols dividido pelas rodadas. Sem histórico
+    devolve nulo, e o algoritmo trata como a média do grupo. No fim, um batch
+    grava o time de todo mundo: ou todos ganham time, ou ninguém.</li>
+  </ul>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 5 — Providers e controllers</div>
+  <h3 id="f-aval-ctrl"><span class="num">5.10</span>avaliacao_controller.dart e ranking_controller.dart</h3>
+  <p><b>AvaliacaoController.enviarAvaliacoes</b> grava todas as notas num batch
+  (com o <code>grupoId</code> copiado do racha) e depois recalcula o ranking de cada
+  usuário avaliado. Convidados não têm ranking.</p>
+  <pre><code>Future&lt;void&gt; recalcularRanking(String userId) async {
+  final avaliacoes = await ref.read(avaliacaoRepositoryProvider).buscarRecebidasPor(userId);
+  final estatisticas = await ref.read(estatisticaRepositoryProvider).buscarTodasDe(userId);
+  final rachasComMvp = await ref.read(rachaRepositoryProvider).buscarPorMvp(userId);
+
+  final agregado = agregarRanking(
+    avaliacoes: avaliacoes,
+    estatisticas: estatisticas,
+    mvpUserIds: [for (var i = 0; i &lt; rachasComMvp.length; i++) userId],
+  );
+
+  await ref.read(rankingRepositoryProvider)
+      .salvar(agregado[userId] ?? RankingModel(userId: userId));
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Recalcula do zero, sempre</b><br>Em vez de somar "+1 gol" no valor
+    anterior, busca tudo que o jogador já recebeu e refaz a conta. Assim, se um
+    número ficou errado por qualquer motivo, a próxima vez conserta.</li>
+    <li><b>A conta em si</b><br>Fica em <code>agregarRanking</code>
+    (<a href="#f-agregador">6.4</a>), a mesma usada pelo ranking do grupo.</li>
+    <li><b>calcularMvpDaRodada</b><br>Usa <code>calcularMvpDoRacha</code>
+    (<a href="#f-mvp">6.5</a>), grava o MVP no racha e recalcula o ranking de quem
+    ganhou — e de quem perdeu, se o MVP mudou.</li>
+  </ul>
+
+  <h3 id="f-estat-ctrl"><span class="num">5.11</span>estatistica_controller.dart</h3>
+  <pre><code>Future&lt;void&gt; salvar({required RachaModel racha, required String jogadorId, ...}) async {
+  final uid = ref.read(firebaseAuthProvider).currentUser!.uid;
+  final conferida = racha.podeConferirEstatistica(uid, jogadorId);
+
+  await ref.read(estatisticaRepositoryProvider).salvar(EstatisticaModel(
+        ...
+        confirmada: conferida,
+        conferidaPor: conferida ? uid : null,
+      ));
+  if (jogadorTipo == TipoJogador.user) {
+    await ref.read(rankingControllerProvider.notifier).recalcularRanking(jogadorId);
+  }
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Quem lança decide o status</b><br>Se quem salvou pode conferir
+    (admin ou anotador lançando por outro), já nasce conferida. Se foi o próprio
+    jogador, fica pendente.</li>
+    <li><b>Editar volta para pendente</b><br>Toda gravação recalcula o status, então
+    alterar um número já conferido o devolve para "aguardando conferência".</li>
+    <li><b>confirmar</b><br>Marca várias pendentes como conferidas de uma vez (botão
+    "Confirmar todas") e recalcula o ranking dos usuários afetados. Ignora as
+    que a pessoa não pode conferir.</li>
+  </ul>
+  <p>A mesma regra está no <code>firestore.rules</code>, para ninguém burlar
+  gravando direto no banco sem passar pelo app.</p>
+
+  <h3 id="f-notif-ctrl"><span class="num">5.12</span>notification_controller.dart</h3>
+  <pre><code>final notificationSyncProvider = Provider&lt;void&gt;((ref) {
+  ref.read(localNotificationServiceProvider).inicializar();
+
+  ref.listen(authStateChangesProvider, (previous, next) {
+    final uid = next.valueOrNull?.uid;
+    if (uid != null) registrarToken(uid);
+  });
+
+  final tokenRefreshSub = ref.read(notificationServiceProvider)
+      .onTokenRefresh.listen((token) { ... atualizarFcmToken ... });
+  ref.onDispose(tokenRefreshSub.cancel);
+});
+</code></pre>
+  <ul class="pontos">
+    <li><b>Provider&lt;void&gt;</b><br>Não entrega valor nenhum: existe só pelo que faz
+    ao ser criado. O <code>main.dart</code> o observa para ligá-lo
+    (<a href="#f-main">1.1</a>).</li>
+    <li><b>ref.listen</b><br>Toda vez que alguém loga, registra o token do celular
+    no usuário (<a href="#c6">C6</a>).</li>
+    <li><b>ref.onDispose</b><br>Cancela as escutas quando o provider é destruído,
+    para não ficar consumindo memória.</li>
+    <li><b>try/catch com debugPrint</b><br>Falhar ao registrar notificação nunca pode
+    travar o login.</li>
+  </ul>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 6 — Lógica pura</div>
+  <h2>O cérebro do app</h2>
+  <div class="oque">
+    <p>Estes arquivos não sabem nada de tela nem de banco: recebem dados,
+    devolvem um resultado. Por isso são os que têm testes automáticos
+    (<code>test/core/</code>). É aqui que estão as regras mais "inteligentes" do app:
+    montar times equilibrados, calcular ranking e eleger o MVP.</p>
+  </div>
+
+  <h3 id="f-elegivel"><span class="num">6.1</span>jogador_elegivel.dart e balanceamento_constants.dart</h3>
+  <div class="arquivo">lib/core/balanceamento/ e lib/core/constants/</div>
+  <pre><code>class JogadorElegivel {
+  final String id;            // id do participante ou do convidado
+  final TipoJogador tipo;
+  final Posicao? posicaoMain;
+  final Posicao? posicaoUsual;
+  final double nota;
+  final int idade;
+  final double peso;
+  final double? golsPorJogo;  // nulo = "não sabemos"
+
+  bool get isGoleiro =&gt; posicaoMain == Posicao.goleiro;
+}
+</code></pre>
+  <p>A forma única com que o algoritmo enxerga qualquer jogador, venha de um
+  participante ou de um convidado. <b>golsPorJogo nulo é diferente de zero</b>:
+  zero é "joga e não marca"; nulo é "não sabemos".</p>
+  <pre><code>const double notaNeutra = 3.0;
+
+const double pesoNota = 1.0;
+const double pesoGols = 0.6;
+const double pesoIdade = 0.4;
+const double pesoCorporal = 0.15;
+
+const double escalaNota = 1.0;    // 1 ponto de nota já é muita diferença
+const double escalaGols = 1.0;    // 1 gol por rodada
+const double escalaIdade = 10.0;  // 10 anos
+const double escalaPeso = 15.0;   // 15 kg
+</code></pre>
+  <ul class="pontos">
+    <li><b>notaNeutra</b><br>Nota de quem nunca foi avaliado e de todo convidado.
+    3 é o meio da escala de 1 a 5: não beneficia nem prejudica.</li>
+    <li><b>Pesos</b><br>O quanto cada critério importa para o equilíbrio. A nota é
+    o principal (1,0); peso corporal só desempata (0,15). <b>Zerar um peso
+    desliga o critério.</b></li>
+    <li><b>Escalas</b><br>Cada critério tem uma unidade diferente. Dividindo pela
+    escala, "1 ponto de nota" e "10 anos de idade" passam a valer a mesma coisa
+    na conta, e só o peso decide qual importa mais. Sem isso, o peso em kg
+    dominaria só por ser um número maior.</li>
+  </ul>
+
+  <h3 id="f-setores"><span class="num">6.2</span>setores.dart</h3>
+  <div class="arquivo">lib/core/balanceamento/setores.dart</div>
+  <p>Num racha, zagueiro e lateral são intercambiáveis. O algoritmo pensa em
+  <b>três setores</b>, não em seis posições:</p>
+  <pre><code>enum SetorCampo { defesa, meio, ataque }
+
+SetorCampo? setorDe(Posicao? posicao) =&gt; switch (posicao) {
+      Posicao.zagueiro || Posicao.lateral =&gt; SetorCampo.defesa,
+      Posicao.volante || Posicao.meia =&gt; SetorCampo.meio,
+      Posicao.atacante =&gt; SetorCampo.ataque,
+      Posicao.goleiro =&gt; null,
+      null =&gt; null,
+    };
+
+Map&lt;SetorCampo, int&gt; distribuicaoIdeal(int qtdJogadoresLinha) {
+  const tabela = &lt;int, (int, int, int)&gt;{
+    4: (2, 1, 1),    // futsal
+    6: (2, 2, 2),    // society
+    10: (4, 4, 2),   // campão
+    ...
+  };
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Goleiro devolve nulo</b><br>Goleiro tem tratamento próprio no
+    balanceador (é a única vaga obrigatória).</li>
+    <li><b>distribuicaoIdeal</b><br>Quantos jogadores cada setor deveria ter, pela
+    formação. Os valores são <i>records</i> (<a href="#c11">C11</a>) de três números:
+    defesa, meio, ataque. Acima de 10 usa uma proporção.</li>
+  </ul>
+  <h4>distribuirPorSetor — a regra da posição secundária</h4>
+  <p>Coloca cada jogador no setor da posição <b>principal</b>. Depois, onde faltar
+  gente (comparando com o alvo):</p>
+  <ol>
+    <li>Primeiro entram os que <b>não escolheram posição</b> — não tiram ninguém do lugar.</li>
+    <li>Se ainda faltar, puxa de um setor que está <b>sobrando</b> alguém cuja
+    posição <b>secundária</b> é o setor em falta. Entre os candidatos, sai o de
+    <b>menor nota</b>: os melhores continuam onde jogam melhor.</li>
+    <li>Se ninguém tem esse setor como secundária, o time joga desfalcado ali.
+    Forçar alguém a jogar fora das duas posições dele seria pior.</li>
+  </ol>
+  <p><b>Exemplo:</b> confirmaram dez atacantes e nenhum meia. Os atacantes que
+  marcaram "também jogo de meia" descem para o meio. Os que só jogam na frente
+  ficam lá.</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 6 — Lógica pura</div>
+  <h3 id="f-balanceador"><span class="num">6.3</span>balanceador_times.dart — como os times são montados</h3>
+  <div class="arquivo">lib/core/balanceamento/balanceador_times.dart</div>
+  <p>Três garantias, <b>nesta ordem de prioridade</b>:</p>
+  <ol>
+    <li><b>Goleiro</b>: no máximo um por time.</li>
+    <li><b>Setor</b>: os dois times com a mesma quantidade de defesa, meio e ataque (diferença máxima de 1).</li>
+    <li><b>Força</b>: os dois times o mais parecidos possível em nota, gols, idade e peso.</li>
+  </ol>
+  <h4>Passo 1 e 2: goleiros e setores</h4>
+  <pre><code>final goleiros = elegiveis.where((j) =&gt; j.isGoleiro).toList()..sort(_porNotaEEmpate);
+if (goleiros.isNotEmpty) timeA.add(goleiros.first);
+if (goleiros.length &gt; 1) timeB.add(goleiros[1]);
+
+final linha = [...elegiveis.where((j) =&gt; !j.isGoleiro), ...goleiros.skip(2)];
+final escalacao = distribuirPorSetor(linha, qtdJogadoresLinha: qtdJogadoresLinha);
+
+for (final setor in SetorCampo.values) {
+  final doSetor = escalacao.porSetor[setor]!..sort(_porNotaEEmpate);
+  for (final jogador in doSetor) {
+    final destino = _escolherTime(timeA, timeB, noSetorA[setor] ?? 0, noSetorB[setor] ?? 0);
+    destino.add(jogador);
+    ...
+  }
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Goleiros</b><br>Ordena por nota; o melhor vai para o A, o segundo para o B.
+    Do terceiro em diante viram jogadores de linha (<code>skip(2)</code> pula os dois
+    primeiros).</li>
+    <li><b>..sort</b><br>Os dois pontos ("cascata") ordenam a lista e devolvem a
+    própria lista, permitindo fazer isso na mesma linha da criação.</li>
+    <li><b>Do melhor para o pior</b><br>Dentro de cada setor, os jogadores entram
+    em ordem de nota, cada um no time escolhido por <code>_escolherTime</code>:</li>
+  </ul>
+  <pre><code>List&lt;JogadorElegivel&gt; _escolherTime(timeA, timeB, int noSetorA, int noSetorB) {
+  if (noSetorA != noSetorB) return noSetorA &lt; noSetorB ? timeA : timeB;
+  if (timeA.length != timeB.length) return timeA.length &lt; timeB.length ? timeA : timeB;
+  return _somaNota(timeA) &lt;= _somaNota(timeB) ? timeA : timeB;
+}
+</code></pre>
+  <p>Vai para o time com <b>menos gente naquele setor</b>; empatou, o com
+  <b>menos gente no total</b>; empatou de novo, o com <b>menos nota somada</b>.
+  Isso já espalha os melhores: o melhor vai para A, o segundo para B, o
+  terceiro para o time mais fraco…</p>
+
+  <h4>Passo 3: o ajuste fino com quatro critérios</h4>
+  <p>Depois da distribuição, o algoritmo testa <b>todas as trocas possíveis</b>
+  entre um jogador do time A e um do time B <b>do mesmo setor</b>, e faz a que
+  mais aproxima os times. Repete até nenhuma troca melhorar.</p>
+  <pre><code>double _desequilibrio(_Somas a, int tamA, _Somas b, int tamB) {
+  double dif(double somaA, double somaB, double escala) =&gt;
+      (somaA / tamA - somaB / tamB).abs() / escala;
+
+  return pesoNota * dif(a.nota, b.nota, escalaNota) +
+      pesoGols * dif(a.gols, b.gols, escalaGols) +
+      pesoIdade * dif(a.idade, b.idade, escalaIdade) +
+      pesoCorporal * dif(a.peso, b.peso, escalaPeso);
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Um número só</b><br>O desequilíbrio é a soma das diferenças das
+    <b>médias</b> de cada critério, cada uma dividida pela escala e multiplicada
+    pelo peso. Zero = perfeitamente equilibrado.</li>
+    <li><b>Média, não soma</b><br>Os times podem ter um jogador de diferença. Somas
+    iguais, nesse caso, significariam o time menor mais forte por jogador.</li>
+    <li><b>Só troca dentro do mesmo setor</b><br>Goleiro por goleiro, meia por meia.
+    Por isso o passo 3 nunca desfaz os passos 1 e 2.</li>
+    <li><b>.abs()</b><br>Valor absoluto: tanto faz qual time é mais forte, só importa
+    o tamanho da diferença.</li>
+  </ul>
+  <pre><code>Map&lt;String, double&gt; _golsEfetivos(List&lt;JogadorElegivel&gt; todos) {
+  final conhecidos = [for (final j in todos) if (j.golsPorJogo != null) j.golsPorJogo!];
+  final media = conhecidos.isEmpty ? 0.0 : conhecidos.reduce((a, b) =&gt; a + b) / conhecidos.length;
+  return {for (final j in todos) j.id: j.golsPorJogo ?? media};
+}
+</code></pre>
+  <p>Quem não tem histórico de gols entra com a <b>média do grupo</b>, não com zero.
+  Com zero, o algoritmo juntaria todos os novatos de um lado para "compensar" o
+  artilheiro do outro.</p>
+  <div class="nota"><b>Exemplo para explicar na hora:</b> dois times com a mesma nota
+  média, mas um tem os quatro jogadores de 18 anos e o outro os de 40. O
+  desequilíbrio de idade é alto. O algoritmo procura dois jogadores do mesmo
+  setor, um novo no A e um velho no B, e troca. A nota continua igual, e a
+  idade média se aproxima.</div>
+  <p><b>_Somas</b>, no fim do arquivo, guarda as somas de cada critério de um time.
+  Assim, testar uma troca é só "tira a contribuição de um e põe a do outro", sem
+  recalcular o time inteiro — importante porque num campão são centenas de
+  trocas testadas por rodada.</p>
+  <p><b>Como se sabe que funciona:</b> os testes em
+  <code>test/core/balanceamento/</code> montam casos (todos os novos de um lado, os
+  artilheiros juntos) e conferem o resultado. Zerando o peso da idade ou dos
+  gols, exatamente o teste correspondente falha.</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 6 — Lógica pura</div>
+  <h3 id="f-agregador"><span class="num">6.4</span>agregador_ranking.dart</h3>
+  <div class="arquivo">lib/core/ranking/agregador_ranking.dart</div>
+  <p>A <b>única</b> conta de ranking do app. É usada tanto para o ranking geral do
+  jogador (Perfil e balanceamento) quanto para o ranking de um grupo, para os
+  números nunca saírem diferentes de uma tela para outra.</p>
+  <pre><code>Map&lt;String, RankingModel&gt; agregarRanking({
+  required List&lt;AvaliacaoModel&gt; avaliacoes,
+  required List&lt;EstatisticaModel&gt; estatisticas,
+  required List&lt;String&gt; mvpUserIds,
+}) {
+  final notasPorUser = &lt;String, List&lt;double&gt;&gt;{};
+  final golsPorUser = &lt;String, int&gt;{};
+
+  for (final avaliacao in avaliacoes) {
+    if (avaliacao.avaliadoTipo != TipoJogador.user) continue;
+    notasPorUser.putIfAbsent(avaliacao.avaliadoId, () =&gt; []).add(avaliacao.nota);
+  }
+
+  for (final estatistica in estatisticas) {
+    if (estatistica.jogadorTipo != TipoJogador.user) continue;
+    if (!estatistica.confirmada) continue;
+    golsPorUser.update(estatistica.jogadorId,
+        (total) =&gt; total + estatistica.gols, ifAbsent: () =&gt; estatistica.gols);
+  }
+  ...
+  return { for (final userId in userIds) userId: RankingModel(...) };
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Função pura</b><br>Recebe listas, devolve um mapa <code>userId → RankingModel</code>.
+    Não sabe de onde vieram os dados: quem chama decide se passa tudo do
+    jogador ou só o de um grupo.</li>
+    <li><b>continue</b><br>Pula para o próximo item do <code>for</code>. Aqui pula
+    convidados (não têm ranking) e estatísticas ainda não conferidas.</li>
+    <li><b>putIfAbsent</b><br>"Se esse jogador ainda não tem lista, cria uma vazia" —
+    e então adiciona a nota.</li>
+    <li><b>update(..., ifAbsent: ...)</b><br>"Soma os gols ao total; se ainda não tem
+    total, começa com esses gols."</li>
+    <li><b>Média de zero notas</b><br>A função <code>_media</code> devolve 0 para lista
+    vazia em vez de dividir por zero.</li>
+  </ul>
+  <pre><code>List&lt;RankingModel&gt; ordenarRanking(Iterable&lt;RankingModel&gt; ranking) {
+  return ranking.toList()
+    ..sort((a, b) {
+      final porMvp = b.totalMvps.compareTo(a.totalMvps);
+      if (porMvp != 0) return porMvp;
+      return b.mediaAvaliacoes.compareTo(a.mediaAvaliacoes);
+    });
+}
+</code></pre>
+  <p>Ordem do ranking: <b>mais MVPs primeiro</b>; empate, a melhor média. O
+  <code>compareTo</code> devolve negativo, zero ou positivo; usar <code>b</code> antes de
+  <code>a</code> inverte a ordem (maior primeiro).</p>
+
+  <h3 id="f-mvp"><span class="num">6.5</span>mvp_calculator.dart</h3>
+  <div class="arquivo">lib/core/avaliacao/mvp_calculator.dart</div>
+  <pre><code>MvpResultado? calcularMvpDoRacha(List&lt;AvaliacaoModel&gt; avaliacoes) {
+  final porAvaliado = &lt;String, List&lt;AvaliacaoModel&gt;&gt;{};
+  for (final avaliacao in avaliacoes) {
+    if (avaliacao.avaliadoTipo != TipoJogador.user) continue;
+    porAvaliado.putIfAbsent(avaliacao.avaliadoId, () =&gt; []).add(avaliacao);
+  }
+  if (porAvaliado.isEmpty) return null;
+<span class="c">  // calcula a média de cada um e fica com o melhor</span>
+}
+
+bool _melhorQue(MvpResultado a, MvpResultado b) {
+  if (a.mediaNota != b.mediaNota) return a.mediaNota &gt; b.mediaNota;
+  if (a.totalAvaliacoes != b.totalAvaliacoes) return a.totalAvaliacoes &gt; b.totalAvaliacoes;
+  return a.avaliadoId.compareTo(b.avaliadoId) &lt; 0;
+}
+</code></pre>
+  <p>MVP = <b>maior média</b> de notas na rodada. Empate: quem <b>recebeu mais
+  avaliações</b>. Empate de novo: ordem do id, só para o resultado ser sempre o
+  mesmo. <b>Convidado nunca é MVP</b> (não tem ranking para guardar o título).</p>
+
+  <h3 id="f-utils"><span class="num">6.6</span>Utilitários</h3>
+  <table>
+    <tr><th>Arquivo</th><th>O que faz</th></tr>
+    <tr><td><code>data_utils.dart</code></td><td><code>proximaOcorrencia(dia, "HH:mm")</code>: a próxima data que cai naquele dia da semana. Se hoje é o dia mas o horário passou, pula uma semana. Usa <code>% 7</code> para dar a volta na semana.</td></tr>
+    <tr><td><code>geo_utils.dart</code></td><td><code>distanciaKm</code>: distância entre dois pontos do mapa pela <b>fórmula de haversine</b> (considera a curvatura da Terra, raio 6.371 km). <code>distanciaLegivel</code>: "350 m" ou "4,9 km".</td></tr>
+    <tr><td><code>imagem_base64.dart</code></td><td><code>bytesDaFoto</code>: converte a foto base64 em bytes <b>com cache</b> de até 64 fotos. Sem cache, cada redesenho decodificaria de novo e a foto piscaria. Base64 corrompido devolve nulo em vez de quebrar a tela.</td></tr>
+    <tr><td><code>posicao_utils.dart</code></td><td><code>posicaoMaisFrequente</code>: a posição em que o jogador mais jogou, para a ficha do pedido de entrada. Devolve um <i>record</i> <code>(posicao, vezes)</code>.</td></tr>
+    <tr><td><code>string_utils.dart</code></td><td><code>capitalizarNome</code>: "gustavo dias" → "Gustavo Dias".</td></tr>
+    <tr><td><code>firestore_paths.dart</code></td><td>Os nomes das coleções (<code>'users'</code>, <code>'rachas'</code>…) como constantes, para não espalhar texto solto pelo código.</td></tr>
+  </table>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 7 — Widgets reaproveitados</div>
+  <h2>Pedaços de tela usados em vários lugares</h2>
+  <div class="oque">
+    <p>Quando o mesmo visual aparece em várias telas, ele vira um widget
+    próprio. Mudou aqui, muda em todo lugar.</p>
+  </div>
+
+  <h3 id="f-avatar"><span class="num">7.1</span>avatar_jogador.dart</h3>
+  <div class="arquivo">lib/core/widgets/avatar_jogador.dart</div>
+  <pre><code>class AvatarJogador extends StatelessWidget {
+  const AvatarJogador({super.key, required this.nome, this.fotoBase64,
+      this.raio = 20, this.convidado = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = bytesDaFoto(fotoBase64);
+    if (bytes != null) {
+      return CircleAvatar(radius: raio, backgroundImage: MemoryImage(bytes));
+    }
+    return CircleAvatar(
+      radius: raio,
+      backgroundColor: convidado ? AppColors.superficieAlta : AppColors.verde.withValues(alpha: 0.18),
+      child: Text(_iniciais(nome), style: TextStyle(fontSize: raio * 0.72, ...)),
+    );
+  }
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>Foto ou iniciais</b><br>Com foto: <code>CircleAvatar</code> com a imagem.
+    Sem foto: as iniciais ("Gustavo Dias" → "GD"), que ajudam a distinguir as
+    pessoas numa lista.</li>
+    <li><b>MemoryImage</b><br>Desenha uma imagem que está em memória (bytes), e
+    não num arquivo ou na internet.</li>
+    <li><b>Parâmetros com valor padrão</b><br><code>this.raio = 20</code>: se quem usa não
+    passar o tamanho, fica 20.</li>
+    <li><b>Convidado com outra cor</b><br>Para não confundir com um jogador com conta
+    que só não pôs foto.</li>
+    <li><b>fontSize: raio * 0.72</b><br>A letra cresce junto com o círculo.</li>
+  </ul>
+  <p><b>AvatarDoUsuario</b>, no mesmo arquivo, é a versão para quem só tem o id:
+  ela busca o usuário com <code>userPorIdProvider</code> e repassa para o
+  <code>AvatarJogador</code>.</p>
+
+  <h3 id="f-widgets-core"><span class="num">7.2</span>Widgets pequenos</h3>
+  <table>
+    <tr><th>Widget</th><th>O que é</th></tr>
+    <tr><td><code>TituloSecao</code></td><td>Título de bloco ("MEUS RACHAS"): caixa alta, letra menor, espaçada e cinza. Diferencia rótulo de conteúdo sem competir com ele. Aceita um botão opcional à direita (<code>?acao</code> só inclui o widget se ele não for nulo).</td></tr>
+    <tr><td><code>InfoTile</code></td><td>Ícone + rótulo pequeno + valor (Local, Quando…). Feito com <code>Row</code> em vez de <code>ListTile</code> para ocupar metade da altura.</td></tr>
+    <tr><td><code>CampoDeToque</code></td><td>Parece um campo de texto, mas abre um seletor ao tocar (data, horário, mapa). Usa <code>InputDecorator</code> para ter o mesmo visual dos outros campos, com rótulo e mensagem de erro.</td></tr>
+    <tr><td><code>confirmar(...)</code></td><td>Diálogo padrão de "tem certeza?". Devolve <code>true</code> só se a pessoa tocar em confirmar; fechar por fora devolve <code>false</code> (o <code>?? false</code> no fim). <code>destrutivo: true</code> pinta o botão de vermelho.</td></tr>
+  </table>
+
+  <h3 id="f-foto-perfil"><span class="num">7.3</span>foto_perfil_picker.dart — a câmera</h3>
+  <div class="arquivo">lib/widgets/foto_perfil_picker.dart</div>
+  <div class="nota"><b>Requisito de hardware da disciplina:</b> é este arquivo que
+  usa a <b>câmera do celular</b>.</div>
+  <pre><code>class FotoPerfilPicker extends StatefulWidget {
+  const FotoPerfilPicker({super.key, required this.onFotoSelecionada, this.fotoAtualBase64});
+
+  final ValueChanged&lt;Uint8List&gt; onFotoSelecionada;
+  final String? fotoAtualBase64;
+  ...
+}
+
+class _FotoPerfilPickerState extends State&lt;FotoPerfilPicker&gt; {
+  Uint8List? _nova;
+
+  Future&lt;void&gt; _tirarFoto() async {
+    final foto = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+      maxWidth: 1024,
+    );
+    if (foto == null) return;
+
+    final bytes = await foto.readAsBytes();
+    if (!mounted) return;
+    setState(() =&gt; _nova = bytes);
+    widget.onFotoSelecionada(bytes);
+  }
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>ImageSource.camera</b><br>Abre a câmera do aparelho (não a galeria).
+    <code>pickImage</code> devolve nulo se a pessoa cancelar.</li>
+    <li><b>imageQuality e maxWidth</b><br>Comprime e reduz a foto: ela é gravada
+    dentro do documento do usuário, que tem limite de 1 MB.</li>
+    <li><b>readAsBytes</b><br>Lê a foto como bytes. Funciona no celular e no
+    navegador.</li>
+    <li><b>ValueChanged&lt;Uint8List&gt; onFotoSelecionada</b><br>Um <b>callback</b>: a tela
+    que usa o picker passa uma função, e o picker a chama com a foto. Assim o
+    picker não precisa saber se está no cadastro ou na edição de perfil.</li>
+    <li><b>widget.onFotoSelecionada</b><br>Dentro do <code>State</code>, os parâmetros do
+    widget são acessados por <code>widget.</code>.</li>
+    <li><b>_nova ?? foto salva</b><br>No <code>build</code>, mostra a foto recém-tirada;
+    se não tem, a já salva; se não tem nenhuma, um ícone.</li>
+  </ul>
+
+  <h3 id="f-foto-racha"><span class="num">7.4</span>foto_racha.dart — a foto do campo</h3>
+  <div class="arquivo">lib/widgets/foto_racha.dart</div>
+  <div class="ja"><b>Já explicado em <a href="#f-foto-perfil">7.3</a>:</b>
+  <code>pickImage</code>, compressão e <code>readAsBytes</code>.</div>
+  <pre><code>Future&lt;FotoEscolhida?&gt; escolherFotoDoRacha(BuildContext context, {required bool temFoto}) async {
+  final origem = await showModalBottomSheet&lt;Object&gt;(
+    context: context,
+    builder: (sheetContext) =&gt; SafeArea(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ListTile(title: const Text('Tirar foto'),
+            onTap: () =&gt; Navigator.pop(sheetContext, ImageSource.camera)),
+        ListTile(title: const Text('Escolher da galeria'),
+            onTap: () =&gt; Navigator.pop(sheetContext, ImageSource.gallery)),
+        if (temFoto)
+          ListTile(title: const Text('Remover foto'),
+              onTap: () =&gt; Navigator.pop(sheetContext, 'remover')),
+      ]),
+    ),
+  );
+  if (origem == null) return null;
+  if (origem == 'remover') return const FotoEscolhida.remover();
+  ...
+  if (base64.length &gt; _tetoBase64) { /* avisa que ficou grande */ return null; }
+  return FotoEscolhida(base64);
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>showModalBottomSheet</b><br>O menu que sobe de baixo da tela. Cada opção
+    fecha o menu devolvendo um valor (<a href="#c9">C9</a>).</li>
+    <li><b>Aqui a galeria é permitida</b><br>A foto do campo normalmente já está no
+    celular. A de perfil é só câmera por causa do requisito.</li>
+    <li><b>FotoEscolhida.remover()</b><br>Um construtor com nome. Separa "cancelou"
+    (nulo, não mexe em nada) de "quer remover a foto". Sem essa diferença,
+    fechar o menu por engano apagaria a foto.</li>
+    <li><b>Teto de 350 KB</b><br>Esse documento é lido em toda lista de grupos; uma
+    foto grande deixaria a tela inicial lenta para todos.</li>
+  </ul>
+  <p>O arquivo também tem dois widgets: <b>MiniaturaDoRacha</b> (quadradinho da
+  Home; sem foto, mostra uma bola) e <b>CapaDoRacha</b> (faixa larga no topo do
+  grupo, com botão de editar para o admin; sem foto e sem ser admin, não ocupa
+  espaço).</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 8 — Telas</div>
+  <h2>As telas</h2>
+  <div class="oque">
+    <p>As telas usam tudo das partes anteriores. A primeira, o login, é
+    explicada em detalhe porque <b>quase toda tela com formulário segue o mesmo
+    formato</b>. Daí em diante, só o que for novo.</p>
+  </div>
+
+  <h3 id="f-login"><span class="num">8.1</span>login_screen.dart — a base de toda tela com formulário</h3>
+  <div class="arquivo">lib/screens/auth/login_screen.dart</div>
+  <h4>A classe e o estado</h4>
+  <pre><code>class LoginScreen extends ConsumerStatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  ConsumerState&lt;LoginScreen&gt; createState() =&gt; _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState&lt;LoginScreen&gt; {
+  final _formKey = GlobalKey&lt;FormState&gt;();
+  final _emailController = TextEditingController();
+  final _senhaController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _senhaController.dispose();
+    super.dispose();
+  }
+</code></pre>
+  <ul class="pontos">
+    <li><b>ConsumerStatefulWidget</b><br>Tela com estado (<a href="#c1">C1</a>) que
+    também usa providers (<a href="#c6">C6</a>). O <code>ref</code> fica disponível em
+    qualquer método do <code>State</code>.</li>
+    <li><b>createState</b><br>Liga o widget à classe que guarda o estado. O widget
+    pode ser recriado várias vezes; o <code>State</code> sobrevive.</li>
+    <li><b>TextEditingController</b><br>Guarda o texto digitado num campo.
+    <code>_emailController.text</code> lê o que está escrito.</li>
+    <li><b>GlobalKey&lt;FormState&gt;</b><br>Uma "alça" para o formulário inteiro, para
+    poder mandar validar todos os campos de uma vez.</li>
+    <li><b>dispose</b><br>Roda quando a tela é fechada de vez. Os controllers usam
+    memória e precisam ser liberados aqui; o <code>super.dispose()</code> vem por
+    último.</li>
+  </ul>
+  <h4>A ação de entrar</h4>
+  <pre><code>Future&lt;void&gt; _submeter() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  await ref.read(authControllerProvider.notifier).login(
+        email: _emailController.text.trim(),
+        senha: _senhaController.text,
+      );
+
+  final erro = ref.read(authControllerProvider).error;
+  if (erro != null &amp;&amp; mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Email ou senha inválidos')),
+    );
+  }
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>validate()</b><br>Roda o <code>validator</code> de cada campo. Se algum
+    devolver uma mensagem, ela aparece embaixo do campo e a função para.</li>
+    <li><b>ref.read(...notifier).login</b><br>Chama o controller
+    (<a href="#f-auth-ctrl">5.2</a>). A tela não fala com o Firebase.</li>
+    <li><b>Lê o erro depois</b><br>O controller guarda o erro no próprio estado
+    (<a href="#c8">C8</a>); a tela confere e mostra um aviso.</li>
+    <li><b>SnackBar</b><br>A barrinha de aviso que aparece embaixo e some sozinha.
+    <code>ScaffoldMessenger.of(context)</code> é quem sabe mostrá-la.</li>
+    <li><b>Sucesso não faz nada</b><br>Quando o login dá certo, o router leva para a
+    Home sozinho (<a href="#f-router">1.2</a>).</li>
+    <li><b>mounted</b><br>Ver <a href="#c12">C12</a>.</li>
+  </ul>
+  <h4>O build</h4>
+  <pre><code>@override
+Widget build(BuildContext context) {
+  final state = ref.watch(authControllerProvider);
+  final carregando = state.isLoading;
+
+  return Scaffold(
+    body: SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.sports_soccer, size: 64, color: Theme.of(context).colorScheme.primary),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                  validator: (v) =&gt; (v == null || !v.contains('@')) ? 'Email inválido' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _senhaController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Senha'),
+                  validator: (v) =&gt; (v == null || v.isEmpty) ? 'Informe a senha' : null,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: carregando ? null : _submeter,
+                  child: carregando
+                      ? const SizedBox(height: 20, width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Entrar'),
+                ),
+                TextButton(
+                  onPressed: () =&gt; context.push('/cadastro'),
+                  child: const Text('Não tenho conta — cadastrar'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+</code></pre>
+  <table>
+    <tr><th>Widget</th><th>Para que serve</th></tr>
+    <tr><td><code>Scaffold</code></td><td>A estrutura de uma tela: fundo, espaço para a barra de cima (<code>appBar</code>), o corpo (<code>body</code>) e o botão flutuante.</td></tr>
+    <tr><td><code>SafeArea</code></td><td>Afasta o conteúdo do entalhe da câmera e da barra de status do celular.</td></tr>
+    <tr><td><code>SingleChildScrollView</code></td><td>Deixa rolar quando o teclado sobe e o conteúdo não cabe. Sem ele, dá erro de "overflow" (faixa amarela e preta).</td></tr>
+    <tr><td><code>Column</code></td><td>Empilha os filhos na vertical. <code>stretch</code> estica todos na largura toda; <code>MainAxisSize.min</code> ocupa só a altura necessária (para o <code>Center</code> centralizar).</td></tr>
+    <tr><td><code>Form</code> + <code>TextFormField</code></td><td>Campo de texto que participa da validação do formulário.</td></tr>
+    <tr><td><code>validator</code></td><td>Função que devolve <code>null</code> (tudo certo) ou o texto do erro.</td></tr>
+    <tr><td><code>obscureText</code></td><td>Esconde o que é digitado (senha).</td></tr>
+    <tr><td><code>SizedBox(height: 12)</code></td><td>Espaço em branco entre os campos.</td></tr>
+  </table>
+  <ul class="pontos">
+    <li><b>Botão com carregamento</b><br><code>onPressed: null</code> desativa o botão.
+    Enquanto o login roda, ele fica desativado e mostra a bolinha girando no
+    lugar do texto — impede clicar duas vezes. <b>Esse padrão se repete em
+    todos os formulários do app.</b></li>
+    <li><b>ref.watch no build</b><br>Observa o controller: quando ele passa a
+    "carregando" e volta, a tela redesenha o botão sozinha.</li>
+    <li><b>Theme.of(context)</b><br>Pega as cores do tema (<a href="#f-tema">1.3</a>).</li>
+  </ul>
+  <p><b>_recuperarSenha</b> abre um <code>AlertDialog</code> com um campo de email,
+  espera o resultado do <code>showDialog</code> (o email ou nulo, se cancelou) e
+  chama o controller. A mensagem final é sempre a mesma, exista a conta ou
+  não.</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 8 — Telas</div>
+  <h3 id="f-cadastro"><span class="num">8.2</span>cadastro_screen.dart</h3>
+  <div class="ja"><b>Já explicado em <a href="#f-login">8.1 login_screen.dart</a>:</b>
+  estrutura da tela, controllers e <code>dispose</code>, <code>Form</code> e
+  <code>validator</code>, botão com carregamento e erro por SnackBar.</div>
+  <p>O que é novo:</p>
+  <pre><code>Uint8List? _fotoPerfil;
+...
+FotoPerfilPicker(onFotoSelecionada: (bytes) =&gt; _fotoPerfil = bytes),
+...
+Row(children: [
+  Expanded(child: TextFormField(controller: _idadeController, ...)),
+  const SizedBox(width: 12),
+  Expanded(child: TextFormField(controller: _pesoController, ...)),
+]),
+...
+await ref.read(authControllerProvider.notifier).cadastrar(
+      nome: capitalizarNome(_nomeController.text),
+      idade: int.parse(_idadeController.text),
+      peso: double.parse(_pesoController.text.replaceAll(',', '.')),
+      fotoPerfil: _fotoPerfil,
+      ...
+    );
+</code></pre>
+  <ul class="pontos">
+    <li><b>A câmera</b><br>O <code>FotoPerfilPicker</code> (<a href="#f-foto-perfil">7.3</a>)
+    devolve a foto pelo callback, e a tela guarda em <code>_fotoPerfil</code> para
+    mandar junto no cadastro.</li>
+    <li><b>Row + Expanded</b><br>Idade e peso lado a lado. <code>Expanded</code> faz cada
+    campo ocupar metade do espaço que sobra.</li>
+    <li><b>int.parse / double.parse</b><br>O campo devolve texto; isso converte para
+    número. O <code>replaceAll(',', '.')</code> aceita "72,5" (vírgula brasileira).</li>
+    <li><b>tryParse no validator</b><br>Na validação usa-se <code>int.tryParse</code>,
+    que devolve nulo em vez de quebrar quando o texto não é número.</li>
+    <li><b>Senha com 6+ caracteres</b><br>Mínimo exigido pelo Firebase Auth.</li>
+  </ul>
+
+  <h3 id="f-perfil"><span class="num">8.3</span>perfil_screen.dart e editar_perfil_screen.dart</h3>
+  <div class="ja"><b>Já explicado em <a href="#f-cadastro">8.2</a>:</b> o
+  formulário de editar perfil é o do cadastro sem email e senha.</div>
+  <ul class="pontos">
+    <li><b>Campos já preenchidos</b><br><code>late final _nomeController = TextEditingController(text: widget.user.nome);</code> — o <code>late</code> é
+    necessário porque <code>widget</code> só existe depois que o <code>State</code> é
+    criado.</li>
+    <li><b>Ao salvar, volta</b><br><code>context.pop()</code> fecha a tela de edição.</li>
+    <li><b>PerfilScreen</b><br>Um <code>ConsumerWidget</code> sem estado: observa
+    <code>currentUserModelProvider</code> e, com <code>.when</code> (<a href="#c7">C7</a>),
+    mostra foto, dados (<code>InfoTile</code>) e o resumo do ranking (nota média,
+    MVPs, gols, assistências).</li>
+    <li><b>Passando o usuário para a edição</b><br>
+    <code>context.push('/perfil/editar', extra: user)</code> (<a href="#c9">C9</a>).</li>
+    <li><b>DateFormat('dd/MM/yyyy', 'pt_BR')</b><br>Formata a data de cadastro no
+    padrão brasileiro.</li>
+  </ul>
+
+  <h3 id="f-home"><span class="num">8.4</span>home_screen.dart</h3>
+  <div class="arquivo">lib/screens/home/home_screen.dart</div>
+  <p>A tela inicial: "Meus rachas", "Rachas avulsos", "Rachas que participo" e
+  "Próximas rodadas", mais o sino e o botão de criar.</p>
+  <pre><code>final grupos = ref.watch(meusGruposProvider);
+final proximasRodadas = ref.watch(proximasRodadasProvider);
+final avisos = ref.watch(meusAvisosProvider).valueOrNull ?? const [];
+final pendentes = proximasRodadas.valueOrNull
+        ?.where((r) =&gt; r.participacao.statusConfirmacao == StatusConfirmacao.pendente)
+        .length ?? 0;
+final naCaixa = pendentes + avisos.length;
+
+...
+IconButton(
+  icon: Badge(
+    label: Text('$naCaixa'),
+    isLabelVisible: naCaixa &gt; 0,
+    child: const Icon(Icons.notifications_outlined),
+  ),
+  onPressed: naCaixa == 0 ? null : () =&gt; _mostrarCaixaDeEntrada(context, meuUid),
+),
+</code></pre>
+  <ul class="pontos">
+    <li><b>O sino</b><br>Conta convites ainda sem resposta (só de rodadas que vão
+    acontecer) mais avisos. <code>Badge</code> é a bolinha com o número em cima do
+    ícone.</li>
+    <li><b>Várias seções num ListView</b><br>Cada seção é um
+    <code>grupos.when(...)</code>; se a lista estiver vazia, devolve
+    <code>SizedBox.shrink()</code> (um widget de tamanho zero) e a seção some.</li>
+    <li><b>Ao tocar num grupo</b><br><code>context.push('/grupos/${grupo.id}', extra: grupo)</code>.</li>
+    <li><b>actions da AppBar</b><br>Os ícones do canto: Rachas Próximos, sino, a
+    própria foto (leva ao perfil) e sair (com <code>confirmar(...)</code>,
+    <a href="#f-widgets-core">7.2</a>).</li>
+  </ul>
+  <h4>Widgets e funções do arquivo</h4>
+  <table>
+    <tr><th>Nome</th><th>O que é</th></tr>
+    <tr><td><code>_RachaTile</code></td><td>O cartão de um racha: miniatura da foto, nome, local/horário e uma etiqueta com o tipo de campo. <code>Material</code> + <code>InkWell</code> dão o fundo arredondado e o efeito de toque.</td></tr>
+    <tr><td><code>_RodadaTile</code></td><td>Cartão de uma rodada para a qual a pessoa foi convidada, com a cor do status (Responder / Confirmado / Recusado). Usa um <code>switch</code> que devolve um record <code>(rotulo, cor)</code> (<a href="#c11">C11</a>).</td></tr>
+    <tr><td><code>_mostrarCaixaDeEntrada</code></td><td>O menu que sobe ao tocar no sino. Usa um <code>Consumer</code> dentro do menu para ele se redesenhar sozinho quando um aviso é dispensado.</td></tr>
+    <tr><td><code>_mostrarOpcoesCriarRacha</code></td><td>O botão flutuante "Criar racha" abre um menu: avulso, recorrente ou entrar com código.</td></tr>
+    <tr><td><code>_mostrarDialogoEntrarComCodigo</code></td><td>Diálogo com <code>StatefulBuilder</code> (ver abaixo) que chama <code>entrarComCodigo</code> (<a href="#f-racha-ctrl">5.5</a>) e abre o racha.</td></tr>
+  </table>
+  <div class="nota"><b>StatefulBuilder em diálogos:</b> um diálogo não tem
+  <code>setState</code> próprio. O <code>StatefulBuilder</code> dá um <code>setState</code> só
+  para o diálogo (para mostrar "carregando" ou o erro). As variáveis precisam
+  ser declaradas <b>fora</b> do builder: ele roda de novo a cada
+  <code>setState</code>, e uma variável declarada dentro voltaria ao valor
+  inicial.</div>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 8 — Telas</div>
+  <h3 id="f-criar-racha"><span class="num">8.5</span>criar_racha_screen.dart</h3>
+  <div class="ja"><b>Já explicado em <a href="#f-login">8.1</a>:</b> formulário,
+  validação, botão com carregamento.</div>
+  <pre><code>TipoCampo _tipoCampo = TipoCampo.campao;
+DateTime? _data;
+TimeOfDay? _horario;
+
+@override
+void initState() {
+  super.initState();
+  _qtdController = TextEditingController(text: _tipoCampo.qtdJogadoresLinhaPadrao.toString());
+}
+
+void _onTipoCampoChanged(TipoCampo? tipo) {
+  if (tipo == null) return;
+  setState(() {
+    _tipoCampo = tipo;
+    _qtdController.text = tipo.qtdJogadoresLinhaPadrao.toString();
+  });
+}
+</code></pre>
+  <ul class="pontos">
+    <li><b>initState</b><br>Roda uma vez, quando a tela é criada. Aqui preenche o
+    campo de quantidade com o padrão do tipo de campo inicial.</li>
+    <li><b>Dropdown que muda outro campo</b><br>Trocar o tipo de campo preenche a
+    quantidade sozinho (<a href="#f-enums">2.1</a>). O campo só fica editável se
+    <code>_tipoCampo.qtdConfiguravel</code>.</li>
+    <li><b>DropdownButtonFormField</b><br>Lista de opções; <code>items</code> é montado
+    a partir de <code>TipoCampo.values</code> (todos os valores do enum).</li>
+    <li><b>showDatePicker / showTimePicker</b><br>Abrem o calendário e o relógio do
+    Material. <code>firstDate: DateTime.now()</code> impede escolher uma data no
+    passado.</li>
+    <li><b>Juntando data e hora</b><br><code>DateTime(ano, mês, dia, hora, minuto)</code>
+    monta a data final.</li>
+    <li><b>CampoDeToque</b><br>Data e horário aparecem como campos
+    (<a href="#f-widgets-core">7.2</a>).</li>
+  </ul>
+
+  <h3 id="f-criar-grupo"><span class="num">8.6</span>criar_grupo_screen.dart</h3>
+  <div class="ja"><b>Já explicado em <a href="#f-criar-racha">8.5</a>:</b> tipo de
+  campo e quantidade, seletor de horário, botão de criar.</div>
+  <p>Diferenças do racha recorrente:</p>
+  <ul class="pontos">
+    <li><b>Dia da semana em vez de data</b><br>Um dropdown com
+    <code>DiaSemana.values</code>. A data de cada rodada é calculada depois.</li>
+    <li><b>Horário formatado "HH:mm"</b><br><code>hour.toString().padLeft(2, '0')</code>
+    garante dois dígitos ("09:05").</li>
+    <li><b>Foto do racha</b><br><code>CapaDoRacha</code> + <code>escolherFotoDoRacha</code>
+    (<a href="#f-foto-racha">7.4</a>).</li>
+    <li><b>Localização no mapa</b><br><code>escolherLocalizacaoNoMapa</code> abre a tela
+    do mapa e espera o ponto escolhido (<a href="#f-mapa">8.8</a>).</li>
+    <li><b>SwitchListTile "Aberto para novos jogadores"</b><br>Um interruptor. A tela
+    bloqueia o envio se estiver ligado sem localização: o racha nunca
+    apareceria na busca por distância.</li>
+  </ul>
+
+  <h3 id="f-editar"><span class="num">8.7</span>editar_racha_screen.dart e editar_grupo_screen.dart</h3>
+  <div class="ja"><b>Já explicado em <a href="#f-criar-racha">8.5</a> e
+  <a href="#f-criar-grupo">8.6</a>:</b> são os mesmos formulários.</div>
+  <p>A diferença é que os valores começam preenchidos com o que já existe, no
+  <code>initState</code>, a partir do modelo recebido pela rota
+  (<code>widget.racha</code> / <code>widget.grupo</code>). Por isso as variáveis são
+  <code>late</code> (<a href="#c2">C2</a>). Editar o grupo vale para as <b>próximas</b>
+  rodadas; a rodada aberta se edita pela própria tela da rodada.</p>
+
+  <h3 id="f-mapa"><span class="num">8.8</span>localizacao_picker_screen.dart</h3>
+  <div class="arquivo">lib/screens/grupo/localizacao_picker_screen.dart</div>
+  <pre><code>Future&lt;GeoPoint?&gt; escolherLocalizacaoNoMapa(BuildContext context, {GeoPoint? inicial}) {
+  return Navigator.of(context).push&lt;GeoPoint&gt;(
+    MaterialPageRoute(builder: (_) =&gt; LocalizacaoPickerScreen(inicial: inicial)),
+  );
+}
+
+<span class="c">// no build:</span>
+FlutterMap(
+  mapController: _mapController,
+  options: MapOptions(
+    initialCenter: _selecionado,
+    initialZoom: 15,
+    onTap: (_, ponto) =&gt; setState(() =&gt; _selecionado = ponto),
+  ),
+  children: [
+    TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', ...),
+    MarkerLayer(markers: [Marker(point: _selecionado, child: const Icon(Icons.location_pin))]),
+    const RichAttributionWidget(attributions: [TextSourceAttribution('© OpenStreetMap contributors')]),
+  ],
+),
+</code></pre>
+  <ul class="pontos">
+    <li><b>Navigator.push que devolve valor</b><br>Esta tela não tem rota no
+    go_router: é aberta com <code>Navigator.push</code> e, ao confirmar, fecha com
+    <code>Navigator.pop(GeoPoint(...))</code>. Quem abriu recebe o ponto no
+    <code>await</code>.</li>
+    <li><b>flutter_map + OpenStreetMap</b><br>Mapa gratuito. O <code>TileLayer</code>
+    baixa as imagens do mapa ({z} = zoom, {x}/{y} = posição). O
+    <code>MarkerLayer</code> desenha o alfinete no ponto escolhido.</li>
+    <li><b>onTap</b><br>Tocar no mapa move o alfinete.</li>
+    <li><b>Crédito obrigatório</b><br>A licença do OpenStreetMap exige o texto
+    "© OpenStreetMap contributors" visível.</li>
+    <li><b>Stack e Positioned</b><br>O corpo é um <code>Stack</code> (camadas
+    empilhadas): o mapa embaixo e, por cima, os cartões de resultado da busca e
+    de aviso, posicionados com <code>Positioned</code>.</li>
+    <li><b>Busca de endereço</b><br>Campo na <code>AppBar</code> (propriedade
+    <code>bottom</code>) que chama o <code>GeocodingService</code>
+    (<a href="#f-geocoding">3.4</a>). Escolher um resultado move o mapa com
+    <code>_mapController.move(ponto, 17)</code>.</li>
+    <li><b>GPS ao abrir</b><br>Se é um grupo novo, o <code>initState</code> já tenta
+    centralizar na posição atual (<a href="#f-location">3.3</a>). Se falhar, mostra
+    um aviso em vez de abrir num lugar aleatório sem explicação.</li>
+  </ul>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 8 — Telas</div>
+  <h3 id="f-proximos"><span class="num">8.9</span>rachas_proximos_screen.dart</h3>
+  <div class="arquivo">lib/screens/descoberta/rachas_proximos_screen.dart</div>
+  <p>Lista os grupos abertos a novos jogadores, perto de quem está olhando.</p>
+  <pre><code>@override
+void initState() {
+  super.initState();
+  _buscarMinhaPosicao();
+}
+
+<span class="c">// no build, depois de ter a posição:</span>
+final deOutros = grupos.where((g) =&gt; g.adminId != meuUid &amp;&amp; !g.membrosFixos.contains(meuUid)).toList();
+final comLocal = deOutros.where((g) =&gt; g.localizacao != null).toList();
+final ordenados = comLocal
+    .map((g) =&gt; (grupo: g, distancia: distanciaKm(minhaPosicao, g.localizacao!)))
+    .toList()
+  ..sort((a, b) =&gt; a.distancia.compareTo(b.distancia));
+final proximos = ordenados.where((par) =&gt; par.distancia &lt;= _raioKm).toList();
+</code></pre>
+  <ul class="pontos">
+    <li><b>Pega a posição ao abrir</b><br>No <code>initState</code>, com o
+    <code>LocationService</code> (<a href="#f-location">3.3</a>). Enquanto isso, a tela
+    mostra carregando; se der erro, mostra a mensagem e um botão "Tentar
+    novamente".</li>
+    <li><b>Filtro em etapas</b><br>Tira os grupos da própria pessoa → tira os sem
+    ponto no mapa → calcula a distância de cada um (<code>distanciaKm</code>,
+    <a href="#f-utils">6.6</a>) → ordena → fica com os dentro do raio.</li>
+    <li><b>Records com nome</b><br><code>(grupo: g, distancia: ...)</code> junta o grupo e
+    a distância sem criar uma classe; depois se acessa <code>par.distancia</code>.</li>
+    <li><b>Filtro no celular, não no banco</b><br>O Firestore não sabe filtrar por
+    distância sem bibliotecas extras. Como são poucos grupos, o app baixa os
+    abertos e filtra ele mesmo.</li>
+    <li><b>ChoiceChip</b><br>Os botões 5/10/25/50 km. Trocar o raio só muda
+    <code>_raioKm</code> com <code>setState</code>; não consulta o banco de novo.</li>
+  </ul>
+  <ul class="pontos">
+    <li><b>_Vazio</b><br>Quando não há nada, explica <b>por quê</b> — nenhum grupo
+    aberto, os abertos são seus, nenhum tem mapa, ou o mais próximo está fora
+    do raio (e diz a quantos km). Cada motivo pede uma ação diferente.</li>
+    <li><b>_RachaProximoTile</b><br>O cartão de cada grupo: foto grande (aqui ela
+    importa: a pessoa quer ver o campo antes de pedir para entrar), nome,
+    distância e o botão. O texto do botão muda com o pedido da pessoa,
+    observado ao vivo por <code>minhaSolicitacaoProvider</code>: "Solicitar
+    entrada" → "Pedido pendente" → "Pedido aprovado" ou "Pedido recusado".</li>
+  </ul>
+
+  <h3 id="f-grupo-detalhe"><span class="num">8.10</span>grupo_detalhe_screen.dart</h3>
+  <div class="arquivo">lib/screens/grupo/grupo_detalhe_screen.dart</div>
+  <p>A tela de um racha recorrente: cabeçalho com foto, local, horário, membros
+  e pedidos de entrada, e embaixo as abas da rodada aberta.</p>
+  <pre><code>final rachaAsync = ref.watch(rachaAtualDoGrupoProvider(grupo.id));
+final grupoAtual = ref.watch(grupoPorIdProvider(grupo.id)).valueOrNull ?? grupo;
+final isAdmin = grupoAtual.adminId == meuUid;
+...
+return rachaAsync.when(
+  data: (racha) {
+    if (racha == null) return comCabecalho(const Text('Nenhuma rodada aberta no momento.'));
+    return RachaTabsSection(racha: racha, cabecalho: cabecalho);
+  },
+  loading: () =&gt; comCabecalho(const CircularProgressIndicator()),
+  error: (e, _) =&gt; comCabecalho(Text('Erro ao carregar rodada: $e')),
+);
+</code></pre>
+  <ul class="pontos">
+    <li><b>grupoAtual</b><br>O grupo chega pela rota (<code>extra</code>), mas isso é uma
+    "foto" do momento em que a Home abriu. Observando o grupo ao vivo, a tela
+    mostra na hora um membro novo ou uma foto trocada. Enquanto o ao vivo não
+    chega, usa o recebido (<code>?? grupo</code>).</li>
+    <li><b>isAdmin decide o que aparece</b><br>O admin vê editar/apagar, adicionar e
+    remover membros, a prancheta de anotador e os pedidos de entrada. Quem só
+    participa vê "Sair do grupo".</li>
+    <li><b>PopupMenuButton</b><br>O menu de três pontinhos. Os itens mudam conforme
+    <code>isAdmin</code>; o valor escolhido passa por um <code>switch</code> num enum
+    (<code>_AcaoGrupo</code>).</li>
+    <li><b>Cabeçalho que rola</b><br>O cabeçalho é passado para a
+    <code>RachaTabsSection</code> (<a href="#f-abas">8.12</a>), que o faz rolar junto e
+    sair de cena, deixando as abas presas no topo.</li>
+  </ul>
+  <h4>Partes do arquivo</h4>
+  <table>
+    <tr><th>Nome</th><th>O que faz</th></tr>
+    <tr><td><code>_MembrosFixosSection</code> / <code>_MembroFixoTile</code></td><td>Lista de membros com foto. Para o admin: ícone de prancheta (liga/desliga anotador, <a href="#f-grupo-ctrl">5.6</a>) e X para remover.</td></tr>
+    <tr><td><code>_removerMembroFixo</code></td><td>Se a pessoa já confirmou a rodada aberta, pergunta se tira só do grupo ou também da rodada. O diálogo devolve um valor do enum <code>_SaidaDoGrupo</code>.</td></tr>
+    <tr><td><code>_mostrarDialogoAdicionarMembro</code></td><td>Busca por nome/email e adiciona. Diálogo com <code>StatefulBuilder</code> (nota em <a href="#f-home">8.4</a>).</td></tr>
+    <tr><td><code>_SolicitacoesSection</code> / <code>_SolicitacaoTile</code></td><td>Pedidos pendentes com a ficha do jogador (nota, posição, rodadas, MVPs — <code>fichaDoJogadorProvider</code>) e botões aprovar/recusar.</td></tr>
+    <tr><td><code>_ResumoDoJogador</code></td><td>A linha da ficha. Jogador sem histórico mostra "Jogador novo" em vez de "0,0 ★", que pareceria nota ruim.</td></tr>
+    <tr><td><code>_RecusadasSection</code></td><td>Pedidos já recusados, com "Reabrir" — o único caminho de volta para quem foi recusado.</td></tr>
+    <tr><td><code>_trocarFotoDoRacha</code></td><td>Abre o seletor de foto (<a href="#f-foto-racha">7.4</a>) e grava. A capa nova aparece sozinha, porque a tela observa o grupo ao vivo.</td></tr>
+  </table>
+
+  <h3 id="f-racha-detalhe"><span class="num">8.11</span>racha_detalhe_screen.dart</h3>
+  <p>A tela de uma rodada aberta pela Home (rodada avulsa ou convite). É curta:
+  observa o racha pelo id da rota e mostra a <code>RachaTabsSection</code> sem
+  cabeçalho. O admin de racha <b>avulso</b> tem um botão de apagar na AppBar;
+  rodada de grupo não pode ser apagada sozinha.</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 8 — Telas</div>
+  <h3 id="f-abas"><span class="num">8.12</span>racha_tabs_section.dart — as abas da rodada</h3>
+  <div class="arquivo">lib/screens/racha/racha_tabs_section.dart (o maior arquivo do app)</div>
+  <p>As cinco abas de uma rodada, usadas pela tela do grupo e pela tela do
+  racha: <b>Participantes, Convidados, Times, Estatísticas e Próximo
+  racha</b>.</p>
+  <pre><code>return DefaultTabController(
+  length: 5,
+  child: cabecalho == null
+      ? Column(children: [_abas, Expanded(child: conteudo)])
+      : NestedScrollView(
+          headerSliverBuilder: (context, _) =&gt; [
+            SliverToBoxAdapter(child: cabecalho),
+            const SliverPersistentHeader(pinned: true, delegate: _AbasFixas(_abas)),
+          ],
+          body: conteudo,
+        ),
+);
+</code></pre>
+  <ul class="pontos">
+    <li><b>DefaultTabController</b><br>Controla qual aba está aberta. O
+    <code>TabBar</code> (os títulos) e o <code>TabBarView</code> (o conteúdo) conversam
+    através dele. <code>length</code> é o número de abas.</li>
+    <li><b>Sem cabeçalho</b><br>Abas em cima e conteúdo embaixo; o
+    <code>Expanded</code> faz o conteúdo ocupar o resto da tela.</li>
+    <li><b>Com cabeçalho: NestedScrollView</b><br>O cabeçalho rola e sai de cena; as
+    abas ficam <b>presas no topo</b> (<code>pinned: true</code>). Antes, com muitos
+    membros, o cabeçalho ocupava a tela toda e as abas sumiam.</li>
+    <li><b>Slivers</b><br>Peças de uma área rolável. <code>SliverToBoxAdapter</code>
+    coloca um widget comum dentro dela; <code>SliverPersistentHeader</code> é um
+    pedaço que pode ficar fixo. <code>_AbasFixas</code> só informa a altura e dá
+    fundo opaco às abas.</li>
+  </ul>
+
+  <h4>Aba Participantes (_ParticipantesTab)</h4>
+  <ul class="pontos">
+    <li><b>Agrupado por status</b><br>Confirmados, Pendentes e Recusados separados,
+    com uma função local <code>grupo(titulo, pessoas)</code> que monta cada bloco.</li>
+    <li><b>Botão "Fazer chamada"</b><br>Só para admin ou anotador, só a partir do
+    horário do jogo, e só se a rodada não foi finalizada.</li>
+    <li><b>_ParticipanteTile</b><br>Foto, nome, status, posição e presença (cor
+    pelo resultado). Para a própria pessoa pendente: ✓ e ✗. Ao confirmar, se ainda
+    não tem posição, abre antes o diálogo de posição — confirmar e escolher
+    posição viraram um passo só — e agenda o lembrete
+    (<a href="#f-notif">3.5</a>). Recusar cancela o lembrete.</li>
+    <li><b>_mostrarDialogoPosicao</b><br>Posição principal (obrigatória) e
+    secundária (opcional, com "Só a principal"). Mostra a formação do racha para
+    a pessoa escolher sabendo onde vai jogar. Devolve <code>true</code> se salvou.</li>
+    <li><b>_mostrarChamada</b><br>Menu com os confirmados e, em cada linha, um
+    <code>SegmentedButton</code> com três opções: chegou, atrasou, faltou.</li>
+  </ul>
+
+  <h4>Aba Convidados (_ConvidadosTab)</h4>
+  <p>Lista de convidados. Para o admin: aprovar, recusar, remover e
+  <b>oficializar</b> — um diálogo que busca a conta que o convidado criou e
+  migra o histórico dele (<a href="#f-part-ctrl">5.7</a>).</p>
+
+  <h4>Aba Times (_TimesTab)</h4>
+  <pre><code>final totalElegiveis = confirmados.length + aprovados.length;
+final minimo = racha.totalVagas * 2;
+final suficiente = totalElegiveis &gt;= minimo;
+...
+FilledButton.icon(
+  onPressed: (suficiente &amp;&amp; !timesState.isLoading)
+      ? () =&gt; ref.read(timesControllerProvider.notifier).gerar(racha)
+      : null,
+  label: Text(jaGerado ? 'Gerar times novamente' : 'Gerar times'),
+),
+</code></pre>
+  <ul class="pontos">
+    <li><b>Mínimo para gerar</b><br>Dois times completos (<code>totalVagas * 2</code>).
+    O texto acima do botão diz quantos faltam.</li>
+    <li><b>_AvisoEscalacao</b><br>Antes de gerar, avisa se ninguém escolheu goleiro
+    ou se há confirmados sem posição. Não bloqueia, só informa.</li>
+    <li><b>Depois de gerados</b><br>Mostra os dois times (<code>_TimeSection</code>, com o
+    goleiro primeiro), o botão "Avaliar jogadores", o troféu para o admin calcular
+    o MVP e o botão "Finalizar racha".</li>
+    <li><b>_FinalizarRachaSection</b><br>Pede confirmação e chama
+    <code>finalizar</code> (<a href="#f-racha-ctrl">5.5</a>). Fica desativado enquanto
+    houver estatística esperando conferência, mostrando quantas faltam.</li>
+  </ul>
+
+  <h4>Aba Estatísticas (_EstatisticasTab)</h4>
+  <pre><code>final aberta = racha.status != RachaStatus.finalizado;
+final conferente = racha.podeFazerChamada(uid);
+
+bool podeConfirmar(EstatisticaModel? e) =&gt;
+    aberta &amp;&amp; e != null &amp;&amp; !e.confirmada &amp;&amp;
+    racha.podeConferirEstatistica(uid, e.jogadorId);
+...
+_EstatisticaParticipanteTile(
+  podeEditar: isAdmin || (aberta &amp;&amp; (conferente || jogador.userId == uid)),
+  podeConfirmar: podeConfirmar(porJogador[jogador.userId]),
+),
+</code></pre>
+  <ul class="pontos">
+    <li><b>Quem edita</b><br>O jogador edita os próprios números; admin e anotadores
+    editam os de todos (inclusive convidados, que não têm login). Depois de
+    finalizada, só o admin.</li>
+    <li><b>Função dentro do build</b><br><code>podeConfirmar</code> é uma função local,
+    usada em cada linha.</li>
+    <li><b>_ResumoConferencia</b><br>O cartão no topo: quantas estão aguardando
+    conferência e, para quem confere, o botão "Confirmar todas (N)".</li>
+    <li><b>_EstatisticaTile</b><br>Gols, assistências e cartões; "Aguardando
+    conferência" em amarelo ou "Conferido" em verde; ✓ para confirmar e o lápis
+    para editar.</li>
+    <li><b>_mostrarDialogoEstatistica</b><br>Quatro campos numéricos.
+    <code>FilteringTextInputFormatter.digitsOnly</code> só deixa digitar números. Se
+    quem lança não pode conferir, avisa que vai ficar pendente.</li>
+  </ul>
+
+  <h4>Aba Próximo racha (_ProximoRachaTab)</h4>
+  <p>Data, local e tipo de campo (<code>InfoTile</code>). Para o admin: "Compartilhar
+  código" (copia o id do racha com <code>Clipboard.setData</code>) e "Editar
+  racha". Para quem foi convidado e ainda não respondeu: um cartão com
+  "Confirmar presença" e "Recusar".</p>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 8 — Telas</div>
+  <h3 id="f-convidar"><span class="num">8.13</span>convidar_jogador_screen.dart</h3>
+  <div class="ja"><b>Já explicado em <a href="#f-cadastro">8.2</a>:</b> formulário
+  com idade e peso lado a lado. <b>Em <a href="#f-user-repo">4.1</a>:</b> a busca
+  por nome ou email.</div>
+  <p>Duas partes na mesma tela:</p>
+  <ul class="pontos">
+    <li><b>Jogador cadastrado</b><br>Busca e um botão "Convidar" em cada resultado
+    (<code>for (final user in _resultados) ListTile(...)</code> dentro da lista,
+    <a href="#c11">C11</a>). O convite nasce pendente.</li>
+    <li><b>Convidado sem cadastro</b><br>Nome, idade e peso aproximados e posições.
+    Fica pendente até o admin aprovar. Ao adicionar, os campos são limpos com
+    <code>.clear()</code> para cadastrar o próximo.</li>
+  </ul>
+
+  <h3 id="f-avaliacao-tela"><span class="num">8.14</span>avaliacao_screen.dart</h3>
+  <pre><code>final Map&lt;String, double&gt; _notasCompanheiros = {};
+AlvoAvaliacao? _adversarioEscolhido;
+double? _notaAdversario;
+...
+final contextoAsync = ref.watch(contextoAvaliacaoProvider((rachaId: widget.rachaId, uid: uid)));
+...
+final formCompleto = companheiros.every((c) =&gt; _notasCompanheiros[c.id] != null) &amp;&amp;
+    (adversarios.isEmpty || (_adversarioEscolhido != null &amp;&amp; _notaAdversario != null));
+</code></pre>
+  <ul class="pontos">
+    <li><b>A regra</b><br>Cada jogador dá nota a <b>todos os companheiros do próprio
+    time</b> e escolhe <b>um adversário</b>.</li>
+    <li><b>Map de notas</b><br><code>_notasCompanheiros</code> guarda a nota de cada
+    companheiro pelo id. Tocar numa estrela chama <code>setState</code> e grava ali.</li>
+    <li><b>Family com record</b><br>O provider recebe dois valores juntos:
+    <code>(rachaId: ..., uid: ...)</code>.</li>
+    <li><b>formCompleto</b><br><code>every</code> = "todos cumprem a condição". O botão só
+    habilita com todas as notas dadas.</li>
+    <li><b>Estados da tela</b><br>Já avaliou → agradece. Sem time (não jogou ou times
+    não gerados) → explica. Senão → o formulário.</li>
+    <li><b>_NotaSelector</b><br>Cinco <code>IconButton</code>s de estrela, criados com
+    <code>for (var i = 1; i &lt;= 5; i++)</code>; cheia se a nota for maior ou igual a <code>i</code>.</li>
+    <li><b>_AdversarioChip</b><br><code>ChoiceChip</code> com foto: só um pode ficar
+    selecionado.</li>
+    <li><b>ref.invalidate</b><br>Depois de enviar, manda o provider buscar de novo, e
+    a tela passa a mostrar "Você já avaliou".</li>
+  </ul>
+
+  <h3 id="f-ranking-tela"><span class="num">8.15</span>grupo_ranking_screen.dart e historico_grupo_screen.dart</h3>
+  <div class="ja"><b>Já explicado em <a href="#c7">C7</a>:</b> <code>.when</code> com
+  carregando/erro/dado.</div>
+  <ul class="pontos">
+    <li><b>Ranking</b><br>Observa <code>rankingDoGrupoProvider</code>
+    (<a href="#f-providers">5.1</a>) e mostra uma lista com
+    <code>ListView.separated</code> (uma linha divisória entre os itens). A foto tem
+    um selo com a posição; o primeiro lugar ganha selo dourado
+    (<code>Stack</code> + <code>Positioned</code>). Quem nunca foi avaliado mostra "—"
+    em vez de "0.0", que pareceria a pior nota.</li>
+    <li><b>Histórico</b><br>Rodadas finalizadas do grupo, com data por extenso
+    (<code>DateFormat("EEEE, dd/MM/yyyy 'às' HH:mm", 'pt_BR')</code>) e o MVP de cada
+    uma. Tocar abre a rodada.</li>
+  </ul>
+</section>
+
+<section class="parte">
+  <div class="rotulo">Parte 9</div>
+  <h2 id="s9">Perguntas que o professor pode fazer</h2>
+  <p>Respostas curtas, com o link para a explicação completa.</p>
+
+  <div class="pergunta"><div class="q">Onde o app usa a câmera?</div>
+  No <code>FotoPerfilPicker</code>, com <code>ImagePicker().pickImage(source: ImageSource.camera)</code>,
+  no cadastro e na edição de perfil. → <a href="#f-foto-perfil">7.3</a></div>
+
+  <div class="pergunta"><div class="q">Como a tela sabe que alguém fez login e vai para a Home?</div>
+  O router observa o stream de login do Firebase. Quando muda, o
+  <code>redirect</code> roda de novo e manda para <code>/home</code>. A tela de login não
+  navega. → <a href="#f-router">1.2</a></div>
+
+  <div class="pergunta"><div class="q">Qual a diferença entre ref.watch e ref.read?</div>
+  <code>watch</code> lê e fica observando, redesenhando a tela quando muda (usado no
+  <code>build</code>). <code>read</code> lê uma vez (usado em botões). → <a href="#c6">C6</a></div>
+
+  <div class="pergunta"><div class="q">Para que serve o dispose?</div>
+  Libera os <code>TextEditingController</code>s quando a tela fecha, para não ficar
+  ocupando memória. → <a href="#f-login">8.1</a></div>
+
+  <div class="pergunta"><div class="q">O que é fromMap e toMap?</div>
+  Conversões entre o objeto do Dart e o mapa que o Firestore grava. <code>toMap</code>
+  para salvar, <code>fromMap</code> para ler. → <a href="#f-user">2.2</a></div>
+
+  <div class="pergunta"><div class="q">Por que separar em services, repositories e controllers?</div>
+  Cada camada tem uma responsabilidade. Só services e repositories conhecem o
+  Firebase; a lógica de times e ranking fica em <code>core/</code> sem Firebase, e
+  por isso dá para testá-la sem internet. → <a href="#s0-2">0.2</a></div>
+
+  <div class="pergunta"><div class="q">Como os times são balanceados?</div>
+  Um goleiro por time; mesma quantidade em defesa, meio e ataque, pela posição
+  principal; depois troca jogadores do mesmo setor até os times ficarem
+  parecidos em nota (peso 1,0), gols (0,6), idade (0,4) e peso corporal
+  (0,15). → <a href="#f-balanceador">6.3</a></div>
+
+  <div class="pergunta"><div class="q">E se faltar meia e sobrar atacante?</div>
+  Primeiro entra quem não escolheu posição. Depois, atacantes que marcaram meia
+  como posição secundária descem, começando pelos de menor nota. Ninguém joga
+  fora das duas posições que escolheu. → <a href="#f-setores">6.2</a></div>
+
+  <div class="pergunta"><div class="q">Que nota tem um jogador novo ou convidado?</div>
+  3,0, o meio da escala, para não puxar o equilíbrio para nenhum lado. Nos
+  gols, a média do grupo. → <a href="#f-elegivel">6.1</a></div>
+
+  <div class="pergunta"><div class="q">Como é calculado o ranking?</div>
+  Sempre do zero, a partir de todas as avaliações, estatísticas conferidas e
+  MVPs do jogador, numa função só (<code>agregarRanking</code>), usada pelo ranking
+  geral e pelo do grupo. Ordem: mais MVPs, depois maior média.
+  → <a href="#f-agregador">6.4</a></div>
+
+  <div class="pergunta"><div class="q">Como é escolhido o MVP?</div>
+  Maior média de notas na rodada; empate, quem recebeu mais avaliações.
+  Convidado nunca é MVP. → <a href="#f-mvp">6.5</a></div>
+
+  <div class="pergunta"><div class="q">Um jogador pode inventar os próprios gols?</div>
+  Pode lançar, mas fica "aguardando conferência" e não conta no ranking até o
+  admin ou um anotador confirmar. O anotador não confere os próprios números,
+  e o racha só finaliza com tudo conferido. A regra também está no
+  <code>firestore.rules</code>. → <a href="#f-estat-ctrl">5.11</a></div>
+
+  <div class="pergunta"><div class="q">O que acontece quando o admin finaliza uma rodada de grupo?</div>
+  Num único batch: a rodada vira "finalizada", nasce a próxima (data calculada
+  pelo dia da semana) e o admin e os membros fixos são convidados.
+  → <a href="#f-racha-ctrl">5.5</a></div>
+
+  <div class="pergunta"><div class="q">O que é um WriteBatch e por que usar?</div>
+  Várias gravações enviadas juntas: ou todas acontecem, ou nenhuma. Evita
+  estados quebrados, como um racha sem participantes ou times atribuídos pela
+  metade. → <a href="#c10">C10</a></div>
+
+  <div class="pergunta"><div class="q">Como funciona a busca por "Rachas Próximos"?</div>
+  Pega a posição pelo GPS, baixa os grupos abertos e calcula a distância de
+  cada um com a fórmula de haversine, filtrando pelo raio escolhido.
+  → <a href="#f-proximos">8.9</a></div>
+
+  <div class="pergunta"><div class="q">Por que a foto é guardada em base64?</div>
+  O Firebase Storage exige plano pago. A foto é comprimida, convertida em texto
+  e gravada no documento. O <code>StorageService</code> isola isso para trocar
+  depois sem mexer em quem chama. → <a href="#f-storage">3.2</a></div>
+
+  <div class="pergunta"><div class="q">O que é o AsyncValue.guard?</div>
+  Executa a ação e captura qualquer erro, guardando no estado do controller em
+  vez de deixar o app quebrar. A tela lê <code>isLoading</code> e <code>error</code>
+  desse estado. → <a href="#c8">C8</a></div>
+
+  <div class="pergunta"><div class="q">Por que tem "if (!mounted) return" depois de await?</div>
+  Durante a espera a pessoa pode ter saído da tela; usar o <code>context</code> de uma
+  tela fechada quebra o app. → <a href="#c12">C12</a></div>
+</section>
+
+</body>
+</html>

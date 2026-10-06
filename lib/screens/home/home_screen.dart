@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/avatar_jogador.dart';
 import '../../core/widgets/confirmar_dialog.dart';
 import '../../core/widgets/titulo_secao.dart';
 import '../../models/enums.dart';
 import '../../providers/auth_controller.dart';
 import '../../providers/firebase_providers.dart';
 import '../../providers/racha_controller.dart';
+import '../../widgets/foto_racha.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -75,7 +77,14 @@ class HomeScreen extends ConsumerWidget {
                 : () => _mostrarCaixaDeEntrada(context, meuUid),
           ),
           IconButton(
-            icon: const Icon(Icons.person),
+            // A própria foto no lugar do ícone genérico: é o atalho para o
+            // perfil e, de quebra, mostra de relance com qual conta se está
+            // — útil para quem alterna entre contas de teste.
+            icon: AvatarJogador(
+              nome: userModel.valueOrNull?.nome ?? '',
+              fotoBase64: userModel.valueOrNull?.fotoPerfilBase64,
+              raio: 14,
+            ),
             tooltip: 'Meu perfil',
             onPressed: () => context.push('/perfil'),
           ),
@@ -108,6 +117,7 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     const TituloSecao('Meus rachas'),
                     ...lista.map((grupo) => _RachaTile(
+                          fotoBase64: grupo.fotoBase64,
                           nome: grupo.nome,
                           detalhe:
                               '${grupo.localPadrao} • ${grupo.diaSemana.label}, ${grupo.horario}',
@@ -164,6 +174,7 @@ class HomeScreen extends ConsumerWidget {
                     const TituloSecao('Rachas que participo'),
                     ...lista.map(
                       (grupo) => _RachaTile(
+                        fotoBase64: grupo.fotoBase64,
                         nome: grupo.nome,
                         detalhe:
                             '${grupo.localPadrao} • ${grupo.diaSemana.label}, ${grupo.horario}',
@@ -230,12 +241,17 @@ class _RachaTile extends StatelessWidget {
     required this.detalhe,
     required this.etiqueta,
     required this.onTap,
+    this.fotoBase64,
   });
 
   final String nome;
   final String detalhe;
   final String etiqueta;
   final VoidCallback onTap;
+
+  /// Foto do grupo. Racha avulso não tem (não há grupo para guardá-la),
+  /// e nesse caso a miniatura mostra a bola, como antes.
+  final String? fotoBase64;
 
   @override
   Widget build(BuildContext context) {
@@ -251,18 +267,7 @@ class _RachaTile extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             child: Row(
               children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    // Verde bem diluído: marca o item como "racha" sem
-                    // roubar a atenção do nome, que é o que se lê primeiro.
-                    color: AppColors.verde.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.sports_soccer,
-                      size: 20, color: AppColors.verde),
-                ),
+                MiniaturaDoRacha(fotoBase64: fotoBase64, tamanho: 42),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

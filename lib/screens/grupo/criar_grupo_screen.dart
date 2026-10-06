@@ -7,6 +7,7 @@ import '../../core/widgets/campo_de_toque.dart';
 import '../../core/widgets/titulo_secao.dart';
 import '../../models/enums.dart';
 import '../../providers/grupo_controller.dart';
+import '../../widgets/foto_racha.dart';
 import 'localizacao_picker_screen.dart';
 
 /// Cria um racha recorrente (Grupo): dia da semana e horário fixos, em vez
@@ -30,6 +31,17 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
   TimeOfDay? _horario;
   GeoPoint? _localizacao;
   bool _abertoParaNovosMembros = false;
+
+  /// Foto do racha escolhida antes de criar. Opcional: dá para pular e
+  /// colocar depois, pela própria tela do grupo.
+  String? _fotoBase64;
+
+  Future<void> _escolherFoto() async {
+    final escolha =
+        await escolherFotoDoRacha(context, temFoto: _fotoBase64 != null);
+    if (escolha == null) return;
+    setState(() => _fotoBase64 = escolha.base64);
+  }
 
   @override
   void initState() {
@@ -105,6 +117,7 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
           qtdJogadoresLinhaPadrao: int.parse(_qtdController.text),
           localizacao: _localizacao,
           abertoParaNovosMembros: _abertoParaNovosMembros,
+          fotoBase64: _fotoBase64,
         );
 
     final erro = ref.read(grupoControllerProvider).error;
@@ -136,6 +149,13 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const TituloSecao('Foto do racha'),
+                CapaDoRacha(
+                  fotoBase64: _fotoBase64,
+                  podeEditar: true,
+                  onEditar: _escolherFoto,
+                  margem: EdgeInsets.zero,
+                ),
                 const TituloSecao('Sobre o racha'),
                 TextFormField(
                   controller: _nomeController,

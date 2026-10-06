@@ -622,6 +622,130 @@ registrado no Firebase com o pacote novo (T18):
 
 ---
 
+## Bloco 6 — Fotos e balanceamento por mais de um critério
+
+Levantado em 05/10/2026, a partir de testes com o app no celular.
+
+### [x] T28 — Fotos de perfil não apareciam nas telas do racha
+
+Só as telas de perfil desenhavam a foto. Participantes, times, chamada,
+estatísticas, ranking, membros fixos, solicitações e avaliação mostravam um
+ícone genérico — **mesmo com a foto já carregada**: essas telas buscam o
+documento do usuário (`userPorIdProvider`) para pegar o nome, e a foto vem
+junto. Ela só não era desenhada.
+
+Criado o `AvatarJogador` (`lib/core/widgets/avatar_jogador.dart`), usado em
+todas essas telas. Sem foto, mostra as iniciais em vez do ícone, para dar
+para distinguir as pessoas numa lista. Convidado aparece com outro tom.
+
+A decodificação do base64 passou a ter cache (`imagem_base64.dart`): sem ele,
+cada redesenho de tela decodificava todas as fotos de novo, e como cada
+decodificação gera bytes novos, o Flutter tratava como imagem diferente e a
+foto piscava.
+
+**Achado junto:** a foto de perfil não funcionava no navegador. A cadeia
+inteira (seletor → telas → controllers → `StorageService`) passava um
+`File` de `dart:io`, que não existe na web — tirar a foto funcionava, ler o
+arquivo quebrava. Trocado por `Uint8List` de ponta a ponta. Nenhum arquivo do
+app importa mais `dart:io`.
+
+### [x] T29 — Foto do racha
+
+O admin pode pôr uma foto do grupo (o campo, a quadra, a turma), por câmera
+ou galeria — diferente do perfil, que é só câmera por ser o requisito de
+hardware da disciplina. Aparece como capa na tela do grupo, miniatura nos
+cards da tela inicial e grande na aba Rachas Próximos, onde quem decide se
+pede para entrar quer ver o campo antes.
+
+Mesma estratégia provisória da foto de perfil: base64 no próprio documento
+(`GrupoModel.fotoBase64`), porque o Storage exige o plano pago. Comprimida
+bem mais (800 px / 70%) e com teto de 350 KB, já que o documento do grupo é
+lido em toda lista — cada KB a mais pesa N vezes. Não exigiu mudança nas
+regras: o admin já podia gravar qualquer campo do grupo.
+
+**Achado junto:** o cabeçalho da tela do grupo era fixo, e as abas ficavam
+só com a altura que sobrava. Com vários membros fixos e solicitações, o
+cabeçalho passava da altura da tela e as abas sumiam com overflow. Agora ele
+rola junto e sai de cena, com as abas presas no topo (`NestedScrollView`, via
+o parâmetro `cabecalho` do `RachaTabsSection`).
+
+### [x] T30 — Balanceamento passou a considerar idade e gols
+
+O `docs/estrutura.md` pedia nota como critério principal e "talvez
+idade/peso como critério secundário", e dizia que as estatísticas alimentam
+"os próximos algoritmos de balanceamento". O código usava só a nota: a idade
+chegava ao algoritmo e **nunca era lida**, o peso servia só de desempate na
+ordenação, e os gols nem chegavam.
+
+O ajuste final (trocar jogadores de mesma posição entre os times) passou a
+minimizar uma soma ponderada das diferenças de quatro médias:
+
+| Critério | Peso | Escala |
+| --- | --- | --- |
+| Nota | 1,0 | 1 ponto |
+| Gols por rodada | 0,6 | 1 gol |
+| Idade | 0,4 | 10 anos |
+| Peso corporal | 0,15 | 15 kg |
+
+Cada diferença é dividida pela escala antes de entrar na conta, senão o
+critério medido no maior número (kg) dominaria só por isso. **Os pesos estão
+em `balanceamento_constants.dart`** — mexer neles muda a prioridade, e zerar
+um desliga o critério.
+
+Quem não tem histórico de gols (convidado, jogador novo) entra com a média do
+grupo, não com zero: zero o trataria como quem nunca marca, e o algoritmo
+empurraria todos os novos contra o artilheiro.
+
+Gols por rodada usa `totalRachas` como divisor, que hoje conta rodadas
+**avaliadas** e não jogadas (T7) — é uma aproximação.
+
+Testes novos provam que idade e gols de fato contam: com os dois pesos
+zerados, exatamente os dois testes correspondentes quebram.
+
+### [ ] T31 — Avaliação de convidado não entra no ranking
+
+Não é bug, mas confunde. Notas dadas a convidados são descartadas do ranking
+por definição (o id de um convidado não sobrevive entre rodadas). Num racha
+com poucos jogadores cadastrados e o resto convidado, quase todas as
+avaliações de companheiro de time vão para convidados — e o ranking parece
+mostrar só as notas que vieram do time adversário.
+
+Caminhos possíveis: avisar na tela de avaliação que a nota de convidado não
+conta para o ranking, ou incentivar a oficialização do convidado (que já
+reatribui as notas dele para a conta nova).
+
+### [ ] T32 — Mínimo de jogadores para gerar times
+
+`RachaModel.totalVagas` é `qtdJogadoresLinha + 1` — o tamanho de **um** time.
+O `TimesController` usa esse número como mínimo total para gerar os times,
+então um futsal 5×5 libera a geração com só 5 confirmados. Decidir se isso é
+intencional (deixar jogar desfalcado) e, se for, renomear para não parecer
+bug.
+
+### [x] T33 — Conferência das estatísticas antes de valerem
+
+Cada jogador lançava os próprios gols e assistências, e eles iam direto para
+o ranking e para o balanceamento, sem ninguém checar. Agora funciona como a
+chamada:
+
+- o jogador lança os próprios números → ficam **aguardando conferência**;
+- o admin ou um anotador (a mesma prancheta da chamada) confirma, linha a
+  linha ou com "Confirmar todas"; o que eles mesmos lançam já nasce
+  conferido;
+- o anotador não confere os próprios números;
+- editar depois de conferido volta para pendente;
+- só estatística conferida entra no ranking (`agregarRanking`);
+- o racha só finaliza com tudo conferido; depois disso, só o admin edita.
+
+A regra do Firestore (`estatisticas`) garante o mesmo do lado do servidor —
+sem ela, bastava chamar a API direto com `confirmada: true`. Documentos de
+antes desta mudança (sem o campo) contam como conferidos, para não apagar o
+histórico de rodadas que já foram finalizadas.
+
+**Precisa publicar as regras** (`firebase deploy --only firestore:rules`).
+
+---
+
 ## Fora do escopo por enquanto
 
 - **Push notification de verdade** (FCM): o token do dispositivo é registrado

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/avatar_jogador.dart';
 import '../../core/widgets/info_tile.dart';
 import '../../models/convidado_model.dart';
 import '../../models/enums.dart';
@@ -25,41 +26,85 @@ import '../../providers/times_controller.dart';
 /// tela de detalhe do grupo (visão do admin) quanto na tela de detalhe do
 /// racha (visão de quem só foi convidado).
 class RachaTabsSection extends StatelessWidget {
-  const RachaTabsSection({super.key, required this.racha});
+  const RachaTabsSection({super.key, required this.racha, this.cabecalho});
 
   final RachaModel racha;
 
+  /// Conteúdo acima das abas que **rola junto e sai de cena**, deixando as
+  /// abas presas no topo.
+  ///
+  /// Sem isto, a tela do grupo montava o cabeçalho (capa, local, horário,
+  /// membros fixos, solicitações) fixo e dava às abas só a altura que
+  /// sobrava. Com vários membros e pedidos pendentes o cabeçalho passava da
+  /// altura da tela e as abas sumiam com erro de overflow — e a lista de
+  /// participantes, que é o que mais se usa, ficava espremida no rodapé
+  /// mesmo quando cabia.
+  final Widget? cabecalho;
+
+  static const _abas = TabBar(
+    isScrollable: true,
+    tabs: [
+      Tab(text: 'Participantes'),
+      Tab(text: 'Convidados'),
+      Tab(text: 'Times'),
+      Tab(text: 'Estatísticas'),
+      Tab(text: 'Próximo racha'),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
+    final conteudo = TabBarView(
+      children: [
+        _ParticipantesTab(racha: racha),
+        _ConvidadosTab(racha: racha),
+        _TimesTab(racha: racha),
+        _EstatisticasTab(racha: racha),
+        _ProximoRachaTab(racha: racha),
+      ],
+    );
+
+    final cabecalho = this.cabecalho;
     return DefaultTabController(
       length: 5,
-      child: Column(
-        children: [
-          const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'Participantes'),
-              Tab(text: 'Convidados'),
-              Tab(text: 'Times'),
-              Tab(text: 'Estatísticas'),
-              Tab(text: 'Próximo racha'),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _ParticipantesTab(racha: racha),
-                _ConvidadosTab(racha: racha),
-                _TimesTab(racha: racha),
-                _EstatisticasTab(racha: racha),
-                _ProximoRachaTab(racha: racha),
+      child: cabecalho == null
+          ? Column(children: [_abas, Expanded(child: conteudo)])
+          : NestedScrollView(
+              headerSliverBuilder: (context, _) => [
+                SliverToBoxAdapter(child: cabecalho),
+                const SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _AbasFixas(_abas),
+                ),
               ],
+              body: conteudo,
             ),
-          ),
-        ],
-      ),
     );
   }
+}
+
+/// Mantém as abas no topo enquanto o cabeçalho sai de cena.
+///
+/// O fundo opaco é necessário: sem ele, o conteúdo da lista apareceria por
+/// trás das abas ao rolar.
+class _AbasFixas extends SliverPersistentHeaderDelegate {
+  const _AbasFixas(this.abas);
+
+  final TabBar abas;
+
+  @override
+  double get minExtent => abas.preferredSize.height;
+
+  @override
+  double get maxExtent => abas.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return ColoredBox(color: AppColors.fundo, child: abas);
+  }
+
+  @override
+  bool shouldRebuild(_AbasFixas oldDelegate) => oldDelegate.abas != abas;
 }
 
 class _ParticipantesTab extends ConsumerWidget {
@@ -391,6 +436,12 @@ class _FinalizarRachaSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(rachaControllerProvider);
+    final pendentes = ref
+            .watch(estatisticasDoRachaProvider(racha.id))
+            .valueOrNull
+            ?.where((e) => !e.confirmada)
+            .length ??
+        0;
 
     if (racha.status == RachaStatus.finalizado) {
       return const Row(
@@ -405,8 +456,17 @@ class _FinalizarRachaSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (pendentes > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              '$pendentes estatística(s) aguardando conferência. Confira na aba '
+              'Estatísticas para poder finalizar.',
+              style: const TextStyle(color: AppColors.pendente),
+            ),
+          ),
         OutlinedButton.icon(
-          onPressed: state.isLoading
+          onPressed: state.isLoading || pendentes > 0
               ? null
               : () async {
                   final confirmar = await showDialog<bool>(
@@ -497,7 +557,7 @@ class _TimeSection extends StatelessWidget {
             for (final c in convidados)
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.person_outline),
+                leading: AvatarJogador(nome: c.nome, convidado: true),
                 title: Text(c.nome),
                 subtitle: c.posicaoMain != null ? Text(c.posicaoMain!.label) : null,
               ),
@@ -518,7 +578,10 @@ class _ParticipanteTimeTile extends ConsumerWidget {
     final userAsync = ref.watch(userPorIdProvider(participante.userId));
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.person),
+      leading: AvatarJogador(
+        nome: userAsync.valueOrNull?.nome ?? '',
+        fotoBase64: userAsync.valueOrNull?.fotoPerfilBase64,
+      ),
       title: Text(userAsync.valueOrNull?.nome ?? 'Carregando...'),
       subtitle:
           participante.posicaoMain != null ? Text(participante.posicaoMain!.label) : null,
@@ -528,8 +591,11 @@ class _ParticipanteTimeTile extends ConsumerWidget {
 
 /// Registro de gols, assistências e cartões de quem jogou a rodada (só
 /// entra aqui quem já tem `time` definido pelo algoritmo de balanceamento).
-/// Editável pelo admin (qualquer jogador) ou pelo próprio User na sua
-/// própria linha — Convidados só o admin edita, já que não têm login.
+///
+/// Funciona como a chamada: cada User lança os próprios números, que ficam
+/// "aguardando conferência" até o admin ou um anotador confirmar — só então
+/// contam no ranking. Admin e anotadores também lançam por qualquer um
+/// (convidados inclusive, que não têm login), e aí já nasce conferido.
 class _EstatisticasTab extends ConsumerWidget {
   const _EstatisticasTab({required this.racha});
 
@@ -564,23 +630,45 @@ class _EstatisticasTab extends ConsumerWidget {
             }
 
             final porJogador = {for (final e in estatisticas) e.jogadorId: e};
+            // Depois de finalizada, só o admin mexe — e a rodada só finaliza
+            // com tudo conferido, então não sobra nada pendente para ninguém.
+            final aberta = racha.status != RachaStatus.finalizado;
+            final conferente = racha.podeFazerChamada(uid);
+
+            bool podeConfirmar(EstatisticaModel? e) =>
+                aberta &&
+                e != null &&
+                !e.confirmada &&
+                racha.podeConferirEstatistica(uid, e.jogadorId);
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
+                _ResumoConferencia(
+                  racha: racha,
+                  conferente: conferente,
+                  pendentes: estatisticas.where((e) => !e.confirmada).length,
+                  aConferir: estatisticas.where(podeConfirmar).toList(),
+                ),
+                const SizedBox(height: 8),
                 for (final jogador in participantes.where((p) => p.time != null))
                   _EstatisticaParticipanteTile(
                     racha: racha,
                     participante: jogador,
                     estatistica: porJogador[jogador.userId],
-                    podeEditar: isAdmin || jogador.userId == uid,
+                    podeEditar: isAdmin ||
+                        (aberta && (conferente || jogador.userId == uid)),
+                    podeConfirmar: podeConfirmar(porJogador[jogador.userId]),
                   ),
                 for (final jogador in convidados.where((c) => c.time != null))
                   _EstatisticaConvidadoTile(
                     racha: racha,
                     convidado: jogador,
                     estatistica: porJogador[jogador.id],
-                    podeEditar: isAdmin,
+                    // Convidado não tem login para lançar os próprios
+                    // números: quem lança é quem confere.
+                    podeEditar: isAdmin || (aberta && conferente),
+                    podeConfirmar: podeConfirmar(porJogador[jogador.id]),
                   ),
               ],
             );
@@ -597,35 +685,128 @@ class _EstatisticasTab extends ConsumerWidget {
   }
 }
 
+/// Topo da aba: quanto falta conferir e, para quem confere, o atalho de
+/// confirmar tudo de uma vez — no fim do jogo ninguém quer tocar em vinte
+/// linhas uma por uma.
+class _ResumoConferencia extends ConsumerWidget {
+  const _ResumoConferencia({
+    required this.racha,
+    required this.conferente,
+    required this.pendentes,
+    required this.aConferir,
+  });
+
+  final RachaModel racha;
+  final bool conferente;
+
+  /// Total aguardando conferência, de qualquer jogador.
+  final int pendentes;
+
+  /// O que **quem está olhando** pode confirmar — para o anotador, tudo
+  /// menos os próprios números.
+  final List<EstatisticaModel> aConferir;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(estatisticaControllerProvider);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  pendentes == 0 ? Icons.verified_outlined : Icons.hourglass_top,
+                  size: 18,
+                  color: pendentes == 0 ? AppColors.confirmado : AppColors.pendente,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    pendentes == 0
+                        ? 'Nada esperando conferência.'
+                        : '$pendentes aguardando conferência.',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              conferente
+                  ? 'Você confere esta rodada: confirme os números que os '
+                      'jogadores lançaram. O que você mesmo lança já entra '
+                      'conferido.'
+                  : 'Lance seus números pelo lápis. Eles só contam no ranking '
+                      'depois que o admin ou quem faz a chamada conferir.',
+              style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+            ),
+            if (aConferir.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              FilledButton.tonalIcon(
+                onPressed: state.isLoading
+                    ? null
+                    : () => ref
+                        .read(estatisticaControllerProvider.notifier)
+                        .confirmar(racha, aConferir),
+                icon: const Icon(Icons.done_all),
+                label: Text('Confirmar todas (${aConferir.length})'),
+              ),
+            ],
+            if (state.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'Erro: ${state.error}',
+                  style: const TextStyle(color: AppColors.recusado),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _EstatisticaParticipanteTile extends ConsumerWidget {
   const _EstatisticaParticipanteTile({
     required this.racha,
     required this.participante,
     required this.estatistica,
     required this.podeEditar,
+    required this.podeConfirmar,
   });
 
   final RachaModel racha;
   final ParticipanteModel participante;
   final EstatisticaModel? estatistica;
   final bool podeEditar;
+  final bool podeConfirmar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userPorIdProvider(participante.userId));
     return _EstatisticaTile(
       nome: userAsync.valueOrNull?.nome ?? 'Carregando...',
+      fotoBase64: userAsync.valueOrNull?.fotoPerfilBase64,
       estatistica: estatistica,
       podeEditar: podeEditar,
       onEditar: () => _mostrarDialogoEstatistica(
         context,
         ref,
-        rachaId: racha.id,
-        grupoId: racha.grupoId,
+        racha: racha,
         jogadorId: participante.userId,
         jogadorTipo: TipoJogador.user,
         estatistica: estatistica,
       ),
+      onConfirmar: podeConfirmar
+          ? () => ref
+              .read(estatisticaControllerProvider.notifier)
+              .confirmar(racha, [estatistica!])
+          : null,
     );
   }
 }
@@ -636,28 +817,35 @@ class _EstatisticaConvidadoTile extends ConsumerWidget {
     required this.convidado,
     required this.estatistica,
     required this.podeEditar,
+    required this.podeConfirmar,
   });
 
   final RachaModel racha;
   final ConvidadoModel convidado;
   final EstatisticaModel? estatistica;
   final bool podeEditar;
+  final bool podeConfirmar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return _EstatisticaTile(
       nome: convidado.nome,
+      convidado: true,
       estatistica: estatistica,
       podeEditar: podeEditar,
       onEditar: () => _mostrarDialogoEstatistica(
         context,
         ref,
-        rachaId: racha.id,
-        grupoId: racha.grupoId,
+        racha: racha,
         jogadorId: convidado.id,
         jogadorTipo: TipoJogador.convidado,
         estatistica: estatistica,
       ),
+      onConfirmar: podeConfirmar
+          ? () => ref
+              .read(estatisticaControllerProvider.notifier)
+              .confirmar(racha, [estatistica!])
+          : null,
     );
   }
 }
@@ -668,34 +856,75 @@ class _EstatisticaTile extends StatelessWidget {
     required this.estatistica,
     required this.podeEditar,
     required this.onEditar,
+    this.onConfirmar,
+    this.fotoBase64,
+    this.convidado = false,
   });
 
   final String nome;
+  final String? fotoBase64;
+  final bool convidado;
   final EstatisticaModel? estatistica;
   final bool podeEditar;
   final VoidCallback onEditar;
 
+  /// Presente só para quem pode conferir esta linha, e só enquanto ela está
+  /// pendente.
+  final VoidCallback? onConfirmar;
+
   @override
   Widget build(BuildContext context) {
+    final estatistica = this.estatistica;
     final gols = estatistica?.gols ?? 0;
     final assistencias = estatistica?.assistencias ?? 0;
     final amarelos = estatistica?.cartoesAmarelos ?? 0;
     final vermelhos = estatistica?.cartoesVermelhos ?? 0;
 
+    // Sem documento, não há o que conferir. Conferida sem `conferidaPor` é
+    // estatística de antes da conferência existir: não mostra selo nenhum,
+    // em vez de afirmar uma conferência que não aconteceu.
+    final (String? status, Color? corStatus) = switch (estatistica) {
+      null => (null, null),
+      EstatisticaModel(confirmada: false) =>
+        ('Aguardando conferência', AppColors.pendente),
+      EstatisticaModel(conferidaPor: null) => (null, null),
+      _ => ('Conferido', AppColors.confirmado),
+    };
+
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.person),
-      title: Text(nome),
-      subtitle: Text(
-        '⚽ $gols  🎯 $assistencias  🟨 $amarelos  🟥 $vermelhos',
+      leading: AvatarJogador(
+        nome: nome,
+        fotoBase64: fotoBase64,
+        convidado: convidado,
       ),
-      trailing: podeEditar
-          ? IconButton(
+      title: Text(nome),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('⚽ $gols  🎯 $assistencias  🟨 $amarelos  🟥 $vermelhos'),
+          if (status != null)
+            Text(status, style: TextStyle(fontSize: 12, color: corStatus)),
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (onConfirmar != null)
+            IconButton(
+              icon: const Icon(Icons.check_circle_outline,
+                  color: AppColors.confirmado),
+              tooltip: 'Confirmar',
+              onPressed: onConfirmar,
+            ),
+          if (podeEditar)
+            IconButton(
               icon: const Icon(Icons.edit_note),
               tooltip: 'Registrar estatísticas',
               onPressed: onEditar,
-            )
-          : null,
+            ),
+        ],
+      ),
     );
   }
 }
@@ -706,8 +935,7 @@ class _EstatisticaTile extends StatelessWidget {
 Future<void> _mostrarDialogoEstatistica(
   BuildContext context,
   WidgetRef ref, {
-  required String rachaId,
-  required String? grupoId,
+  required RachaModel racha,
   required String jogadorId,
   required TipoJogador jogadorTipo,
   required EstatisticaModel? estatistica,
@@ -720,6 +948,9 @@ Future<void> _mostrarDialogoEstatistica(
       TextEditingController(text: '${estatistica?.cartoesAmarelos ?? 0}');
   final vermelhosController =
       TextEditingController(text: '${estatistica?.cartoesVermelhos ?? 0}');
+
+  final uid = ref.read(firebaseAuthProvider).currentUser?.uid;
+  final vaiFicarPendente = !racha.podeConferirEstatistica(uid, jogadorId);
 
   return showDialog<void>(
     context: context,
@@ -771,6 +1002,14 @@ Future<void> _mostrarDialogoEstatistica(
               ),
             ],
           ),
+          if (vaiFicarPendente) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Fica aguardando conferência até o admin ou quem faz a chamada '
+              'confirmar. Editar depois de conferido volta para pendente.',
+              style: TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+            ),
+          ],
         ],
       ),
       actions: [
@@ -781,8 +1020,7 @@ Future<void> _mostrarDialogoEstatistica(
         FilledButton(
           onPressed: () {
             ref.read(estatisticaControllerProvider.notifier).salvar(
-                  rachaId: rachaId,
-                  grupoId: grupoId,
+                  racha: racha,
                   jogadorId: jogadorId,
                   jogadorTipo: jogadorTipo,
                   gols: int.tryParse(golsController.text) ?? 0,
@@ -983,7 +1221,10 @@ class _ParticipanteTile extends ConsumerWidget {
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.person),
+      leading: AvatarJogador(
+        nome: userAsync.valueOrNull?.nome ?? '',
+        fotoBase64: userAsync.valueOrNull?.fotoPerfilBase64,
+      ),
       title: Text(userAsync.valueOrNull?.nome ?? 'Carregando...'),
       subtitle: Row(
         children: [
@@ -1190,6 +1431,13 @@ class _LinhaChamada extends ConsumerWidget {
 
     return ListTile(
       dense: true,
+      // Na chamada o rosto vale mais que em qualquer outra tela: quem anota a
+      // presença está olhando para as pessoas chegando, não para uma lista.
+      leading: AvatarJogador(
+        nome: userAsync.valueOrNull?.nome ?? '',
+        fotoBase64: userAsync.valueOrNull?.fotoPerfilBase64,
+        raio: 16,
+      ),
       title: Text(userAsync.valueOrNull?.nome ?? 'Carregando...'),
       trailing: SegmentedButton<PresencaFinal>(
         showSelectedIcon: false,
@@ -1388,7 +1636,7 @@ class _ConvidadoTile extends ConsumerWidget {
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.person_outline),
+      leading: AvatarJogador(nome: convidado.nome, convidado: true),
       title: Text(convidado.nome),
       subtitle: convidado.oficializado
           ? const Text('Oficializado', style: TextStyle(color: AppColors.info, fontWeight: FontWeight.w600))

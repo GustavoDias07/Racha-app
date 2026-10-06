@@ -46,6 +46,14 @@ class RachaModel {
   bool podeFazerChamada(String? userId) =>
       userId != null && (userId == adminId || anotadores.contains(userId));
 
+  /// Pode conferir as estatísticas de [jogadorId] nesta rodada — a mesma
+  /// gente da chamada, com uma exceção: o anotador não confere os próprios
+  /// números, senão a conferência viraria autodeclaração de novo. O admin
+  /// passa mesmo nos dele: ele já pode editar a estatística de qualquer um,
+  /// então barrar só a própria não protegeria nada.
+  bool podeConferirEstatistica(String? userId, String jogadorId) =>
+      podeFazerChamada(userId) && (userId == adminId || userId != jogadorId);
+
   factory RachaModel.fromMap(String id, Map<String, dynamic> map) {
     return RachaModel(
       id: id,

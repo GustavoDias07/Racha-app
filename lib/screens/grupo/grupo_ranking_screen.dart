@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/avatar_jogador.dart';
 import '../../models/ranking_model.dart';
 import '../../providers/firebase_providers.dart';
 
@@ -63,7 +64,47 @@ class _RankingTile extends ConsumerWidget {
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(child: Text('$posicao')),
+      // Foto com a posição num selo no canto, em vez de só o número: no
+      // ranking o que se procura é a pessoa, e o rosto acha mais rápido que
+      // o nome. O primeiro lugar ganha o selo dourado.
+      leading: SizedBox(
+        width: 46,
+        height: 46,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AvatarJogador(
+              nome: userAsync.valueOrNull?.nome ?? '',
+              fotoBase64: userAsync.valueOrNull?.fotoPerfilBase64,
+              raio: 23,
+            ),
+            Positioned(
+              right: -3,
+              bottom: -3,
+              child: Container(
+                width: 21,
+                height: 21,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: posicao == 1
+                      ? AppColors.destaque
+                      : AppColors.superficieAlta,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.fundo, width: 2),
+                ),
+                child: Text(
+                  '$posicao',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: posicao == 1 ? Colors.black : AppColors.texto,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
       title: Text(userAsync.valueOrNull?.nome ?? 'Carregando...'),
       subtitle: Text(
         '${ranking.totalRachas} racha(s) avaliado(s) • ${ranking.totalGols} gol(s) • '
@@ -76,9 +117,21 @@ class _RankingTile extends ConsumerWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.star, color: AppColors.destaque, size: 16),
+              Icon(
+                Icons.star,
+                color: ranking.mediaAvaliacoes > 0
+                    ? AppColors.destaque
+                    : AppColors.neutro,
+                size: 16,
+              ),
               const SizedBox(width: 2),
-              Text(ranking.mediaAvaliacoes.toStringAsFixed(1)),
+              // Zero aqui quer dizer "ainda não foi avaliado", não "joga
+              // mal". Com 0.0 e estrela, o jogador parecia o pior do grupo.
+              Text(
+                ranking.mediaAvaliacoes > 0
+                    ? ranking.mediaAvaliacoes.toStringAsFixed(1)
+                    : '—',
+              ),
             ],
           ),
           if (ranking.totalMvps > 0)

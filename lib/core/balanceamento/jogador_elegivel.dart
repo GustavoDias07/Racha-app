@@ -14,6 +14,7 @@ class JogadorElegivel {
     required this.nota,
     required this.idade,
     required this.peso,
+    this.golsPorJogo,
   });
 
   /// Id do Participante ou do Convidado (não o userId) — é o que o
@@ -26,6 +27,14 @@ class JogadorElegivel {
   final double nota;
   final int idade;
   final double peso;
+
+  /// Média de gols por rodada, ou `null` para quem não tem histórico —
+  /// convidado, ou jogador que ainda não teve rodada avaliada.
+  ///
+  /// `null` é diferente de zero: zero é "joga e não marca", `null` é "não
+  /// sabemos". O balanceador trata o desconhecido como a média do grupo, para
+  /// que ele não puxe para nenhum lado.
+  final double? golsPorJogo;
 
   bool get isGoleiro => posicaoMain == Posicao.goleiro;
 

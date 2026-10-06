@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,7 +21,7 @@ class _CadastroScreenState extends ConsumerState<CadastroScreen> {
   final _senhaController = TextEditingController();
   final _idadeController = TextEditingController();
   final _pesoController = TextEditingController();
-  File? _fotoPerfil;
+  Uint8List? _fotoPerfil;
 
   @override
   void dispose() {
@@ -70,7 +70,7 @@ class _CadastroScreenState extends ConsumerState<CadastroScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 FotoPerfilPicker(
-                  onFotoSelecionada: (arquivo) => _fotoPerfil = arquivo,
+                  onFotoSelecionada: (bytes) => _fotoPerfil = bytes,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

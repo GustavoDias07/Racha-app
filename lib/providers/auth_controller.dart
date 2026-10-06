@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +19,7 @@ class AuthController extends AsyncNotifier<void> {
     required String senha,
     required int idade,
     required double peso,
-    File? fotoPerfil,
+    Uint8List? fotoPerfil,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -41,7 +41,7 @@ class AuthController extends AsyncNotifier<void> {
         if (fotoPerfil != null) {
           fotoBase64 = await storageService.uploadFotoPerfil(
             userId: uid,
-            arquivo: fotoPerfil,
+            bytes: fotoPerfil,
           );
         }
 

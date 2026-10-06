@@ -45,6 +45,9 @@ Map<String, RankingModel> agregarRanking({
 
   for (final estatistica in estatisticas) {
     if (estatistica.jogadorTipo != TipoJogador.user) continue;
+    // Número que ninguém conferiu ainda é só o que o jogador declarou —
+    // não entra no ranking nem no balanceamento até alguém confirmar.
+    if (!estatistica.confirmada) continue;
     golsPorUser.update(
       estatistica.jogadorId,
       (total) => total + estatistica.gols,

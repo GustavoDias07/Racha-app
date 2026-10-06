@@ -29,6 +29,24 @@ class EstatisticaRepository {
         .set(estatistica.toMap());
   }
 
+  /// Marca como conferidas as estatísticas de vários jogadores de uma vez —
+  /// o "Confirmar" de quem faz a chamada. Um batch só, para que uma queda no
+  /// meio não deixe metade conferida e metade não.
+  Future<void> confirmar({
+    required String rachaId,
+    required Iterable<String> jogadorIds,
+    required String conferidaPor,
+  }) {
+    final batch = _firestore.batch();
+    for (final jogadorId in jogadorIds) {
+      batch.update(_collection(rachaId).doc(jogadorId), {
+        'confirmada': true,
+        'conferidaPor': conferidaPor,
+      });
+    }
+    return batch.commit();
+  }
+
   /// Todas as estatísticas que um User já acumulou, em qualquer racha —
   /// fonte de verdade que o `RankingController` usa pra recalcular
   /// `totalGols`/`totalAssistencias` do zero.
@@ -85,6 +103,10 @@ class EstatisticaRepository {
         assistencias: antiga.assistencias,
         cartoesAmarelos: antiga.cartoesAmarelos,
         cartoesVermelhos: antiga.cartoesVermelhos,
+        // O que já tinha sido conferido como convidado continua conferido
+        // na conta nova — e o que estava pendente continua pendente.
+        confirmada: antiga.confirmada,
+        conferidaPor: antiga.conferidaPor,
       );
       batch.set(doc.reference.parent.doc(userId), nova.toMap());
     }

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,7 +15,7 @@ class PerfilController extends AsyncNotifier<void> {
     required String nome,
     required int idade,
     required double peso,
-    File? novaFoto,
+    Uint8List? novaFoto,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -28,7 +28,7 @@ class PerfilController extends AsyncNotifier<void> {
       if (novaFoto != null) {
         fotoBase64 = await ref.read(storageServiceProvider).uploadFotoPerfil(
               userId: uid,
-              arquivo: novaFoto,
+              bytes: novaFoto,
             );
       }
 

@@ -89,14 +89,16 @@ lib/
   repositories/ leitura e escrita no Firestore
   providers/   injeção de dependência e estado (Riverpod)
   screens/     as telas
-test/          51 testes, só de lógica pura
+test/          62 testes, só de lógica pura
 docs/          documentação e histórico de decisões
 ```
 
-A separação que mais importa: **`services/` e `repositories/` são as únicas camadas que conhecem o Firebase**. Telas e `core/` não importam nada do SDK — é o que permite testar a lógica sem subir emulador.
+A separação que mais importa: **`services/` e `repositories/` são as únicas camadas que leem e gravam no Firebase**. Telas e `core/` no máximo usam tipos dele (`GeoPoint`) — é o que permite testar a lógica sem subir emulador.
 
-### Dois arquivos para ler antes de mexer
+### Arquivos para ler antes de mexer
 
+- **`CLAUDE.md`** — o contexto do projeto para o Claude Code: decisões, convenções, o que falta e o que nunca fazer. O Claude Code lê sozinho ao abrir a pasta.
+- **`docs/racha-app-codigo-explicado.pdf`** (ou `.html`) — o código do app inteiro explicado arquivo por arquivo, para estudar e para responder ao professor.
 - **`docs/tarefas.md`** — o registro completo: cada problema encontrado, o que foi feito e por quê. É aqui que está o roadmap, incluindo o Bloco 5, com os pré-requisitos para publicar na Play Store.
 - **`firestore.rules`** — os comentários no topo explicam as limitações conhecidas da arquitetura (sem Cloud Functions, ranking calculado no cliente).
 
@@ -109,7 +111,7 @@ flutter test
 flutter analyze
 ```
 
-São 51 testes cobrindo balanceamento de times, cálculo de MVP, agregação de ranking, distância geográfica, busca de endereço e o tema. Não há teste de tela: isso exigiria mocks dos plugins do Firebase, que ainda não fazem parte do projeto.
+São 62 testes cobrindo balanceamento de times, cálculo de MVP, agregação de ranking, conferência de estatísticas, distância geográfica, busca de endereço e o tema. Não há teste de tela: isso exigiria mocks dos plugins do Firebase, que ainda não fazem parte do projeto.
 
 ---
 

@@ -43,9 +43,25 @@ class RachaController extends AsyncNotifier<void> {
   /// encerram, sem gerar sequência. Tudo num único batch (o encerramento e
   /// a criação da próxima rodada), pra nunca deixar o grupo sem nenhuma
   /// rodada aberta se a escrita cair no meio.
+  ///
+  /// Só finaliza com todas as estatísticas conferidas: depois de encerrada,
+  /// só o admin mexe nelas, então o que ficasse pendente ficaria de fora do
+  /// ranking sem que ninguém percebesse.
   Future<void> finalizar(RachaModel racha) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      final estatisticas = await ref
+          .read(estatisticaRepositoryProvider)
+          .observarPorRacha(racha.id)
+          .first;
+      final pendentes = estatisticas.where((e) => !e.confirmada).length;
+      if (pendentes > 0) {
+        throw Exception(
+          '$pendentes estatística(s) ainda esperando conferência. Confira na '
+          'aba Estatísticas antes de finalizar.',
+        );
+      }
+
       final rachaRepo = ref.read(rachaRepositoryProvider);
       final participanteRepo = ref.read(participanteRepositoryProvider);
       final batch = ref.read(firestoreProvider).batch();

@@ -102,6 +102,18 @@ class GrupoRepository {
     });
   }
 
+  /// Troca (ou remove, com `null`) a foto do grupo.
+  ///
+  /// Escrita separada da edição da configuração: a foto muda de um
+  /// toque na tela do grupo, sem abrir o formulário inteiro, e regravar
+  /// nome/horário/local só para trocar a imagem seria pedir para
+  /// sobrescrever uma edição que alguém fez no meio tempo.
+  Future<void> atualizarFoto(String grupoId, String? fotoBase64) {
+    return _collection.doc(grupoId).update({
+      'fotoBase64': fotoBase64 ?? FieldValue.delete(),
+    });
+  }
+
   /// Saída do próprio jogador do grupo (não é o admin removendo alguém —
   /// ver `atualizarMembrosFixos`). Usa `arrayRemove` em vez de reescrever a
   /// lista inteira porque a regra do Firestore só libera essa escrita pra

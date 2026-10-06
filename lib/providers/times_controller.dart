@@ -59,6 +59,7 @@ class TimesController extends AsyncNotifier<void> {
           nota: _notaDe(rankings[p.userId]),
           idade: user.idade,
           peso: user.peso,
+          golsPorJogo: _golsPorJogoDe(rankings[p.userId]),
         ));
       }
       for (final c in convidados) {
@@ -101,6 +102,20 @@ class TimesController extends AsyncNotifier<void> {
   double _notaDe(RankingModel? ranking) {
     final media = ranking?.mediaAvaliacoes ?? 0;
     return media > 0 ? media : notaNeutra;
+  }
+
+  /// Gols por rodada a partir do ranking, ou `null` quando não dá para
+  /// calcular.
+  ///
+  /// O divisor é `totalRachas`, que hoje conta rodadas em que o jogador foi
+  /// **avaliado**, não rodadas jogadas (ver T7 em docs/tarefas.md). É uma
+  /// aproximação: quem jogou e não foi avaliado fica com média um pouco
+  /// inflada. Sem nenhuma rodada avaliada não há divisor confiável, e o
+  /// jogador entra como desconhecido — o balanceador o trata como a média
+  /// do grupo.
+  double? _golsPorJogoDe(RankingModel? ranking) {
+    if (ranking == null || ranking.totalRachas == 0) return null;
+    return ranking.totalGols / ranking.totalRachas;
   }
 
   void _salvarTimeEmLote(

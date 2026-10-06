@@ -46,6 +46,14 @@ service cloud.firestore {
           .data.get('anotadores', []);
     }
 
+    // Rodada ainda não encerrada. Mesmo documento que `grupoDoRacha` e
+    // `isAnotador` já leem, e o Firestore cobra uma leitura só por documento
+    // dentro da mesma avaliação de regra.
+    function rachaAberto(rachaId) {
+      return get(/databases/$(database)/documents/rachas/$(rachaId))
+        .data.status != 'finalizado';
+    }
+
     function isGrupoAdmin(grupoId) {
       return isSignedIn() &&
         get(/databases/$(database)/documents/grupos/$(grupoId)).data.adminId == request.auth.uid;
@@ -270,13 +278,35 @@ service cloud.firestore {
 
       // estatisticas/{jogadorId} — o id do doc é o próprio jogadorId
       // (userId real do User, ou id do Convidado — ver EstatisticaRepository).
+      //
+      // Conferência (igual à chamada): o jogador lança os próprios números,
+      // mas só como pendente (`confirmada == false`); quem marca como
+      // conferido é o admin ou um anotador — e o anotador nunca nos
+      // próprios números, nem deixando de se registrar em `conferidaPor`.
+      // Com a rodada finalizada, só o admin escreve (ele precisa disso para
+      // oficializar convidado, que copia estatísticas de rodadas antigas).
       match /estatisticas/{jogadorId} {
         allow read: if isSignedIn();
         allow create, update: if isSignedIn()
           && request.resource.data.rachaId == rachaId
           && request.resource.data.jogadorId == jogadorId
           && request.resource.data.get('grupoId', null) == grupoDoRacha(rachaId)
-          && (isRachaAdmin(rachaId) || request.auth.uid == jogadorId)
+          && request.resource.data.confirmada is bool
+          && (
+            isRachaAdmin(rachaId) ||
+            (
+              rachaAberto(rachaId) && isAnotador(rachaId)
+              && request.auth.uid != jogadorId
+              && (
+                request.resource.data.confirmada == false ||
+                request.resource.data.conferidaPor == request.auth.uid
+              )
+            ) ||
+            (
+              rachaAberto(rachaId) && request.auth.uid == jogadorId
+              && request.resource.data.confirmada == false
+            )
+          )
           && request.resource.data.gols >= 0
           && request.resource.data.assistencias >= 0
           && request.resource.data.cartoesAmarelos >= 0

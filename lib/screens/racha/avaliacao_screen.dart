@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/avatar_jogador.dart';
 import '../../models/alvo_avaliacao.dart';
 import '../../models/enums.dart';
 import '../../providers/avaliacao_controller.dart';
@@ -170,11 +171,26 @@ class _AlvoNome extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (alvo.tipo == TipoJogador.convidado) {
-      return Text(alvo.nome ?? '');
-    }
-    final userAsync = ref.watch(userPorIdProvider(alvo.id));
-    return Text(userAsync.valueOrNull?.nome ?? 'Carregando...');
+    final convidado = alvo.tipo == TipoJogador.convidado;
+    final user = convidado
+        ? null
+        : ref.watch(userPorIdProvider(alvo.id)).valueOrNull;
+    final nome = convidado ? (alvo.nome ?? '') : (user?.nome ?? 'Carregando...');
+
+    // A foto do lado do nome: avaliar companheiro pelo nome escrito é
+    // difícil quando o grupo tem dois "Lucas", e o rosto tira a dúvida.
+    return Row(
+      children: [
+        AvatarJogador(
+          nome: convidado ? nome : (user?.nome ?? ''),
+          fotoBase64: user?.fotoPerfilBase64,
+          convidado: convidado,
+          raio: 18,
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Text(nome)),
+      ],
+    );
   }
 }
 
@@ -212,13 +228,19 @@ class _AdversarioChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final String nome;
-    if (alvo.tipo == TipoJogador.convidado) {
-      nome = alvo.nome ?? '';
-    } else {
-      nome = ref.watch(userPorIdProvider(alvo.id)).valueOrNull?.nome ?? '...';
-    }
+    final convidado = alvo.tipo == TipoJogador.convidado;
+    final user = convidado
+        ? null
+        : ref.watch(userPorIdProvider(alvo.id)).valueOrNull;
+    final nome = convidado ? (alvo.nome ?? '') : (user?.nome ?? '...');
+
     return ChoiceChip(
+      avatar: AvatarJogador(
+        nome: nome,
+        fotoBase64: user?.fotoPerfilBase64,
+        convidado: convidado,
+        raio: 11,
+      ),
       label: Text(nome),
       selected: selecionado,
       onSelected: (_) => onSelected(),

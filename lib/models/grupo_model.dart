@@ -26,6 +26,15 @@ class GrupoModel {
   /// nada mais, não editam o racha nem aprovam entrada.
   final List<String> auxiliares;
 
+  /// Foto do racha (o campo, a quadra, a turma) em base64, ou nulo.
+  ///
+  /// Mesma estratégia provisória da foto de perfil: o Firebase Storage
+  /// exige o plano pago, então a imagem mora no próprio documento. Por
+  /// isso ela é comprimida bem mais que a de perfil antes de chegar aqui
+  /// — este documento é lido em toda lista de grupos da tela inicial e da
+  /// aba "Rachas Próximos", e cada KB a mais pesa N vezes.
+  final String? fotoBase64;
+
   const GrupoModel({
     required this.id,
     required this.nome,
@@ -39,6 +48,7 @@ class GrupoModel {
     this.localizacao,
     this.abertoParaNovosMembros = false,
     this.auxiliares = const [],
+    this.fotoBase64,
   });
 
   factory GrupoModel.fromMap(String id, Map<String, dynamic> map) {
@@ -55,6 +65,7 @@ class GrupoModel {
       localizacao: map['localizacao'] as GeoPoint?,
       abertoParaNovosMembros: map['abertoParaNovosMembros'] as bool? ?? false,
       auxiliares: List<String>.from(map['auxiliares'] as List? ?? const []),
+      fotoBase64: map['fotoBase64'] as String?,
     );
   }
 
@@ -71,6 +82,7 @@ class GrupoModel {
       'localizacao': localizacao,
       'abertoParaNovosMembros': abertoParaNovosMembros,
       'auxiliares': auxiliares,
+      'fotoBase64': fotoBase64,
     };
   }
 
@@ -100,6 +112,7 @@ class GrupoModel {
       localizacao: localizacao ?? this.localizacao,
       abertoParaNovosMembros: abertoParaNovosMembros ?? this.abertoParaNovosMembros,
       auxiliares: auxiliares ?? this.auxiliares,
+      fotoBase64: fotoBase64,
     );
   }
 }

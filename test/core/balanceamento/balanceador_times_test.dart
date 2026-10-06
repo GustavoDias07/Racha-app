@@ -12,6 +12,7 @@ JogadorElegivel _jogador(
   double nota = 3.0,
   int idade = 25,
   double peso = 75,
+  double? gols,
 }) {
   return JogadorElegivel(
     id: id,
@@ -22,8 +23,12 @@ JogadorElegivel _jogador(
     nota: nota,
     idade: idade,
     peso: peso,
+    golsPorJogo: gols,
   );
 }
+
+double _media(List<JogadorElegivel> time, double Function(JogadorElegivel) de) =>
+    time.map(de).reduce((a, b) => a + b) / time.length;
 
 /// Quantos jogadores do time atuam neste setor, contando pela posição em que
 /// eles foram efetivamente escalados (main, ou usual quando a main não é de
@@ -202,5 +207,100 @@ void main() {
 
     expect(resultado.timeA, isEmpty);
     expect(resultado.timeB, isEmpty);
+  });
+
+  group('além da nota', () {
+    // Nos testes abaixo a ordem de entrada é escolhida para que a
+    // distribuição inicial (que só olha a nota) saia desequilibrada no
+    // critério testado. Se o ajuste final ignorasse esse critério, os times
+    // terminariam desequilibrados — que é exatamente o que o teste pega.
+
+    test('com notas iguais, não junta os mais novos de um lado só', () {
+      final elegiveis = [
+        _jogador('novo1', posicaoMain: Posicao.zagueiro, idade: 18),
+        _jogador('veterano1', posicaoMain: Posicao.zagueiro, idade: 40),
+        _jogador('novo2', posicaoMain: Posicao.zagueiro, idade: 19),
+        _jogador('veterano2', posicaoMain: Posicao.zagueiro, idade: 41),
+      ];
+
+      final r = balanceador.gerar(elegiveis, qtdJogadoresLinha: 2);
+
+      final idadeA = _media(r.timeA, (j) => j.idade.toDouble());
+      final idadeB = _media(r.timeB, (j) => j.idade.toDouble());
+      // Sem o critério de idade a diferença seria de 21,5 anos.
+      expect((idadeA - idadeB).abs(), lessThan(2));
+    });
+
+    test('com notas iguais, não junta os artilheiros no mesmo time', () {
+      final elegiveis = [
+        _jogador('artilheiro1', posicaoMain: Posicao.atacante, gols: 2.0),
+        _jogador('pereba1', posicaoMain: Posicao.atacante, gols: 0.0),
+        _jogador('artilheiro2', posicaoMain: Posicao.atacante, gols: 1.8),
+        _jogador('pereba2', posicaoMain: Posicao.atacante, gols: 0.2),
+      ];
+
+      final r = balanceador.gerar(elegiveis, qtdJogadoresLinha: 2);
+
+      final ids = {for (final j in r.timeA) j.id};
+      // Cada time fica com exatamente um artilheiro.
+      expect(
+        ids.contains('artilheiro1') != ids.contains('artilheiro2'),
+        isTrue,
+        reason: 'os dois artilheiros caíram no mesmo time: $ids',
+      );
+    });
+
+    test('a nota continua sendo o critério principal', () {
+      // Conflito proposital: equilibrar a idade exigiria um time com nota
+      // média 4 contra outro com 2. A nota pesa mais, então o algoritmo
+      // aceita a diferença de idade para manter as notas iguais.
+      final elegiveis = [
+        _jogador('craque', posicaoMain: Posicao.meia, nota: 5, idade: 20),
+        _jogador('fraco', posicaoMain: Posicao.meia, nota: 1, idade: 20),
+        _jogador('medio1', posicaoMain: Posicao.meia, nota: 3, idade: 40),
+        _jogador('medio2', posicaoMain: Posicao.meia, nota: 3, idade: 40),
+      ];
+
+      final r = balanceador.gerar(elegiveis, qtdJogadoresLinha: 2);
+
+      final notaA = _media(r.timeA, (j) => j.nota);
+      final notaB = _media(r.timeB, (j) => j.nota);
+      expect((notaA - notaB).abs(), lessThan(0.5));
+    });
+
+    test('jogador sem histórico de gols não é tratado como quem não marca', () {
+      // Se o desconhecido virasse zero, os três sem histórico seriam vistos
+      // como "fracos no ataque" e empurrados todos contra o artilheiro.
+      final elegiveis = [
+        _jogador('artilheiro', posicaoMain: Posicao.atacante, gols: 2.0),
+        _jogador('novo1', posicaoMain: Posicao.atacante),
+        _jogador('novo2', posicaoMain: Posicao.atacante),
+        _jogador('novo3', posicaoMain: Posicao.atacante),
+      ];
+
+      final r = balanceador.gerar(elegiveis, qtdJogadoresLinha: 2);
+
+      expect(r.timeA.length + r.timeB.length, 4);
+      expect((r.timeA.length - r.timeB.length).abs(), lessThanOrEqualTo(1));
+    });
+
+    test('a troca por critério secundário não desmonta os setores', () {
+      final elegiveis = [
+        _jogador('z1', posicaoMain: Posicao.zagueiro, idade: 18),
+        _jogador('z2', posicaoMain: Posicao.zagueiro, idade: 40),
+        _jogador('a1', posicaoMain: Posicao.atacante, idade: 19),
+        _jogador('a2', posicaoMain: Posicao.atacante, idade: 41),
+      ];
+
+      final r = balanceador.gerar(elegiveis, qtdJogadoresLinha: 2);
+
+      for (final setor in [SetorCampo.defesa, SetorCampo.ataque]) {
+        expect(
+          (_noSetor(r.timeA, setor) - _noSetor(r.timeB, setor)).abs(),
+          lessThanOrEqualTo(1),
+          reason: 'setor $setor desequilibrou',
+        );
+      }
+    });
   });
 }

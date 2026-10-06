@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,7 +23,7 @@ class _EditarPerfilScreenState extends ConsumerState<EditarPerfilScreen> {
   late final _nomeController = TextEditingController(text: widget.user.nome);
   late final _idadeController = TextEditingController(text: widget.user.idade.toString());
   late final _pesoController = TextEditingController(text: widget.user.peso.toString());
-  File? _novaFoto;
+  Uint8List? _novaFoto;
 
   @override
   void dispose() {
@@ -71,7 +71,7 @@ class _EditarPerfilScreenState extends ConsumerState<EditarPerfilScreen> {
               children: [
                 FotoPerfilPicker(
                   fotoAtualBase64: widget.user.fotoPerfilBase64,
-                  onFotoSelecionada: (arquivo) => _novaFoto = arquivo,
+                  onFotoSelecionada: (bytes) => _novaFoto = bytes,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

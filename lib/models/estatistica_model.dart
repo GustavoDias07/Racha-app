@@ -20,6 +20,18 @@ class EstatisticaModel {
   /// campo em `AvaliacaoModel`: o ranking do grupo busca tudo de uma vez.
   final String? grupoId;
 
+  /// Se alguém que faz a chamada (admin ou anotador) já conferiu esses
+  /// números. Só estatística conferida entra no ranking.
+  ///
+  /// Sem isso, cada jogador lançava os próprios gols e eles iam direto para
+  /// o ranking e para o balanceamento — bastava digitar 10 para virar
+  /// artilheiro. Agora o jogador lança, fica "aguardando conferência", e
+  /// quem acompanhou o jogo confirma; a rodada só finaliza com tudo conferido.
+  final bool confirmada;
+
+  /// Quem conferiu, ou `null` enquanto está pendente.
+  final String? conferidaPor;
+
   const EstatisticaModel({
     required this.id,
     required this.rachaId,
@@ -30,6 +42,8 @@ class EstatisticaModel {
     this.cartoesAmarelos = 0,
     this.cartoesVermelhos = 0,
     this.grupoId,
+    this.confirmada = false,
+    this.conferidaPor,
   });
 
   factory EstatisticaModel.fromMap(String id, Map<String, dynamic> map) {
@@ -43,6 +57,11 @@ class EstatisticaModel {
       cartoesAmarelos: map['cartoesAmarelos'] as int? ?? 0,
       cartoesVermelhos: map['cartoesVermelhos'] as int? ?? 0,
       grupoId: map['grupoId'] as String?,
+      // Documento sem o campo é de antes da conferência existir — rodadas
+      // que já foram finalizadas assim. Tratar como pendente apagaria do
+      // ranking um histórico que ninguém mais tem como conferir.
+      confirmada: map['confirmada'] as bool? ?? true,
+      conferidaPor: map['conferidaPor'] as String?,
     );
   }
 
@@ -56,6 +75,8 @@ class EstatisticaModel {
       'cartoesAmarelos': cartoesAmarelos,
       'cartoesVermelhos': cartoesVermelhos,
       'grupoId': grupoId,
+      'confirmada': confirmada,
+      'conferidaPor': conferidaPor,
     };
   }
 
@@ -75,6 +96,8 @@ class EstatisticaModel {
       cartoesAmarelos: cartoesAmarelos ?? this.cartoesAmarelos,
       cartoesVermelhos: cartoesVermelhos ?? this.cartoesVermelhos,
       grupoId: grupoId,
+      confirmada: confirmada,
+      conferidaPor: conferidaPor,
     );
   }
 }

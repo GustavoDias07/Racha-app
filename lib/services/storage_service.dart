@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
 /// Prepara a foto de perfil para ser salva.
 ///
@@ -12,9 +12,10 @@ import 'dart:io';
 class StorageService {
   Future<String> uploadFotoPerfil({
     required String userId,
-    required File arquivo,
+    required Uint8List bytes,
   }) async {
-    final bytes = await arquivo.readAsBytes();
+    // Recebe os bytes, e não um `File`: no navegador não existe caminho
+    // de arquivo, e a versão com `File` quebrava ao cadastrar pelo Chrome.
     return base64Encode(bytes);
   }
 }

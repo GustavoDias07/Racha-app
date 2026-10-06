@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/geo_utils.dart';
+import '../../core/utils/imagem_base64.dart';
 import '../../models/enums.dart';
 import '../../models/grupo_model.dart';
 import '../../providers/firebase_providers.dart';
@@ -20,7 +21,8 @@ class RachasProximosScreen extends ConsumerStatefulWidget {
   const RachasProximosScreen({super.key});
 
   @override
-  ConsumerState<RachasProximosScreen> createState() => _RachasProximosScreenState();
+  ConsumerState<RachasProximosScreen> createState() =>
+      _RachasProximosScreenState();
 }
 
 class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
@@ -41,7 +43,9 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
       _erro = null;
     });
     try {
-      final posicao = await ref.read(locationServiceProvider).obterPosicaoAtual();
+      final posicao = await ref
+          .read(locationServiceProvider)
+          .obterPosicaoAtual();
       if (!mounted) return;
       setState(() {
         _minhaPosicao = posicao;
@@ -102,8 +106,11 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    const Icon(Icons.my_location,
-                        size: 20, color: AppColors.pendente),
+                    const Icon(
+                      Icons.my_location,
+                      size: 20,
+                      color: AppColors.pendente,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -147,34 +154,42 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
               // ele aparece na Home, e deixar o card aqui só oferecia um
               // botão de solicitar entrada em algo em que já estou dentro.
               final deOutros = grupos
-                  .where((g) =>
-                      g.adminId != meuUid && !g.membrosFixos.contains(meuUid))
+                  .where(
+                    (g) =>
+                        g.adminId != meuUid && !g.membrosFixos.contains(meuUid),
+                  )
                   .toList();
 
               // Grupo sem ponto no mapa não tem como entrar no cálculo de
               // distância. Só acontece em grupos criados antes de a tela de
               // mapa existir — hoje a localização é obrigatória para abrir.
-              final comLocal =
-                  deOutros.where((g) => g.localizacao != null).toList();
+              final comLocal = deOutros
+                  .where((g) => g.localizacao != null)
+                  .toList();
 
-              final ordenados = comLocal
-                  .map((g) => (
-                        grupo: g,
-                        distancia: distanciaKm(minhaPosicao, g.localizacao!)
-                      ))
-                  .toList()
-                ..sort((a, b) => a.distancia.compareTo(b.distancia));
+              final ordenados =
+                  comLocal
+                      .map(
+                        (g) => (
+                          grupo: g,
+                          distancia: distanciaKm(minhaPosicao, g.localizacao!),
+                        ),
+                      )
+                      .toList()
+                    ..sort((a, b) => a.distancia.compareTo(b.distancia));
 
-              final proximos =
-                  ordenados.where((par) => par.distancia <= _raioKm).toList();
+              final proximos = ordenados
+                  .where((par) => par.distancia <= _raioKm)
+                  .toList();
 
               if (proximos.isEmpty) {
                 return _Vazio(
                   totalAbertos: grupos.length,
                   deOutros: deOutros.length,
                   comLocal: comLocal.length,
-                  distanciaMaisProximo:
-                      ordenados.isEmpty ? null : ordenados.first.distancia,
+                  distanciaMaisProximo: ordenados.isEmpty
+                      ? null
+                      : ordenados.first.distancia,
                   raioKm: _raioKm,
                 );
               }
@@ -183,7 +198,10 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
                   for (final par in proximos)
-                    _RachaProximoTile(grupo: par.grupo, distanciaKm: par.distancia),
+                    _RachaProximoTile(
+                      grupo: par.grupo,
+                      distanciaKm: par.distancia,
+                    ),
                 ],
               );
             },
@@ -221,30 +239,30 @@ class _Vazio extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icone, titulo, detalhe) = switch (0) {
       _ when totalAbertos == 0 => (
-          Icons.explore_off_outlined,
-          'Nenhum racha aberto ainda',
-          'Só aparecem aqui os rachas que o organizador marcou como "aberto '
-              'para novos jogadores" ao criar o grupo.',
-        ),
+        Icons.explore_off_outlined,
+        'Nenhum racha aberto ainda',
+        'Só aparecem aqui os rachas que o organizador marcou como "aberto '
+            'para novos jogadores" ao criar o grupo.',
+      ),
       _ when deOutros == 0 => (
-          Icons.person_outline,
-          'Os rachas abertos são seus',
-          'Esta aba é para descobrir rachas de outras pessoas, então os que '
-              'você organiza ou já participa ficam de fora. Eles continuam na '
-              'tela inicial.',
-        ),
+        Icons.person_outline,
+        'Os rachas abertos são seus',
+        'Esta aba é para descobrir rachas de outras pessoas, então os que '
+            'você organiza ou já participa ficam de fora. Eles continuam na '
+            'tela inicial.',
+      ),
       _ when comLocal == 0 => (
-          Icons.location_off_outlined,
-          'Sem localização no mapa',
-          'Existem rachas abertos, mas nenhum deles tem um ponto marcado no '
-              'mapa — sem isso não dá para calcular a distância.',
-        ),
+        Icons.location_off_outlined,
+        'Sem localização no mapa',
+        'Existem rachas abertos, mas nenhum deles tem um ponto marcado no '
+            'mapa — sem isso não dá para calcular a distância.',
+      ),
       _ => (
-          Icons.social_distance_outlined,
-          'Nenhum racha dentro de $raioKm km',
-          'O mais próximo está a ${distanciaMaisProximo!.toStringAsFixed(1)} km '
-              'daqui. Toque num raio maior acima para alcançá-lo.',
-        ),
+        Icons.social_distance_outlined,
+        'Nenhum racha dentro de $raioKm km',
+        'O mais próximo está a ${distanciaMaisProximo!.toStringAsFixed(1)} km '
+            'daqui. Toque num raio maior acima para alcançá-lo.',
+      ),
     };
 
     return Center(
@@ -258,9 +276,7 @@ class _Vazio extends StatelessWidget {
             Text(
               titulo,
               textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
+              style: Theme.of(context).textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -283,14 +299,16 @@ class _RachaProximoTile extends ConsumerWidget {
   final double distanciaKm;
 
   Future<void> _solicitar(BuildContext context, WidgetRef ref) async {
-    final resultado =
-        await ref.read(solicitacaoControllerProvider.notifier).solicitar(grupo);
+    final resultado = await ref
+        .read(solicitacaoControllerProvider.notifier)
+        .solicitar(grupo);
     if (!context.mounted) return;
 
     final mensagem = switch (resultado) {
       ResultadoSolicitacao.enviada =>
         'Pedido enviado! O admin do racha precisa aprovar.',
-      ResultadoSolicitacao.jaSolicitou => 'Você já tem um pedido pendente aqui.',
+      ResultadoSolicitacao.jaSolicitou =>
+        'Você já tem um pedido pendente aqui.',
       ResultadoSolicitacao.jaEraMembro => 'Você já é membro desse racha.',
       ResultadoSolicitacao.recusadoAntes =>
         'Seu pedido foi recusado. Só o organizador pode reabrir.',
@@ -303,7 +321,9 @@ class _RachaProximoTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final solicitacao = ref.watch(minhaSolicitacaoProvider(grupo.id)).valueOrNull;
+    final solicitacao = ref
+        .watch(minhaSolicitacaoProvider(grupo.id))
+        .valueOrNull;
     final solicitacaoState = ref.watch(solicitacaoControllerProvider);
 
     // Recusa trava o botão de vez: quem decide se a pessoa pode tentar de
@@ -319,42 +339,71 @@ class _RachaProximoTile extends ConsumerWidget {
       null => 'Solicitar entrada',
     };
 
+    final capa = bytesDaFoto(grupo.fotoBase64);
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Nesta aba a foto pesa mais que em qualquer outra: quem está
+          // decidindo se pede para entrar num racha de desconhecidos quer ver
+          // o campo antes. Por isso aqui ela vem grande, e não miniatura.
+          if (capa != null)
+            AspectRatio(
+              aspectRatio: 21 / 9,
+              child: Image.memory(
+                capa,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(grupo.nome, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        grupo.nome,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Text('a ${distanciaLegivel(distanciaKm)}'),
+                  ],
                 ),
-                Text('a ${distanciaLegivel(distanciaKm)}'),
+                const SizedBox(height: 4),
+                Text(
+                  '${grupo.localPadrao} • ${grupo.diaSemana.label}, ${grupo.horario}',
+                ),
+                Text(
+                  '${grupo.tipoCampoPadrao.label} • ${grupo.qtdJogadoresLinhaPadrao} de linha',
+                ),
+                if (status == StatusAprovacao.recusado)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Pedido recusado — fale com o organizador se quiser tentar de novo.',
+                      style: TextStyle(color: AppColors.recusado, fontSize: 12),
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton(
+                    onPressed: bloqueado
+                        ? null
+                        : () => _solicitar(context, ref),
+                    child: Text(rotulo),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text('${grupo.localPadrao} • ${grupo.diaSemana.label}, ${grupo.horario}'),
-            Text('${grupo.tipoCampoPadrao.label} • ${grupo.qtdJogadoresLinhaPadrao} de linha'),
-            if (status == StatusAprovacao.recusado)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'Pedido recusado — fale com o organizador se quiser tentar de novo.',
-                  style: TextStyle(color: AppColors.recusado, fontSize: 12),
-                ),
-              ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton(
-                onPressed: bloqueado ? null : () => _solicitar(context, ref),
-                child: Text(rotulo),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -27,6 +27,7 @@ EstatisticaModel _estatistica(
   int gols = 0,
   int assistencias = 0,
   TipoJogador tipo = TipoJogador.user,
+  bool confirmada = true,
 }) {
   return EstatisticaModel(
     id: jogadorId,
@@ -35,6 +36,7 @@ EstatisticaModel _estatistica(
     jogadorTipo: tipo,
     gols: gols,
     assistencias: assistencias,
+    confirmada: confirmada,
   );
 }
 
@@ -123,5 +125,36 @@ void main() {
 
     expect(ordenado.map((r) => r.userId).toList(),
         ['artilheiro', 'regular', 'esforcado']);
+  });
+
+  test('estatística ainda não conferida fica fora do ranking', () {
+    final ranking = agregarRanking(
+      avaliacoes: const [],
+      estatisticas: [
+        _estatistica('gabi', rachaId: 'r1', gols: 2),
+        // Lançada pela própria jogadora e ninguém conferiu: não conta.
+        _estatistica('gabi', rachaId: 'r2', gols: 10, confirmada: false),
+      ],
+      mvpUserIds: const [],
+    );
+
+    expect(ranking['gabi']!.totalGols, 2);
+  });
+
+  test('documento antigo, sem o campo de conferência, continua contando', () {
+    final antiga = EstatisticaModel.fromMap('hugo', {
+      'rachaId': 'r1',
+      'jogadorId': 'hugo',
+      'jogadorTipo': 'user',
+      'gols': 3,
+    });
+
+    final ranking = agregarRanking(
+      avaliacoes: const [],
+      estatisticas: [antiga],
+      mvpUserIds: const [],
+    );
+
+    expect(ranking['hugo']!.totalGols, 3);
   });
 }

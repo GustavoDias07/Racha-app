@@ -1,3 +1,4 @@
+import '../constants/balanceamento_constants.dart';
 import 'jogador_elegivel.dart';
 import 'setores.dart';
 
@@ -23,11 +24,13 @@ class ResultadoBalanceamento {
 ///    atacantes (diferença de no máximo um em cada setor). Quando um setor
 ///    fica em falta, a posição usual de quem está sobrando em outro setor é
 ///    usada como reforço — ver `distribuirPorSetor`.
-/// 3. **Nota** — os dois times terminam com médias de avaliação o mais
-///    próximas possível. A distribuição inicial já espalha os melhores, e um
-///    ajuste final troca jogadores de mesmo setor entre os lados enquanto
-///    isso aproximar as médias — como a troca é sempre dentro do mesmo setor,
-///    as duas primeiras garantias continuam de pé.
+/// 3. **Força** — os dois times terminam o mais parecidos possível em quatro
+///    critérios ao mesmo tempo: nota média, gols por rodada, idade e peso
+///    (os pesos de cada um estão em `balanceamento_constants.dart`). A
+///    distribuição inicial já espalha os melhores pela nota, e um ajuste
+///    final troca jogadores de mesmo setor entre os lados enquanto isso
+///    aproximar os times — como a troca é sempre dentro do mesmo setor, as
+///    duas primeiras garantias continuam de pé.
 class BalanceadorTimes {
   const BalanceadorTimes();
 
@@ -83,7 +86,12 @@ class BalanceadorTimes {
       _escolherTime(timeA, timeB, 0, 0).add(jogador);
     }
 
-    _aproximarMedias(timeA, timeB, _gruposDe(timeA, timeB));
+    _aproximarTimes(
+      timeA,
+      timeB,
+      _gruposDe(timeA, timeB),
+      _golsEfetivos([...timeA, ...timeB]),
+    );
 
     return ResultadoBalanceamento(timeA: timeA, timeB: timeB);
   }
@@ -108,42 +116,72 @@ class BalanceadorTimes {
     };
   }
 
+  /// Gols por rodada de cada jogador, com o desconhecido preenchido pela
+  /// média de quem tem histórico.
+  ///
+  /// Preencher com zero seria tratar o jogador novo e o convidado como quem
+  /// nunca marca, e o algoritmo os empurraria todos para o mesmo lado para
+  /// "compensar" o artilheiro do outro. Com a média, o desconhecido fica
+  /// neutro. Se ninguém tem histórico, todo mundo fica igual e o critério
+  /// simplesmente não pesa.
+  Map<String, double> _golsEfetivos(List<JogadorElegivel> todos) {
+    final conhecidos = [
+      for (final j in todos)
+        if (j.golsPorJogo != null) j.golsPorJogo!,
+    ];
+    final media = conhecidos.isEmpty
+        ? 0.0
+        : conhecidos.reduce((a, b) => a + b) / conhecidos.length;
+    return {for (final j in todos) j.id: j.golsPorJogo ?? media};
+  }
+
   /// Ajuste final: enquanto existir uma troca de jogadores do mesmo bolso que
-  /// aproxime as médias dos dois times, faz a troca. Sem isso a nota ficava
-  /// em último lugar na fila de critérios — bastava um setor com número ímpar
-  /// de jogadores e notas desiguais pra um time sair claramente mais forte,
-  /// mesmo com setores e tamanhos perfeitos.
+  /// deixe os times mais parecidos, faz a troca.
+  ///
+  /// "Parecidos" é o [_desequilibrio] entre os dois lados, que soma as
+  /// diferenças de nota, gols, idade e peso, cada uma com o seu peso. Antes
+  /// era só a nota: idade e peso chegavam até aqui e nunca eram lidos, e
+  /// gols nem chegavam. Bastava uma rodada com os mais novos todos de um lado
+  /// para o jogo ficar decidido no fôlego, mesmo com notas idênticas.
   ///
   /// Compara **médias**, não somas: os times podem ter um jogador de
   /// diferença, e nesse caso somas iguais significariam o time menor sendo
   /// bem mais forte por jogador.
-  void _aproximarMedias(
+  void _aproximarTimes(
     List<JogadorElegivel> timeA,
     List<JogadorElegivel> timeB,
     Map<String, String> grupos,
+    Map<String, double> gols,
   ) {
     if (timeA.isEmpty || timeB.isEmpty) return;
 
-    var distanciaAtual = _distanciaDeMedias(timeA, timeB);
+    var somaA = _Somas.de(timeA, gols);
+    var somaB = _Somas.de(timeB, gols);
+    var atual = _desequilibrio(somaA, timeA.length, somaB, timeB.length);
 
     // Cada iteração aplica a melhor troca disponível. O laço para sozinho
     // quando nenhuma troca melhora — o limite de voltas é só uma trava de
     // segurança contra empates que fiquem alternando entre si.
     for (var volta = 0; volta < timeA.length * timeB.length; volta++) {
-      var melhorDistancia = distanciaAtual;
+      var melhor = atual;
       var melhorA = -1;
       var melhorB = -1;
 
       for (var i = 0; i < timeA.length; i++) {
         for (var k = 0; k < timeB.length; k++) {
           if (grupos[timeA[i].id] != grupos[timeB[k].id]) continue;
-          if (timeA[i].nota == timeB[k].nota) continue;
 
-          final candidata = _distanciaSeTrocar(timeA, timeB, i, k);
+          final delta = _Somas.diferenca(timeB[k], timeA[i], gols);
+          final candidata = _desequilibrio(
+            somaA + delta,
+            timeA.length,
+            somaB - delta,
+            timeB.length,
+          );
           // Margem pequena pra não ficar trocando por diferença de
           // arredondamento de ponto flutuante.
-          if (candidata < melhorDistancia - 1e-9) {
-            melhorDistancia = candidata;
+          if (candidata < melhor - 1e-9) {
+            melhor = candidata;
             melhorA = i;
             melhorB = k;
           }
@@ -152,31 +190,30 @@ class BalanceadorTimes {
 
       if (melhorA < 0) return;
 
+      final delta = _Somas.diferenca(timeB[melhorB], timeA[melhorA], gols);
+      somaA = somaA + delta;
+      somaB = somaB - delta;
       final trocado = timeA[melhorA];
       timeA[melhorA] = timeB[melhorB];
       timeB[melhorB] = trocado;
-      distanciaAtual = melhorDistancia;
+      atual = melhor;
     }
   }
 
-  double _distanciaDeMedias(
-    List<JogadorElegivel> timeA,
-    List<JogadorElegivel> timeB,
-  ) {
-    return (_somaNota(timeA) / timeA.length - _somaNota(timeB) / timeB.length)
-        .abs();
-  }
+  /// O quanto os dois times estão diferentes, num número só. Zero é
+  /// perfeitamente equilibrado.
+  ///
+  /// Cada critério é dividido pela sua escala antes de entrar na soma —
+  /// sem isso 1 kg de diferença valeria o mesmo que 1 ponto inteiro de nota,
+  /// e o peso corporal dominaria a conta só por ser medido num número maior.
+  double _desequilibrio(_Somas a, int tamA, _Somas b, int tamB) {
+    double dif(double somaA, double somaB, double escala) =>
+        (somaA / tamA - somaB / tamB).abs() / escala;
 
-  double _distanciaSeTrocar(
-    List<JogadorElegivel> timeA,
-    List<JogadorElegivel> timeB,
-    int i,
-    int k,
-  ) {
-    final delta = timeB[k].nota - timeA[i].nota;
-    final mediaA = (_somaNota(timeA) + delta) / timeA.length;
-    final mediaB = (_somaNota(timeB) - delta) / timeB.length;
-    return (mediaA - mediaB).abs();
+    return pesoNota * dif(a.nota, b.nota, escalaNota) +
+        pesoGols * dif(a.gols, b.gols, escalaGols) +
+        pesoIdade * dif(a.idade, b.idade, escalaIdade) +
+        pesoCorporal * dif(a.peso, b.peso, escalaPeso);
   }
 
   /// Nota é o critério de desempate final. Empate de nota (jogador novo, ou
@@ -208,4 +245,50 @@ class BalanceadorTimes {
 
   double _somaNota(List<JogadorElegivel> time) =>
       time.fold<double>(0, (soma, j) => soma + j.nota);
+}
+
+/// Somatórios de um time nos quatro critérios do balanceamento.
+///
+/// Guardar somas, em vez de recalcular as médias a cada candidata, é o que
+/// deixa avaliar uma troca em tempo constante: trocar dois jogadores só tira
+/// a contribuição de um e põe a do outro. Num campo cheio são centenas de
+/// candidatas por volta, e recalcular tudo do zero em cada uma pesaria.
+class _Somas {
+  const _Somas(this.nota, this.gols, this.idade, this.peso);
+
+  final double nota;
+  final double gols;
+  final double idade;
+  final double peso;
+
+  factory _Somas.de(List<JogadorElegivel> time, Map<String, double> gols) {
+    var nota = 0.0, golsTotal = 0.0, idade = 0.0, peso = 0.0;
+    for (final j in time) {
+      nota += j.nota;
+      golsTotal += gols[j.id]!;
+      idade += j.idade;
+      peso += j.peso;
+    }
+    return _Somas(nota, golsTotal, idade, peso);
+  }
+
+  /// O que muda nas somas de um time quando [sai] dá lugar a [entra].
+  static _Somas diferenca(
+    JogadorElegivel entra,
+    JogadorElegivel sai,
+    Map<String, double> gols,
+  ) {
+    return _Somas(
+      entra.nota - sai.nota,
+      gols[entra.id]! - gols[sai.id]!,
+      (entra.idade - sai.idade).toDouble(),
+      entra.peso - sai.peso,
+    );
+  }
+
+  _Somas operator +(_Somas o) =>
+      _Somas(nota + o.nota, gols + o.gols, idade + o.idade, peso + o.peso);
+
+  _Somas operator -(_Somas o) =>
+      _Somas(nota - o.nota, gols - o.gols, idade - o.idade, peso - o.peso);
 }
