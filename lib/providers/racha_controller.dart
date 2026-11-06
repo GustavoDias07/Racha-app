@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/presenca/pontuacao_presenca.dart';
 import '../core/utils/data_utils.dart';
 import '../models/enums.dart';
+import '../models/participante_model.dart';
 import '../models/racha_model.dart';
 import 'criar_racha_com_admin.dart';
 import 'firebase_providers.dart';
@@ -72,6 +74,16 @@ class RachaController extends AsyncNotifier<void> {
       if (grupoId != null) {
         final grupo = await ref.read(grupoRepositoryProvider).buscarPorId(grupoId);
         if (grupo != null) {
+          // Pontuação de presença (RF22), no mesmo batch: ou a rodada fecha
+          // e conta os pontos, ou nada acontece — nunca conta duas vezes.
+          final participantes =
+              await participanteRepo.observarPorRacha(racha.id).first;
+          ref.read(grupoRepositoryProvider).atualizarPresencasEmLote(
+                batch,
+                grupo.id,
+                novosHistoricosDePresenca(grupo.presencas, participantes),
+              );
+
           final proximaRef = rachaRepo.novoDocRef();
           final proxima = RachaModel(
             id: proximaRef.id,
@@ -172,6 +184,27 @@ class RachaController extends AsyncNotifier<void> {
     });
     return rachaId;
   }
+}
+
+/// Histórico de presença de cada participante depois desta rodada.
+///
+/// Rodada sem chamada nenhuma não pontua ninguém (T14): sem chamada não dá
+/// para saber quem foi, e dar 0 a quem recusou enquanto quem confirmou fica
+/// sem nada deixaria a rodada torta. Com chamada, quem confirmou e ficou sem
+/// registro também é pulado — ver `pontosDaRodada`.
+Map<String, List<int>> novosHistoricosDePresenca(
+  Map<String, List<int>> atuais,
+  List<ParticipanteModel> participantes,
+) {
+  final houveChamada = participantes.any((p) => p.presenca != null);
+  if (!houveChamada) return const {};
+
+  return {
+    for (final p in participantes)
+      if (pontosDaRodada(confirmacao: p.statusConfirmacao, presenca: p.presenca)
+          case final pontos?)
+        p.userId: acrescentarAoHistorico(atuais[p.userId] ?? const [], pontos),
+  };
 }
 
 final rachaControllerProvider =

@@ -124,24 +124,39 @@ class AppTheme {
       ),
 
       // No escuro a borda some; o preenchimento é o que delimita o campo.
+      //
+      // Borda de sublinhado (estilo "filled" do Material), e não de contorno:
+      // com `OutlineInputBorder` o rótulo flutuante é desenhado EM CIMA da
+      // linha de cima do campo, e como a linha aqui é invisível o rótulo
+      // ficava meio para fora da caixa ("Data", "Tipo de campo"). Com o
+      // sublinhado o rótulo sobe para dentro do campo. O `borderRadius` nas
+      // quatro pontas mantém o preenchimento arredondado.
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.superficieAlta,
-        border: OutlineInputBorder(
+        border: UnderlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
         ),
-        enabledBorder: OutlineInputBorder(
+        enabledBorder: UnderlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
         ),
-        focusedBorder: OutlineInputBorder(
+        disabledBorder: UnderlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: UnderlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.verde, width: 2),
         ),
-        errorBorder: OutlineInputBorder(
+        errorBorder: UnderlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.recusado),
+        ),
+        focusedErrorBorder: UnderlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.recusado, width: 2),
         ),
         labelStyle: const TextStyle(color: AppColors.textoSecundario),
         hintStyle: const TextStyle(color: AppColors.neutro),

@@ -74,7 +74,11 @@ class ParticipanteRepository {
       userId: userId,
       statusConfirmacao: status,
     );
-    await _collection(rachaId).add(participante.toMap());
+    await _collection(rachaId).add({
+      ...participante.toMap(),
+      if (status == StatusConfirmacao.confirmado)
+        'confirmadoEm': FieldValue.serverTimestamp(),
+    });
   }
 
   /// Mesma coisa que `convidar`, mas escrevendo num `WriteBatch`
@@ -109,9 +113,16 @@ class ParticipanteRepository {
     required String participanteId,
     required StatusConfirmacao status,
   }) {
-    return _collection(rachaId)
-        .doc(participanteId)
-        .update({'statusConfirmacao': status.name});
+    // A hora da confirmação desempata o banco (RF22): com a mesma
+    // pontuação, fica com a vaga quem confirmou primeiro. Hora do servidor,
+    // não do celular, para ninguém "confirmar no passado" mexendo no relógio.
+    // Quem desconfirma perde a hora — se confirmar de novo, vai para o fim.
+    return _collection(rachaId).doc(participanteId).update({
+      'statusConfirmacao': status.name,
+      'confirmadoEm': status == StatusConfirmacao.confirmado
+          ? FieldValue.serverTimestamp()
+          : FieldValue.delete(),
+    });
   }
 
   /// Registra o que aconteceu no dia (chamada). Só quem tem permissão chega
@@ -154,12 +165,21 @@ class ParticipanteRepository {
   /// `TimesController` pra gravar todos os times (Participantes e
   /// Convidados) atomicamente, evitando um racha com times parcialmente
   /// atribuídos se a escrita cair no meio.
+  ///
+  /// Quem ficou no banco recebe `time` nulo e a posição na fila em
+  /// `ordemBanco`; quem entrou num time tem a fila apagada. As duas coisas
+  /// são escritas sempre juntas, para que gerar os times de novo nunca deixe
+  /// alguém num time e no banco ao mesmo tempo.
   void definirTimeEmLote(
     WriteBatch batch, {
     required String rachaId,
     required String participanteId,
-    required TimeRacha time,
+    required TimeRacha? time,
+    int? ordemBanco,
   }) {
-    batch.update(_collection(rachaId).doc(participanteId), {'time': time.name});
+    batch.update(_collection(rachaId).doc(participanteId), {
+      'time': time?.name,
+      'ordemBanco': ordemBanco ?? FieldValue.delete(),
+    });
   }
 }

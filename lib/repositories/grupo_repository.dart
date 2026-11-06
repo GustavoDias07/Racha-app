@@ -102,6 +102,23 @@ class GrupoRepository {
     });
   }
 
+  /// Grava o histórico de presença atualizado de cada jogador da rodada
+  /// (userId → últimas rodadas), dentro do batch da finalização — ver
+  /// `RachaController.finalizar`.
+  ///
+  /// Cada jogador é um campo separado (`presencas.<userId>`), não o mapa
+  /// inteiro: assim quem não estava na rodada fica com o histórico intacto.
+  void atualizarPresencasEmLote(
+    WriteBatch batch,
+    String grupoId,
+    Map<String, List<int>> historicos,
+  ) {
+    if (historicos.isEmpty) return;
+    batch.update(_collection.doc(grupoId), {
+      for (final e in historicos.entries) 'presencas.${e.key}': e.value,
+    });
+  }
+
   /// Troca (ou remove, com `null`) a foto do grupo.
   ///
   /// Escrita separada da edição da configuração: a foto muda de um

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/info_tile.dart';
+import '../../providers/conta_controller.dart';
 import '../../providers/firebase_providers.dart';
 
 /// Tela de perfil do jogador logado: foto, dados pessoais e o resumo do seu
@@ -72,6 +73,18 @@ class PerfilScreen extends ConsumerWidget {
                 Text('Histórico e estatísticas', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 _RankingResumo(userId: user.id),
+                const SizedBox(height: 40),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => const _ExcluirContaDialog(),
+                    ),
+                    icon: const Icon(Icons.delete_forever_outlined),
+                    label: const Text('Excluir conta'),
+                    style: TextButton.styleFrom(foregroundColor: AppColors.recusado),
+                  ),
+                ),
               ],
             );
           },
@@ -79,6 +92,94 @@ class PerfilScreen extends ConsumerWidget {
           error: (e, _) => Center(child: Text('Erro ao carregar perfil: $e')),
         ),
       ),
+    );
+  }
+}
+
+/// Confirmação da exclusão de conta (RF24): explica o que some, pede a
+/// senha de novo e só exclui no botão vermelho. Cancelar, tocar fora ou
+/// voltar não fazem nada.
+///
+/// A senha fica nesta tela e não num `confirmar()` simples porque o próprio
+/// Firebase exige login recente para excluir — ver `AuthService.reautenticar`.
+class _ExcluirContaDialog extends ConsumerStatefulWidget {
+  const _ExcluirContaDialog();
+
+  @override
+  ConsumerState<_ExcluirContaDialog> createState() => _ExcluirContaDialogState();
+}
+
+class _ExcluirContaDialogState extends ConsumerState<_ExcluirContaDialog> {
+  final _senha = TextEditingController();
+
+  @override
+  void dispose() {
+    _senha.dispose();
+    super.dispose();
+  }
+
+  Future<void> _excluir() async {
+    await ref.read(contaControllerProvider.notifier).excluirConta(senha: _senha.text);
+    // Deu certo: o login sumiu e o roteador já está levando para a tela de
+    // login. Deu errado: o erro aparece no próprio diálogo.
+    if (mounted && !ref.read(contaControllerProvider).hasError) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final estado = ref.watch(contaControllerProvider);
+    return AlertDialog(
+      title: const Text('Excluir conta?'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Isso não tem volta. Seu perfil, sua foto, seus avisos e seu '
+              'ranking serão apagados, e você sai de todos os grupos. As notas '
+              'e estatísticas de rodadas já jogadas continuam, sem o seu nome, '
+              'porque fazem parte do ranking dos outros jogadores.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _senha,
+              obscureText: true,
+              enabled: !estado.isLoading,
+              decoration: const InputDecoration(labelText: 'Digite sua senha para confirmar'),
+            ),
+            if (estado.hasError) ...[
+              const SizedBox(height: 8),
+              Text(
+                estado.error.toString().replaceFirst('Exception: ', ''),
+                style: const TextStyle(color: AppColors.recusado),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: estado.isLoading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: estado.isLoading ? null : _excluir,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.recusado,
+            foregroundColor: Colors.black,
+          ),
+          child: estado.isLoading
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Excluir'),
+        ),
+      ],
     );
   }
 }

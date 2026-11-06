@@ -17,6 +17,10 @@ class ConvidadoModel {
   // enquanto o convidado continua só com o perfil temporário.
   final String? oficializadoComoUserId;
 
+  /// Posição na fila do banco — mesmo significado de
+  /// `ParticipanteModel.ordemBanco`.
+  final int? ordemBanco;
+
   const ConvidadoModel({
     required this.id,
     required this.rachaId,
@@ -29,7 +33,10 @@ class ConvidadoModel {
     this.statusAprovacao = StatusAprovacao.pendente,
     this.time,
     this.oficializadoComoUserId,
+    this.ordemBanco,
   });
+
+  bool get noBanco => ordemBanco != null;
 
   bool get aprovado => statusAprovacao == StatusAprovacao.aprovado;
   bool get oficializado => oficializadoComoUserId != null;
@@ -55,6 +62,7 @@ class ConvidadoModel {
           StatusAprovacao.values.byName(map['statusAprovacao'] as String),
       time: map['time'] != null ? TimeRacha.values.byName(map['time'] as String) : null,
       oficializadoComoUserId: map['oficializadoComoUserId'] as String?,
+      ordemBanco: map['ordemBanco'] as int?,
     );
   }
 
@@ -70,6 +78,7 @@ class ConvidadoModel {
       'statusAprovacao': statusAprovacao.name,
       'time': time?.name,
       'oficializadoComoUserId': oficializadoComoUserId,
+      if (ordemBanco != null) 'ordemBanco': ordemBanco,
     };
   }
 
@@ -92,6 +101,7 @@ class ConvidadoModel {
       statusAprovacao: statusAprovacao ?? this.statusAprovacao,
       time: time ?? this.time,
       oficializadoComoUserId: oficializadoComoUserId ?? this.oficializadoComoUserId,
+      ordemBanco: ordemBanco,
     );
   }
 }

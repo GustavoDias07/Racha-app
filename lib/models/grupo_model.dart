@@ -35,6 +35,17 @@ class GrupoModel {
   /// aba "Rachas Próximos", e cada KB a mais pesa N vezes.
   final String? fotoBase64;
 
+  /// Pontos de presença das últimas rodadas de cada jogador (userId →
+  /// lista, a rodada mais recente no fim). Gravado pelo
+  /// `RachaController.finalizar` e lido por `PontuacaoPresenca` — ver RF22 e
+  /// `core/presenca/pontuacao_presenca.dart`.
+  ///
+  /// Mora no grupo, e não em cada participante, porque a tabela de
+  /// pontuação mostra todos os membros de uma vez: guardado aqui ela sai de
+  /// uma leitura só, em vez de varrer 10 rodadas × N participantes. Fica
+  /// fora do `toMap` de propósito: só a finalização da rodada escreve aqui.
+  final Map<String, List<int>> presencas;
+
   const GrupoModel({
     required this.id,
     required this.nome,
@@ -49,6 +60,7 @@ class GrupoModel {
     this.abertoParaNovosMembros = false,
     this.auxiliares = const [],
     this.fotoBase64,
+    this.presencas = const {},
   });
 
   factory GrupoModel.fromMap(String id, Map<String, dynamic> map) {
@@ -66,6 +78,10 @@ class GrupoModel {
       abertoParaNovosMembros: map['abertoParaNovosMembros'] as bool? ?? false,
       auxiliares: List<String>.from(map['auxiliares'] as List? ?? const []),
       fotoBase64: map['fotoBase64'] as String?,
+      presencas: {
+        for (final e in (map['presencas'] as Map? ?? const {}).entries)
+          e.key as String: List<int>.from(e.value as List),
+      },
     );
   }
 
@@ -113,6 +129,7 @@ class GrupoModel {
       abertoParaNovosMembros: abertoParaNovosMembros ?? this.abertoParaNovosMembros,
       auxiliares: auxiliares ?? this.auxiliares,
       fotoBase64: fotoBase64,
+      presencas: presencas,
     );
   }
 }

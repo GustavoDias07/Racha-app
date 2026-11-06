@@ -59,4 +59,14 @@ class AvisoRepository {
   Future<void> dispensar({required String userId, required String avisoId}) {
     return _collection(userId).doc(avisoId).delete();
   }
+
+  /// Apaga todos os avisos do usuário dentro do batch da exclusão de conta.
+  /// Subcoleção não some junto com o documento pai no Firestore — sem isto
+  /// os avisos ficariam órfãos para sempre.
+  Future<void> removerTodosEmLote(WriteBatch batch, String userId) async {
+    final snap = await _collection(userId).get();
+    for (final doc in snap.docs) {
+      batch.delete(doc.reference);
+    }
+  }
 }

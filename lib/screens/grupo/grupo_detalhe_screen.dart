@@ -46,6 +46,12 @@ class GrupoDetalheScreen extends ConsumerWidget {
                 context.push('/grupos/${grupoAtual.id}/ranking', extra: grupoAtual),
           ),
           IconButton(
+            icon: const Icon(Icons.how_to_reg_outlined),
+            tooltip: 'Pontuação de presença',
+            onPressed: () =>
+                context.push('/grupos/${grupoAtual.id}/presenca', extra: grupoAtual),
+          ),
+          IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'Histórico de rodadas',
             onPressed: () =>

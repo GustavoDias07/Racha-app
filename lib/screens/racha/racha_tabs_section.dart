@@ -407,6 +407,14 @@ class _TimesTab extends ConsumerWidget {
                   participantes: timeBParticipantes,
                   convidados: timeBConvidados,
                 ),
+                if (confirmados.any((p) => p.noBanco) ||
+                    aprovados.any((c) => c.noBanco)) ...[
+                  const SizedBox(height: 16),
+                  _BancoSection(
+                    participantes: confirmados.where((p) => p.noBanco).toList(),
+                    convidados: aprovados.where((c) => c.noBanco).toList(),
+                  ),
+                ],
                 if (isAdmin) ...[
                   const SizedBox(height: 24),
                   _FinalizarRachaSection(racha: racha),
@@ -560,6 +568,62 @@ class _TimeSection extends StatelessWidget {
                 leading: AvatarJogador(nome: c.nome, convidado: true),
                 title: Text(c.nome),
                 subtitle: c.posicaoMain != null ? Text(c.posicaoMain!.label) : null,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Quem confirmou mas não coube nos dois times (RF22), na ordem em que
+/// entraria se alguém sair. A ordem vem pronta do `TimesController`
+/// (`ordemBanco`): pontuação de presença, quem atrasou por último, e no
+/// empate quem confirmou primeiro.
+class _BancoSection extends StatelessWidget {
+  const _BancoSection({required this.participantes, required this.convidados});
+
+  final List<ParticipanteModel> participantes;
+  final List<ConvidadoModel> convidados;
+
+  @override
+  Widget build(BuildContext context) {
+    // Participante e convidado misturados numa fila só, pela ordem gravada.
+    final fila = <(int, Widget)>[
+      for (final p in participantes)
+        (p.ordemBanco!, _ParticipanteTimeTile(participante: p)),
+      for (final c in convidados)
+        (
+          c.ordemBanco!,
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: AvatarJogador(nome: c.nome, convidado: true),
+            title: Text(c.nome),
+            subtitle: c.posicaoMain != null ? Text(c.posicaoMain!.label) : null,
+          ),
+        ),
+    ]..sort((a, b) => a.$1.compareTo(b.$1));
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Banco', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            const Text(
+              'Confirmaram, mas não couberam nos dois times. Em ordem: o '
+              'primeiro entra se abrir uma vaga.',
+              style: TextStyle(color: AppColors.textoSecundario),
+            ),
+            const Divider(),
+            for (final (ordem, tile) in fila)
+              Row(
+                children: [
+                  SizedBox(width: 28, child: Text('$ordemº')),
+                  Expanded(child: tile),
+                ],
               ),
           ],
         ),
