@@ -40,4 +40,9 @@ class RankingRepository {
   Future<void> salvar(RankingModel ranking) {
     return _collection.doc(ranking.userId).set(ranking.toMap());
   }
+
+  /// Apaga o ranking global de quem excluiu a conta (RF24).
+  void removerEmLote(WriteBatch batch, String userId) {
+    batch.delete(_collection.doc(userId));
+  }
 }

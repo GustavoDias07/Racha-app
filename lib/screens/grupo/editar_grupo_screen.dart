@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/enums.dart';
 import '../../models/grupo_model.dart';
 import '../../providers/grupo_controller.dart';
+import '../../widgets/campo_endereco.dart';
 import 'localizacao_picker_screen.dart';
 
 /// Edita a configuração padrão de um Grupo já criado — nome, local, dia da
@@ -144,9 +145,8 @@ class _EditarGrupoScreenState extends ConsumerState<EditarGrupoScreen> {
                       (v == null || v.trim().isEmpty) ? 'Informe o nome' : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                CampoEndereco(
                   controller: _localController,
-                  decoration: const InputDecoration(labelText: 'Local'),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Informe o local' : null,
                 ),

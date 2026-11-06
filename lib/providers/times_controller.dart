@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/balanceamento/balanceador_times.dart';
 import '../core/balanceamento/jogador_elegivel.dart';
 import '../core/constants/balanceamento_constants.dart';
+import '../core/presenca/pontuacao_presenca.dart';
 import '../models/enums.dart';
 import '../models/racha_model.dart';
 import '../models/ranking_model.dart';
@@ -77,8 +78,45 @@ class TimesController extends AsyncNotifier<void> {
         ));
       }
 
-      final resultado = const BalanceadorTimes()
-          .gerar(elegiveis, qtdJogadoresLinha: racha.qtdJogadoresLinha);
+      // Banco (RF22): se confirmou mais gente do que cabe nos dois times,
+      // só os primeiros pela pontuação de presença entram no balanceamento.
+      // O banco é decidido ANTES de balancear — presença decide quem joga,
+      // a nota decide só em que time cada um joga (ver T16: assiduidade
+      // nunca pode virar habilidade).
+      final presencas = racha.grupoId == null
+          ? const <String, List<int>>{}
+          : (await ref.read(grupoRepositoryProvider).buscarPorId(racha.grupoId!))
+                  ?.presencas ??
+              const <String, List<int>>{};
+      final userIdDoParticipante = {for (final p in participantes) p.id: p.userId};
+      final atrasados = {
+        for (final p in participantes)
+          if (p.presenca == PresencaFinal.atrasou) p.id,
+      };
+      final confirmadoEm = {for (final p in participantes) p.id: p.confirmadoEm};
+
+      final elenco = montarElenco(
+        [
+          for (final j in elegiveis)
+            CandidatoVaga(
+              id: j.id,
+              pontuacao: switch (presencas[userIdDoParticipante[j.id]]) {
+                final historico? => PontuacaoPresenca(historico),
+                null => null,
+              },
+              atrasou: atrasados.contains(j.id),
+              confirmadoEm: confirmadoEm[j.id],
+            ),
+        ],
+        vagas: 2 * racha.totalVagas,
+      );
+      final titulares = {for (final c in elenco.titulares) c.id};
+      final porId = {for (final j in elegiveis) j.id: j};
+
+      final resultado = const BalanceadorTimes().gerar(
+        elegiveis.where((j) => titulares.contains(j.id)).toList(),
+        qtdJogadoresLinha: racha.qtdJogadoresLinha,
+      );
 
       // Um único batch (tudo ou nada) — sem isso, uma falha de rede no
       // meio da escrita deixaria o racha com times parcialmente
@@ -89,6 +127,11 @@ class TimesController extends AsyncNotifier<void> {
       }
       for (final jogador in resultado.timeB) {
         _salvarTimeEmLote(batch, racha.id, jogador, TimeRacha.B, participanteRepo, convidadoRepo);
+      }
+      for (var i = 0; i < elenco.banco.length; i++) {
+        _salvarTimeEmLote(batch, racha.id, porId[elenco.banco[i].id]!, null,
+            participanteRepo, convidadoRepo,
+            ordemBanco: i + 1);
       }
       await batch.commit();
     });
@@ -122,16 +165,18 @@ class TimesController extends AsyncNotifier<void> {
     WriteBatch batch,
     String rachaId,
     JogadorElegivel jogador,
-    TimeRacha time,
+    TimeRacha? time,
     ParticipanteRepository participanteRepo,
-    ConvidadoRepository convidadoRepo,
-  ) {
+    ConvidadoRepository convidadoRepo, {
+    int? ordemBanco,
+  }) {
     if (jogador.tipo == TipoJogador.user) {
       participanteRepo.definirTimeEmLote(
         batch,
         rachaId: rachaId,
         participanteId: jogador.id,
         time: time,
+        ordemBanco: ordemBanco,
       );
       return;
     }
@@ -140,6 +185,7 @@ class TimesController extends AsyncNotifier<void> {
       rachaId: rachaId,
       convidadoId: jogador.id,
       time: time,
+      ordemBanco: ordemBanco,
     );
   }
 }

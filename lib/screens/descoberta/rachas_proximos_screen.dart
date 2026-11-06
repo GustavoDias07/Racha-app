@@ -9,6 +9,7 @@ import '../../models/grupo_model.dart';
 import '../../providers/firebase_providers.dart';
 import '../../providers/solicitacao_controller.dart';
 import '../../services/location_service.dart';
+import '../../widgets/aviso_localizacao.dart';
 
 const _raiosKm = [5, 10, 25, 50];
 
@@ -34,7 +35,10 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
   @override
   void initState() {
     super.initState();
-    _buscarMinhaPosicao();
+    // Depois do primeiro quadro: a busca pode abrir o diálogo de explicação
+    // da localização (RF28), e um diálogo não pode abrir antes de a tela
+    // existir.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _buscarMinhaPosicao());
   }
 
   Future<void> _buscarMinhaPosicao() async {
@@ -43,6 +47,9 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
       _erro = null;
     });
     try {
+      if (!await explicarLocalizacaoSePreciso(context, ref)) {
+        throw Exception('Permissão de localização negada.');
+      }
       final posicao = await ref
           .read(locationServiceProvider)
           .obterPosicaoAtual();
@@ -116,9 +123,8 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
                       child: Text(
                         'Sua localização está aproximada '
                         '(${_minhaPosicao!.precisaoLegivel}), então as distâncias '
-                        'abaixo são estimativas grosseiras. No computador o '
-                        'navegador calcula por Wi-Fi; no celular, com GPS, fica '
-                        'preciso.',
+                        'abaixo são estimativas grosseiras. Tente de novo num '
+                        'lugar com sinal de Wi-Fi ou de celular melhor.',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),

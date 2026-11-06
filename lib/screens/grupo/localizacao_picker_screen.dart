@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart' as latlong;
 import '../../core/theme/app_theme.dart';
 import '../../services/geocoding_service.dart';
 import '../../providers/firebase_providers.dart';
+import '../../widgets/aviso_localizacao.dart';
 
 /// Fallback de centro do mapa quando não há localização inicial nem GPS
 /// disponível — Praça da Sé (SP), só pra abrir o mapa em algum lugar do
@@ -112,8 +113,12 @@ class _LocalizacaoPickerScreenState extends ConsumerState<LocalizacaoPickerScree
         ? latlong.LatLng(inicial.latitude, inicial.longitude)
         : _centroPadrao;
     // Sem localização inicial (grupo novo) — tenta centralizar no GPS assim
-    // que a tela abre, sem travar a UI se a permissão for negada.
-    if (inicial == null) _usarMinhaLocalizacao(automatico: true);
+    // que a tela abre, sem travar a UI se a permissão for negada. Depois do
+    // primeiro quadro porque pode abrir o diálogo de explicação (RF28).
+    if (inicial == null) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _usarMinhaLocalizacao(automatico: true));
+    }
   }
 
   /// [automatico] distingue a tentativa da abertura da tela do toque no
@@ -125,6 +130,9 @@ class _LocalizacaoPickerScreenState extends ConsumerState<LocalizacaoPickerScree
       _erroLocalizacao = null;
     });
     try {
+      if (!await explicarLocalizacaoSePreciso(context, ref)) {
+        throw Exception('Permissão de localização negada.');
+      }
       final posicao = await ref.read(locationServiceProvider).obterPosicaoAtual();
       if (!mounted) return;
       final ponto =
