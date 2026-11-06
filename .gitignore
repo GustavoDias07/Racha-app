@@ -66,3 +66,6 @@ android/key.properties
 # verificações nem o histórico de decisões. Os únicos arquivos que seguem
 # fora são os que carregam segredo — a chave de assinatura e a senha dela,
 # protegidas mais acima.
+
+# Contexto local do Claude Code; fica so no disco de cada um.
+CLAUDE.md
