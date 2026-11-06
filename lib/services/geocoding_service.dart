@@ -41,6 +41,67 @@ class GeocodingService {
 
   static const _viaCep = 'viacep.com.br';
   static const _nominatim = 'nominatim.openstreetmap.org';
+  static const _photon = 'photon.komoot.io';
+
+  /// Sugestões enquanto a pessoa digita o campo "Local".
+  ///
+  /// Usa o **Photon**, e não o Nominatim: a política de uso do Nominatim
+  /// proíbe busca a cada tecla, e o Photon foi feito exatamente para isso
+  /// (mesmos dados do OpenStreetMap, também gratuito e sem chave).
+  ///
+  /// Com [perto] (a posição do aparelho, quando a pessoa já permitiu a
+  /// localização), o Photon põe primeiro os resultados mais próximos. A
+  /// caixa `bbox` limita ao Brasil, pelo mesmo motivo do `countrycodes` da
+  /// busca do mapa.
+  Future<List<EnderecoEncontrado>> sugerir(
+    String termo, {
+    ({double latitude, double longitude})? perto,
+  }) async {
+    final limpo = termo.trim();
+    if (limpo.length < 3) return const [];
+
+    final uri = Uri.https(_photon, '/api/', {
+      'q': limpo,
+      'limit': '5',
+      'bbox': '-74.0,-34.0,-34.0,5.5',
+      if (perto != null) 'lat': '${perto.latitude}',
+      if (perto != null) 'lon': '${perto.longitude}',
+    });
+
+    final resposta = await _client.get(uri);
+    if (resposta.statusCode != 200) return const [];
+
+    final dados = jsonDecode(utf8.decode(resposta.bodyBytes));
+    if (dados is! Map || dados['features'] is! List) return const [];
+
+    final achados = <EnderecoEncontrado>[];
+    for (final item in dados['features'] as List) {
+      if (item is! Map) continue;
+      final coordenadas = (item['geometry'] as Map?)?['coordinates'];
+      final props = item['properties'];
+      if (coordenadas is! List || coordenadas.length < 2 || props is! Map) continue;
+
+      // "Fatec Zona Leste, Rua X 123, Cidade Tiradentes, São Paulo, SP".
+      final rua = [props['street'], props['housenumber']]
+          .whereType<String>()
+          .join(' ');
+      final partes = <String>[
+        if (props['name'] is String) props['name'] as String,
+        if (rua.isNotEmpty && rua != props['name']) rua,
+        if (props['district'] is String) props['district'] as String,
+        if (props['city'] is String) props['city'] as String,
+        if (props['state'] is String) props['state'] as String,
+      ];
+      if (partes.isEmpty) continue;
+
+      achados.add(EnderecoEncontrado(
+        descricao: partes.toSet().join(', '),
+        latitude: (coordenadas[1] as num).toDouble(),
+        longitude: (coordenadas[0] as num).toDouble(),
+      ));
+    }
+    return achados;
+  }
 
   /// Busca por CEP ou por endereço escrito. Devolve lista vazia quando não
   /// acha nada — quem chama decide o que mostrar.

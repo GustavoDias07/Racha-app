@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/enums.dart';
 import '../../models/racha_model.dart';
 import '../../providers/racha_controller.dart';
+import '../../widgets/campo_endereco.dart';
 
 /// Edita um racha já criado — avulso ou rodada de um Grupo. Ver Fluxo 2,
 /// docs/estrutura.md: "o admin ainda pode ajustar a ocorrência gerada
@@ -126,9 +127,8 @@ class _EditarRachaScreenState extends ConsumerState<EditarRachaScreen> {
                       (v == null || v.trim().isEmpty) ? 'Informe o nome' : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                CampoEndereco(
                   controller: _localController,
-                  decoration: const InputDecoration(labelText: 'Local'),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Informe o local' : null,
                 ),

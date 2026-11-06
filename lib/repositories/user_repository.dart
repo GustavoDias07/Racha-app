@@ -47,6 +47,12 @@ class UserRepository {
     return _collection.doc(user.id).update(user.toMap());
   }
 
+  /// Apaga o perfil (nome, foto, idade, peso) dentro do batch da exclusão
+  /// de conta (RF24).
+  void removerEmLote(WriteBatch batch, String userId) {
+    batch.delete(_collection.doc(userId));
+  }
+
   /// Grava o token do FCM do dispositivo atual - update parcial, separado
   /// de atualizar(), porque roda a cada login/refresh de token, sem
   /// relacao nenhuma com a tela de editar perfil (ver

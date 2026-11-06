@@ -17,9 +17,11 @@ class PosicaoAtual {
   /// probabilidade, dentro de um círculo desse raio em volta de [ponto].
   final double precisaoMetros;
 
-  /// Acima de 1 km a posição não serve para distinguir bairros, que é
-  /// justamente o que a aba "Rachas Próximos" precisa fazer.
-  bool get imprecisa => precisaoMetros > 1000;
+  /// Acima de 3 km o aviso aparece. O app pede só a localização
+  /// aproximada (RF28), que no Android costuma errar por 1 a 2 km — isso é
+  /// esperado e não atrapalha um raio de 5 km ou mais. Passando de 3 km já
+  /// dá para confundir bairros vizinhos, e aí vale avisar.
+  bool get imprecisa => precisaoMetros > 3000;
 
   /// A incerteza escrita de um jeito legível ("±350 m", "±4,9 km").
   String get precisaoLegivel => precisaoMetros < 1000
@@ -32,6 +34,36 @@ class PosicaoAtual {
 /// na aba "Rachas Próximos". Centraliza a checagem de permissão/serviço de
 /// GPS pra não duplicar esse tratamento nas duas telas.
 class LocationService {
+  /// Se o app ainda vai precisar pedir a permissão ao sistema — ou seja, se
+  /// a tela de explicação (RF28) tem que aparecer antes. Quem já permitiu não
+  /// vê a explicação de novo; quem negou vê, porque o sistema vai perguntar
+  /// outra vez.
+  Future<bool> precisaPedirPermissao() async {
+    return await Geolocator.checkPermission() == LocationPermission.denied;
+  }
+
+  /// Posição do aparelho só se a pessoa JÁ permitiu a localização antes —
+  /// nunca pergunta. Usada para ordenar as sugestões do campo "Local" por
+  /// proximidade: perguntar ali, no meio da digitação, seria um pedido de
+  /// permissão sem explicação (o que o RF28 proíbe) por um benefício pequeno.
+  /// Qualquer falha vira `null`, e as sugestões saem sem essa ordem.
+  Future<GeoPoint?> posicaoSemPerguntar() async {
+    try {
+      final permissao = await Geolocator.checkPermission();
+      if (permissao != LocationPermission.whileInUse &&
+          permissao != LocationPermission.always) {
+        return null;
+      }
+      final posicao = await Geolocator.getLastKnownPosition() ??
+          await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
+          );
+      return GeoPoint(posicao.latitude, posicao.longitude);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<PosicaoAtual> obterPosicaoAtual() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
       throw Exception('Ative a localização (GPS) do aparelho e tente de novo.');

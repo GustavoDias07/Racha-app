@@ -69,8 +69,12 @@ class ConvidadoRepository {
     WriteBatch batch, {
     required String rachaId,
     required String convidadoId,
-    required TimeRacha time,
+    required TimeRacha? time,
+    int? ordemBanco,
   }) {
-    batch.update(_collection(rachaId).doc(convidadoId), {'time': time.name});
+    batch.update(_collection(rachaId).doc(convidadoId), {
+      'time': time?.name,
+      'ordemBanco': ordemBanco ?? FieldValue.delete(),
+    });
   }
 }

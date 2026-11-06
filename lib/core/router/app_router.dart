@@ -12,6 +12,7 @@ import '../../screens/descoberta/rachas_proximos_screen.dart';
 import '../../screens/grupo/criar_grupo_screen.dart';
 import '../../screens/grupo/editar_grupo_screen.dart';
 import '../../screens/grupo/grupo_detalhe_screen.dart';
+import '../../screens/grupo/grupo_presenca_screen.dart';
 import '../../screens/grupo/grupo_ranking_screen.dart';
 import '../../screens/grupo/historico_grupo_screen.dart';
 import '../../screens/home/home_screen.dart';
@@ -72,6 +73,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           final grupo = state.extra as GrupoModel;
           return GrupoRankingScreen(grupoId: grupo.id, grupoNome: grupo.nome);
         },
+      ),
+      GoRoute(
+        path: '/grupos/:id/presenca',
+        builder: (context, state) =>
+            GrupoPresencaScreen(grupo: state.extra as GrupoModel),
       ),
       GoRoute(
         path: '/grupos/:id/historico',

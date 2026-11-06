@@ -96,7 +96,8 @@ service cloud.firestore {
         && request.resource.data.email == resource.data.email
         && request.resource.data.createdAt == resource.data.createdAt;
 
-      allow delete: if false;
+      // Só o próprio dono, ao excluir a conta (RF24 — ContaController).
+      allow delete: if isSignedIn() && request.auth.uid == userId;
 
       // avisos/{avisoId} — recado curto deixado pra este jogador quando algo
       // aconteceu fora da tela dele (ver AvisoModel). Só o dono lê e
@@ -200,6 +201,10 @@ service cloud.firestore {
         allow create: if isSignedIn()
           && request.resource.data.rachaId == rachaId
           && request.resource.data.userId is string
+          // Ninguém nasce no banco nem com hora de confirmação inventada
+          // (ver o update logo abaixo).
+          && !('ordemBanco' in request.resource.data)
+          && request.resource.data.get('confirmadoEm', request.time) == request.time
           && (
             request.resource.data.statusConfirmacao == 'pendente' ||
             (
@@ -229,7 +234,20 @@ service cloud.firestore {
             // Presença é registrada por quem faz a chamada, nunca pelo
             // próprio jogador — senão o sistema de pontualidade não vale nada.
             request.resource.data.get('presenca', null)
-              == resource.data.get('presenca', null)
+              == resource.data.get('presenca', null) &&
+            // Lugar no banco é decidido pelo algoritmo (ação do admin), igual
+            // ao `time` — ver RF22 em lib/core/presenca.
+            request.resource.data.get('ordemBanco', null)
+              == resource.data.get('ordemBanco', null) &&
+            // A hora da confirmação desempata o banco, então só vale a hora
+            // do servidor no momento da escrita (ou apagar, ao desconfirmar).
+            // Sem isso dava pra gravar uma data antiga e furar a fila.
+            (
+              request.resource.data.get('confirmadoEm', null)
+                == resource.data.get('confirmadoEm', null) ||
+              request.resource.data.get('confirmadoEm', null) == request.time ||
+              request.resource.data.get('confirmadoEm', null) == null
+            )
           )
         );
         // Só o admin tira alguém do racha (o próprio participante sai
@@ -327,7 +345,8 @@ service cloud.firestore {
         && request.resource.data.totalGols >= 0
         && request.resource.data.totalAssistencias >= 0
         && request.resource.data.totalRachas >= 0;
-      allow delete: if false;
+      // Só o próprio dono, ao excluir a conta (RF24).
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
   }
 }

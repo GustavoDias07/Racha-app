@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/campo_de_toque.dart';
 import '../../core/widgets/titulo_secao.dart';
+import '../../widgets/campo_endereco.dart';
 import '../../models/enums.dart';
 import '../../providers/racha_controller.dart';
 
@@ -132,9 +133,8 @@ class _CriarRachaScreenState extends ConsumerState<CriarRachaScreen> {
                       (v == null || v.trim().isEmpty) ? 'Informe o nome' : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                CampoEndereco(
                   controller: _localController,
-                  decoration: const InputDecoration(labelText: 'Local'),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Informe o local' : null,
                 ),
