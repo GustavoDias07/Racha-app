@@ -459,7 +459,7 @@ A permissão é estreita de propósito: a regra exige que a escrita do anotador
 toque **apenas** o campo `presenca`. Ele não edita o racha, não aprova
 entrada, não mexe em time nem em posição de ninguém.
 
-### [ ] T16 — Pontuação de presença
+### [x] T16 — Pontuação de presença
 
 **Depende de:** T14 (sem chamada não há o que pontuar).
 
@@ -469,7 +469,28 @@ por janela móvel das últimas rodadas.
 Absorve a T7: o contador de rodadas jogadas nasce aqui, e o campo antigo
 `totalRachas` passa a se chamar `totalRachasAvaliados`.
 
-### [ ] T17 — Banco ordenado por prioridade
+**Feito em 26/10/2026 (RF22 no Trello, regras decididas pelo Abreu):**
+confirmou e foi = +3 (atrasar também conta como ir), confirmou e faltou = −1,
+disse que não vai ou não respondeu = 0. Contam as últimas 10 rodadas para as
+quais a pessoa foi convidada; antes de 3 rodadas a pontuação não vale e ela
+é tratada como a média do grupo. A conta é a **soma**, não a média: com a
+média, recusar (0) derrubaria quem costuma ir. Rodada sem chamada não pontua
+ninguém. Lógica pura em `core/presenca/pontuacao_presenca.dart` (testes em
+`test/core/presenca`). O histórico mora no grupo (`presencas.<userId>`) e é
+gravado no mesmo batch do `RachaController.finalizar`. Tabela visível a todos
+os membros: tela `GrupoPresencaScreen`, ícone na tela do grupo.
+**A T7 não foi feita junto:** o rename de `totalRachas` continua pendente.
+
+### [x] T17 — Banco ordenado por prioridade
+
+**Feito em 26/10/2026 (RF22):** limite = os dois times completos
+(`2 × totalVagas`). O `TimesController` chama `montarElenco` antes de
+balancear: quem atrasou nesta rodada vai para o fim da fila (só nela), depois
+maior pontuação, e no empate quem confirmou primeiro (`confirmadoEm`, hora do
+servidor). Quem fica de fora recebe `time` nulo e `ordemBanco` (1, 2, 3…),
+então avaliação e estatísticas continuam ignorando quem não jogou. A aba
+Times ganhou a seção Banco. As regras do Firestore impedem o jogador de mexer
+em `ordemBanco` e de gravar uma `confirmadoEm` que não seja a hora da escrita.
 
 **O que falta:** hoje **nada limita o elenco**. O `qtdJogadoresLinha` só
 alimenta o alvo por setor — se 18 pessoas confirmarem num society de 7v7, o
@@ -565,6 +586,15 @@ Exigência do Google desde 2023 para qualquer app com login: precisa existir
 um caminho dentro do app **e** uma URL pública para pedir a exclusão. Hoje
 não existe nenhum dos dois.
 
+**Caminho dentro do app feito em 26/10/2026 (RF24):** botão "Excluir conta"
+no Perfil, com diálogo que explica o que some, pede a senha de novo e tem
+Cancelar. `ContaController.excluirConta` recusa quem é admin de grupo (o
+grupo ficaria sem dono), sai dos grupos, recusa convites de rodadas abertas,
+apaga perfil + avisos + ranking num batch e por último o login. Notas e
+estatísticas antigas ficam (sem nome), porque fazem parte do ranking dos
+outros. Regras: `users` e `rankings` passaram a aceitar delete do próprio
+dono. **Falta a URL pública** — por isso o item continua aberto.
+
 ### [ ] T22 — Política de privacidade e formulário de segurança de dados
 
 O app coleta email, foto, localização e usa câmera. Sem a política publicada
@@ -594,7 +624,16 @@ são conteúdo gerado por usuário. A política da Play exige denúncia dentro d
 app, bloqueio de usuário e moderação. O canal de `avisos` do jeito que está é
 um vetor de spam pronto.
 
-### [ ] T25 — Divulgação prévia da permissão de localização
+### [x] T25 — Divulgação prévia da permissão de localização
+
+**Feito em 26/10/2026 (RF28):** `explicarLocalizacaoSePreciso`
+(`widgets/aviso_localizacao.dart`) abre a explicação antes do pedido do
+sistema, nas duas telas que usam localização. Aparece enquanto a permissão
+não foi dada (de novo se a pessoa negou). "Agora não" nem chega a perguntar.
+O manifesto ficou só com `ACCESS_COARSE_LOCATION`, e o aviso de posição
+imprecisa em "Rachas Próximos" passou a aparecer só acima de 3 km.
+
+Texto original:
 
 `LocationService` chama `Geolocator.requestPermission()` direto. A Play exige
 uma tela do app **antes** do diálogo do sistema, explicando por que precisa da
@@ -743,6 +782,21 @@ antes desta mudança (sem o campo) contam como conferidos, para não apagar o
 histórico de rodadas que já foram finalizadas.
 
 **Precisa publicar as regras** (`firebase deploy --only firestore:rules`).
+
+### [x] T34 — Sugestões no campo "Local" e rótulos dos campos
+
+**Feito em 26/10/2026 (pedido do Abreu, testando no Chrome):**
+- **Sugestões de endereço:** `CampoEndereco` (`widgets/campo_endereco.dart`)
+  troca o campo Local em criar/editar racha e criar/editar grupo. A partir de
+  3 letras, meio segundo depois de parar de digitar, mostra até 5 endereços.
+  Usa o **Photon** (`GeocodingService.sugerir`) e não o Nominatim, porque a
+  política do Nominatim proíbe busca a cada tecla. Ordena por proximidade só
+  se a localização já estiver permitida (`posicaoSemPerguntar` nunca pede, para
+  não furar o RF28). Continua aceitando texto livre e guarda só o texto.
+- **Rótulos cortados:** com `OutlineInputBorder` invisível, o rótulo flutuante
+  ("Data", "Tipo de campo") era desenhado na linha de cima e ficava meio para
+  fora da caixa. O tema passou a usar `UnderlineInputBorder` com cantos
+  arredondados, e o rótulo fica dentro do campo em todas as telas.
 
 ---
 

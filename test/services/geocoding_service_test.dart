@@ -116,4 +116,67 @@ void main() {
     expect(achados, hasLength(1));
     expect(achados.first.descricao, 'Y');
   });
+
+  group('sugerir (Photon)', () {
+    // Formato real do Photon: GeoJSON, coordenadas na ordem [lon, lat].
+    String photonCom() => jsonEncode({
+          'features': [
+            {
+              'properties': {
+                'name': 'Faculdade de Tecnologia da Zona Leste',
+                'street': 'Avenida Águia de Haia',
+                'housenumber': '2983',
+                'district': 'Cidade Antônio Estêvão de Carvalho',
+                'city': 'São Paulo',
+                'state': 'São Paulo',
+              },
+              'geometry': {
+                'coordinates': [-46.4760113, -23.5213425],
+              },
+            }
+          ],
+        });
+
+    test('monta o texto da sugestão e lê lat/lon na ordem certa', () async {
+      final client = MockClient((req) async => _json(photonCom()));
+
+      final achados = await GeocodingService(client).sugerir('fatec zona');
+
+      expect(achados, hasLength(1));
+      expect(
+        achados.first.descricao,
+        'Faculdade de Tecnologia da Zona Leste, Avenida Águia de Haia 2983, '
+        'Cidade Antônio Estêvão de Carvalho, São Paulo',
+      );
+      expect(achados.first.latitude, closeTo(-23.52, 0.01));
+      expect(achados.first.longitude, closeTo(-46.47, 0.01));
+    });
+
+    test('com a posição do aparelho, manda lat/lon para ordenar por perto',
+        () async {
+      late Uri pedido;
+      final client = MockClient((req) async {
+        pedido = req.url;
+        return _json(photonCom());
+      });
+
+      await GeocodingService(client)
+          .sugerir('fatec', perto: (latitude: -23.5, longitude: -46.6));
+
+      expect(pedido.host, 'photon.komoot.io');
+      expect(pedido.queryParameters['lat'], '-23.5');
+      expect(pedido.queryParameters['lon'], '-46.6');
+    });
+
+    test('menos de 3 letras não consulta a rede', () async {
+      var chamou = false;
+      final client = MockClient((req) async {
+        chamou = true;
+        return _json(photonCom());
+      });
+
+      expect(await GeocodingService(client).sugerir('fa'), isEmpty);
+      expect(chamou, isFalse);
+    });
+  });
 }

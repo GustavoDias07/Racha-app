@@ -38,4 +38,23 @@ class AuthService {
   Future<void> logout() {
     return _firebaseAuth.signOut();
   }
+
+  /// Confere a senha de novo antes de uma ação sem volta (excluir a conta).
+  ///
+  /// Além de ser uma segunda confirmação, o próprio Firebase exige: ele só
+  /// deixa excluir a conta de quem fez login há poucos minutos, e sem isso o
+  /// `delete()` falharia com `requires-recent-login` para quem está logado
+  /// há dias.
+  Future<void> reautenticar({required String senha}) {
+    final user = _firebaseAuth.currentUser!;
+    final credencial =
+        EmailAuthProvider.credential(email: user.email!, password: senha);
+    return user.reauthenticateWithCredential(credencial);
+  }
+
+  /// Apaga a conta de login. Último passo da exclusão — ver
+  /// `ContaController.excluirConta`.
+  Future<void> excluirContaAtual() {
+    return _firebaseAuth.currentUser!.delete();
+  }
 }

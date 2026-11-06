@@ -7,8 +7,10 @@
          não tem o que pedir. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Captura das coordenadas do racha (tela de criar/editar grupo) e da
-         posição do usuário na aba "Rachas Próximos". -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+         posição do usuário na aba "Rachas Próximos". Só a aproximada (RF28):
+         a busca trabalha em quilômetros e o local do campo é ajustado à mão
+         no mapa, então a precisa não acrescenta nada — e pedir menos
+         facilita a revisão da Play Store. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="Racha App"

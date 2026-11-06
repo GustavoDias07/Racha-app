@@ -55,7 +55,7 @@ e pergunta o que uma parte do código faz. Consequências práticas:
 flutter pub get
 flutter run -d chrome            # jeito mais rápido de ver rodando
 flutter analyze                  # tem que ficar "No issues found!"
-flutter test                     # 62 testes, todos de lógica pura
+flutter test                     # 77 testes, todos de lógica pura
 flutter build apk --release      # build/app/outputs/flutter-apk/app-release.apk
 firebase deploy --only firestore:rules            # .firebaserc já aponta o projeto
 firebase deploy --only firestore:indexes
@@ -116,7 +116,7 @@ com `ref.read(algumController.notifier).metodo(...)`.
   `firestore.rules` valida, publique as regras na mesma hora — já aconteceu
   de código e regra saírem de sincronia e as escritas quebrarem.
 - Ao terminar uma mudança: `flutter analyze` limpo, `flutter test` passando,
-  e registrar em `docs/tarefas.md` (próximo número: **T34**).
+  e registrar em `docs/tarefas.md` (próximo número: **T35**).
 
 ---
 
@@ -173,21 +173,21 @@ ranking do grupo sair numa consulta só.
 
 ---
 
-## 6. Estado atual (05/10/2026)
+## 6. Estado atual (26/10/2026)
 
-**Funcionando:** tudo dos Blocos 1–4 exceto T7/T16/T17, mais o Bloco 6
+**Funcionando:** tudo dos Blocos 1–4 exceto T7, mais o Bloco 6
 (fotos em todas as telas, foto do racha, balanceamento multicritério,
 conferência de estatísticas). Tema escuro verde (estilo Spotify) em
 `core/theme/app_theme.dart`. Release **v1.0.0** publicada no GitHub com APK.
 
+**Sprint 1 (Trello, 26/10/2026):** RF22 pontuação de presença + banco
+(T16/T17), RF24 exclusão de conta pelo app (parte de T21) e RF28 aviso antes
+da localização (T25). Regras em `core/presenca/pontuacao_presenca.dart`
+(+3 foi, −1 faltou, 0 não vai; soma das últimas 10 rodadas convidadas).
+
 **Pendente** (detalhes em `docs/tarefas.md`):
-- **T16** pontuação de presença — pergunta aberta: a janela de 10 rodadas
-  conta rodadas do grupo ou rodadas em que a pessoa foi convidada? Sugestão
-  registrada: as convidadas, com mínimo de ~3 rodadas antes de valer.
-- **T17** banco ordenado (hoje nada limita o elenco: 18 confirmados num 7×7
-  viram dois times de 9).
-- **T7** `totalRachas` conta rodadas avaliadas, não jogadas (vai junto da
-  T16, renomeando o campo — mexe em `firestore.rules`).
+- **T7** `totalRachas` conta rodadas avaliadas, não jogadas (renomear o
+  campo mexe em `firestore.rules`).
 - **T31** avisar que nota de convidado não conta no ranking.
 - **T32** decidir se o mínimo para gerar times é um time ou dois
   (`RachaModel.totalVagas` = tamanho de **um** time).
@@ -195,7 +195,8 @@ conferência de estatísticas). Tema escuro verde (estilo Spotify) em
   **desatualizados** (agosto). Confie em `docs/tarefas.md` e neste arquivo.
 - **Play Store** (Bloco 5): T19 chave de upload (o Gradle já está pronto,
   falta criar o keystore — `android/key.properties` não existe), T20 ranking
-  no servidor, T21 exclusão de conta, T22 política de privacidade, T23–T27.
+  no servidor, T21 (falta só a URL pública de exclusão), T22 política de
+  privacidade, T23, T24, T26, T27.
   O `applicationId` já é `com.gustavodias.rachaapp` (T18 feito).
 
 ---
