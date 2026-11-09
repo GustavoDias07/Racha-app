@@ -4,8 +4,39 @@
 > **onde** está o problema, **o que fazer** e **como verificar** que ficou
 > resolvido. Marque o checkbox quando concluir.
 >
-> Ordem sugerida: bloco 1 primeiro (é o que faz o app cumprir a promessa
-> principal), depois o bloco 2, e o bloco 3 quando sobrar fôlego.
+> A ordem de trabalho que vale agora é a da seção logo abaixo. A numeração
+> dos blocos mostra só quando cada item foi levantado.
+
+---
+
+## Ordem de prioridade (combinada em 09/11/2026)
+
+Combinada com o Abreu. A dificuldade é uma estimativa. "Blaze" quer dizer
+que o item precisa do plano pago do Firebase (hoje o projeto está no Spark,
+o gratuito). Os itens de "reta final" ficam por último porque dependem de as
+funcionalidades estarem fechadas.
+
+| # | Tarefa | Dificuldade | Situação |
+|---|---|---|---|
+| 1 | [T35 — Modo claro e escuro](#t35) | — | feito |
+| 2 | [T26 — Ícone do app](#t26) | — | feito |
+| 3 | [T32 — Mínimo de jogadores para gerar times](#t32) | fácil | aberto |
+| 4 | [T31 — Aviso de que nota de convidado não conta no ranking](#t31) | fácil | aberto |
+| 5 | [T25 — Aviso antes de pedir a localização](#t25) | fácil | marcado como feito (Sprint 1): só revisar |
+| 6 | [T19 — Chave de assinatura + `flutterfire configure`](#t19) | fácil, com parte manual | aberto |
+| 7 | [T21 — Excluir conta](#t21) | médio | parcial: falta a URL pública |
+| 8 | [T23 — Foto no Storage](#t23) | médio, Blaze | aberto |
+| 9 | [T16 — Pontuação de presença](#t16), incluindo a [T7](#t7) | médio | T16 marcada como feita (Sprint 1); falta a T7 |
+| 10 | [T17 — Banco por prioridade](#t17) | médio | marcado como feito (Sprint 1): só revisar |
+| 11 | [T38 — Histórico com gráficos e estatísticas](#t38) | médio | aberto |
+| 12 | [T24 — Denúncia e bloqueio](#t24) | médio | aberto |
+| 13 | [T20 — Ranking calculado no servidor](#t20) | difícil, Blaze | aberto |
+| 14 | [T39 — Convite por link ou e-mail](#t39) | difícil | aberto |
+| 15 | [T12 — Documentação atualizada](#t12) | fácil, reta final | aberto |
+| 16 | [T22 — Política de privacidade](#t22) | reta final | aberto |
+| 17 | [T27 — Crashlytics, R8 e App Check](#t27) | reta final | aberto |
+| 18 | [T36 — Publicar na Play Store](#t36) | por último | aberto |
+| — | [T37 — Publicar na App Store](#t37) | opcional | aberto |
 
 ---
 
@@ -179,6 +210,8 @@ já havia sido recusado não, porque aquela conversa já tinha terminado.
 
 ---
 
+<a id="t7"></a>
+
 ### [ ] T7 — `totalRachas` conta rodadas avaliadas, não jogadas
 
 > **Revisão de 22/08/2026:** a auditoria exagerou o problema. As telas já
@@ -324,6 +357,8 @@ coisa e a gravação faria outra.
 
 ---
 
+<a id="t12"></a>
+
 ### [ ] T12 — Documentação desatualizada
 
 **Problema:** `docs/status_atual.md` afirma que "o ranking global de usuário
@@ -459,6 +494,8 @@ A permissão é estreita de propósito: a regra exige que a escrita do anotador
 toque **apenas** o campo `presenca`. Ele não edita o racha, não aprova
 entrada, não mexe em time nem em posição de ninguém.
 
+<a id="t16"></a>
+
 ### [x] T16 — Pontuação de presença
 
 **Depende de:** T14 (sem chamada não há o que pontuar).
@@ -480,6 +517,8 @@ ninguém. Lógica pura em `core/presenca/pontuacao_presenca.dart` (testes em
 gravado no mesmo batch do `RachaController.finalizar`. Tabela visível a todos
 os membros: tela `GrupoPresencaScreen`, ícone na tela do grupo.
 **A T7 não foi feita junto:** o rename de `totalRachas` continua pendente.
+
+<a id="t17"></a>
 
 ### [x] T17 — Banco ordenado por prioridade
 
@@ -538,6 +577,8 @@ Google Services falha o build quando o pacote não bate. Rodar
 `flutterfire configure --project racha-app-ghad-108ab` para registrar o app
 Android novo e regerar os dois arquivos.
 
+<a id="t19"></a>
+
 ### [ ] T19 — Chave de assinatura de upload
 
 O release ainda é assinado com a chave de debug. A Play exige chave própria —
@@ -571,6 +612,8 @@ Para conferir com qual chave um artefato saiu:
 `apksigner verify --print-certs <arquivo>`. Hoje devolve `CN=Android Debug`;
 com a chave criada, passa a devolver os seus dados.
 
+<a id="t20"></a>
+
 ### [ ] T20 — Mover o cálculo de ranking para o servidor
 
 A regra de `rankings` valida o formato, mas não quem escreve: **qualquer
@@ -579,6 +622,8 @@ de faculdade é uma limitação documentada; num app público é uma
 vulnerabilidade — dá para inflar o próprio ranking com uma requisição. A
 correção é Cloud Functions, que também resolveria o push de verdade (hoje só
 o token é registrado) e o mesmo problema em `avisos`.
+
+<a id="t21"></a>
 
 ### [ ] T21 — Exclusão de conta dentro do app
 
@@ -595,6 +640,8 @@ estatísticas antigas ficam (sem nome), porque fazem parte do ranking dos
 outros. Regras: `users` e `rankings` passaram a aceitar delete do próprio
 dono. **Falta a URL pública** — por isso o item continua aberto.
 
+<a id="t22"></a>
+
 ### [ ] T22 — Política de privacidade e formulário de segurança de dados
 
 O app coleta email, foto, localização e usa câmera. Sem a política publicada
@@ -603,6 +650,8 @@ e o formulário preenchido, a Play não aceita a submissão.
 Deixar para a reta final de propósito: o formulário descreve exatamente quais
 dados o app coleta, e T16/T17 ainda vão mudar isso. Preencher agora é
 preencher duas vezes.
+
+<a id="t23"></a>
 
 ### [ ] T23 — Foto de perfil no Storage, não em base64 no Firestore
 
@@ -616,6 +665,8 @@ escrito isolado para que trocar a implementação não mexa em quem chama.
 Custo deste item cresce com o número de usuários reais: hoje é editar um
 arquivo, depois da publicação vira script de migração. Depende do plano Blaze.
 
+<a id="t24"></a>
+
 ### [ ] T24 — Denúncia e bloqueio de conteúdo de usuário
 
 Fotos de perfil, nomes de grupo e os `avisos` (mensagem livre que qualquer
@@ -623,6 +674,8 @@ logado grava no doc de outro, sem autor confiável — ver `firestore.rules`)
 são conteúdo gerado por usuário. A política da Play exige denúncia dentro do
 app, bloqueio de usuário e moderação. O canal de `avisos` do jeito que está é
 um vetor de spam pronto.
+
+<a id="t25"></a>
 
 ### [x] T25 — Divulgação prévia da permissão de localização
 
@@ -641,6 +694,8 @@ localização e o que é feito com ela. Vale avaliar junto trocar
 `ACCESS_FINE_LOCATION` por só `ACCESS_COARSE_LOCATION`: "Rachas Próximos"
 trabalha em escala de quilômetros e a permissão grossa reduz o atrito na
 revisão.
+
+<a id="t26"></a>
 
 ### [x] T26 — Ícone do app
 
@@ -675,6 +730,8 @@ a combinação que faz o revisor marcar o app como "funcionalidade mínima".
 - Teste novo `test/ilustracao_test.dart`: carrega todas as ilustrações nos
   dois temas.
 
+<a id="t27"></a>
+
 ### [ ] T27 — Crashlytics, R8 e App Check
 
 Três itens de reta final, agrupados porque todos dependem do app Android já
@@ -685,6 +742,8 @@ registrado no Firebase com o pacote novo (T18):
   por natureza) permite bater direto no Firestore/Auth fora do app. Deixar
   para o fim porque atrapalha o desenvolvimento: exige token de debug em cada
   máquina.
+
+<a id="t36"></a>
 
 ### [ ] T36 — Publicar na Play Store (meta principal)
 
@@ -702,6 +761,8 @@ principal do grupo. É o ponto de chegada deste bloco: depende de T19–T27
 - Montar a ficha da loja: ícone 512×512 (sai de `assets/icon/icone.png`,
   T26), imagem de destaque 1024×500, prints das telas, descrições, política
   de privacidade (T22) e o formulário de segurança de dados.
+
+<a id="t37"></a>
 
 ### [ ] T37 — Publicar na App Store (se possível)
 
@@ -803,6 +864,8 @@ Gols por rodada usa `totalRachas` como divisor, que hoje conta rodadas
 Testes novos provam que idade e gols de fato contam: com os dois pesos
 zerados, exatamente os dois testes correspondentes quebram.
 
+<a id="t31"></a>
+
 ### [ ] T31 — Avaliação de convidado não entra no ranking
 
 Não é bug, mas confunde. Notas dadas a convidados são descartadas do ranking
@@ -814,6 +877,8 @@ mostrar só as notas que vieram do time adversário.
 Caminhos possíveis: avisar na tela de avaliação que a nota de convidado não
 conta para o ranking, ou incentivar a oficialização do convidado (que já
 reatribui as notas dele para a conta nova).
+
+<a id="t32"></a>
 
 ### [ ] T32 — Mínimo de jogadores para gerar times
 
@@ -860,6 +925,8 @@ histórico de rodadas que já foram finalizadas.
   fora da caixa. O tema passou a usar `UnderlineInputBorder` com cantos
   arredondados, e o rótulo fica dentro do campo em todas as telas.
 
+<a id="t35"></a>
+
 ### [x] T35 — Modo claro e escuro
 
 **Feito em 09/11/2026 (pedido do Abreu):**
@@ -884,6 +951,42 @@ histórico de rodadas que já foram finalizadas.
   vermelho é branco no claro (`sobreRecusado`).
 - Testes novos em `test/widget_test.dart` (os dois temas e a conversão da
   preferência salva).
+
+---
+
+## Bloco 7 — Melhorias pedidas em 09/11/2026
+
+<a id="t38"></a>
+
+### [ ] T38 — Histórico com gráficos e estatísticas
+
+Mostrar a evolução do jogador e do grupo em gráficos: nota média por rodada,
+gols e assistências ao longo do tempo, presença.
+- **Gráficos:** pacote `fl_chart`.
+- **Análise de dados por regras, sem LLM.** Os comentários ("sua nota subiu
+  nas últimas 5 rodadas", "você é o artilheiro do grupo") saem de contas e
+  comparações simples no código. Não usar inteligência artificial: o grupo
+  precisa saber explicar cada regra para o professor, e não haveria custo de
+  API.
+- Seguir a arquitetura: as contas ficam em `core/` (testáveis sem Firebase),
+  e os dados vêm dos repositories que já existem (`avaliacoes` e
+  `estatisticas` têm `grupoId`).
+
+<a id="t39"></a>
+
+### [ ] T39 — Convite por link ou e-mail
+
+Um link que abre o app direto no racha, ou leva ao download se o app não
+estiver instalado.
+- **O Firebase Dynamic Links foi desligado pelo Google**, então não serve. O
+  caminho é **Android App Links + Firebase Hosting**: o Hosting publica o
+  arquivo `assetlinks.json` que prova que o domínio é do app, e o go_router
+  trata a rota do link.
+- **Enviar o e-mail pelo próprio app** exige Cloud Functions (plano Blaze)
+  ou um serviço externo como o EmailJS.
+- **Alternativa mais simples:** um botão "Compartilhar" que abre o menu de
+  compartilhamento do celular (WhatsApp, e-mail…) com o link e o código do
+  racha. A pessoa envia pelo app que quiser e não precisa de servidor.
 
 ---
 
