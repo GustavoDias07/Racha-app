@@ -686,6 +686,41 @@ registrado no Firebase com o pacote novo (T18):
   para o fim porque atrapalha o desenvolvimento: exige token de debug em cada
   máquina.
 
+### [ ] T36 — Publicar na Play Store (meta principal)
+
+Pedido do Abreu em 09/11/2026: publicar o app na Play Store é a meta
+principal do grupo. É o ponto de chegada deste bloco: depende de T19–T27
+(o que ainda está aberto acima). Passos:
+- Criar a conta de desenvolvedor no Google Play Console. A taxa é única
+  (US$ 25, na época do levantamento). Precisa ser feito pelo dono da conta,
+  não pelo Claude.
+- Contas pessoais novas têm de passar por um **teste fechado** antes de
+  publicar: pela regra do Google em 2026, pelo menos 12 testadores por 14 dias
+  seguidos. Vale chamar o próprio grupo e os amigos do racha logo cedo.
+- Gerar o pacote no formato que a loja pede: `flutter build appbundle`
+  (`.aab`, não `.apk`), assinado com a chave da T19.
+- Montar a ficha da loja: ícone 512×512 (sai de `assets/icon/icone.png`,
+  T26), imagem de destaque 1024×500, prints das telas, descrições, política
+  de privacidade (T22) e o formulário de segurança de dados.
+
+### [ ] T37 — Publicar na App Store (se possível)
+
+Também pedido em 09/11/2026, como desejável e não obrigatório. Custa bem mais
+que a Play Store, por isso fica depois da T36:
+- **Apple Developer Program:** anuidade (US$ 99/ano na época do
+  levantamento), não taxa única.
+- **Precisa de um Mac com Xcode** para compilar e enviar. Sem Mac, a saída é
+  um serviço de build na nuvem (ex.: Codemagic).
+- **O projeto ainda não tem pasta `ios/`:** criar com
+  `flutter create --platforms=ios .`, registrar o app iOS no Firebase
+  (`GoogleService-Info.plist` e `flutterfire configure`), pôr os textos de
+  permissão de localização e câmera/fotos no `Info.plist` e ligar `ios: true`
+  no `flutter_launcher_icons`.
+- Revisar os plugins no iOS (notificações, geolocator, image_picker): cada um
+  tem passos próprios de configuração.
+- A revisão da Apple é mais rígida e exige exclusão de conta dentro do app
+  (já feita, RF24/T21) e política de privacidade (T22).
+
 ---
 
 ## Bloco 6 — Fotos e balanceamento por mais de um critério
