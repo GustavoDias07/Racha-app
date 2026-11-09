@@ -1133,7 +1133,7 @@ class _ProximoRachaTab extends ConsumerWidget {
         ),
         InfoTile(icone: Icons.place, label: 'Local', valor: racha.local),
         InfoTile(
-          icone: Icons.sports_soccer,
+          desenho: const DesenhoCampoPequeno(),
           label: 'Tipo de campo',
           valor: '${racha.tipoCampo.label} • ${racha.qtdJogadoresLinha} jogadores de linha',
         ),

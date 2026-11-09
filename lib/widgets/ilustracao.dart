@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -173,6 +175,98 @@ class MarcaRacha extends StatelessWidget {
     );
   }
 }
+
+// --- Desenhos pequenos, no lugar de ícones ----------------------------------
+//
+// Num ícone de 18–24 px o desenho grande vira borrão, então estes dois são
+// versões simplificadas (linhas mais grossas, menos detalhes). E, como
+// ícone, precisam ter a mesma cor que o `Icon` do lugar teria, que pode ser
+// qualquer cor do tema. Por isso o SVG é montado aqui como texto, já com as
+// cores certas, em vez de ler um arquivo de assets/.
+
+/// Campo de futebol (desenho 2) em tamanho de ícone. Usado em "Tipo de
+/// campo". Só o contorno, a linha do meio e o círculo central: as áreas
+/// sumiam em 18 px.
+class DesenhoCampoPequeno extends StatelessWidget {
+  const DesenhoCampoPequeno({super.key, this.tamanho = 18, this.cor});
+
+  final double tamanho;
+
+  /// Cor das linhas. Nulo = a mesma do ícone do `InfoTile`.
+  final Color? cor;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _hex(cor ?? context.cores.textoSecundario);
+    // viewBox recortado em volta do campo (x 96–416, y 56–456, mais a
+    // espessura da linha), para o desenho ocupar o quadrado inteiro.
+    final svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="34 34 444 444">'
+        '<g fill="none" stroke="$c" stroke-width="44">'
+        '<rect x="96" y="56" width="320" height="400" rx="24"/>'
+        '<line x1="96" y1="256" x2="416" y2="256"/>'
+        '<circle cx="256" cy="256" r="62"/>'
+        '</g></svg>';
+    return SvgPicture.string(svg, width: tamanho, height: tamanho, excludeFromSemantics: true);
+  }
+}
+
+/// Bola em movimento (desenho 6) em tamanho de ícone. Usado em "Gols".
+/// Sem o fundo dividido do original: só a bola e as três linhas de
+/// velocidade.
+///
+/// Cores, como pedido: o que era branco vira a cor do ícone ([cor]) e o que
+/// era #121212 vira a cor da superfície onde ele está (o card), então a bola
+/// aparece "recortada" do fundo nos dois temas.
+class DesenhoGols extends StatelessWidget {
+  const DesenhoGols({super.key, this.tamanho = 24, required this.cor});
+
+  final double tamanho;
+  final Color cor;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _hex(cor);
+    final fundo = _hex(context.cores.superficie);
+    // Conteúdo vai de x 40 a x 420 (380 de largura); o viewBox é um
+    // quadrado de 380 centrado na altura da bola (y 256).
+    final svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 66 380 380">'
+        '<g stroke="$c" stroke-width="22" stroke-linecap="round" opacity="0.85">'
+        '<line x1="70" y1="210" x2="160" y2="210"/>'
+        '<line x1="50" y1="256" x2="160" y2="256"/>'
+        '<line x1="80" y1="302" x2="160" y2="302"/>'
+        '</g>'
+        // Linha da bola mais grossa que a do original (10) para não sumir
+        // em 24 px.
+        '${_bolaSvg(300, 256, 110, c, fundo, 16)}'
+        '</svg>';
+    return SvgPicture.string(svg, width: tamanho, height: tamanho, excludeFromSemantics: true);
+  }
+}
+
+/// A BOLA de todos os desenhos: círculo, pentágono no meio (raio 0,38 r,
+/// ponta para cima) e cinco linhas do pentágono até a borda. Os pontos são
+/// calculados com seno e cosseno a cada 72 graus (360 / 5).
+String _bolaSvg(double cx, double cy, double r, String fill, String linha, double esp) {
+  final pentagono = <String>[];
+  final linhas = StringBuffer();
+  for (var i = 0; i < 5; i++) {
+    final angulo = (-90 + 72 * i) * math.pi / 180;
+    final px = cx + 0.38 * r * math.cos(angulo), py = cy + 0.38 * r * math.sin(angulo);
+    final bx = cx + r * math.cos(angulo), by = cy + r * math.sin(angulo);
+    pentagono.add('${px.toStringAsFixed(1)},${py.toStringAsFixed(1)}');
+    linhas.write('<line x1="${px.toStringAsFixed(1)}" y1="${py.toStringAsFixed(1)}" '
+        'x2="${bx.toStringAsFixed(1)}" y2="${by.toStringAsFixed(1)}" '
+        'stroke="$linha" stroke-width="$esp" stroke-linecap="round"/>');
+  }
+  return '<circle cx="$cx" cy="$cy" r="$r" fill="$fill" stroke="$linha" stroke-width="$esp"/>'
+      '$linhas'
+      '<polygon points="${pentagono.join(' ')}" fill="$linha" stroke="$linha" '
+      'stroke-width="$esp" stroke-linejoin="round"/>';
+}
+
+/// Cor do Flutter → texto "#RRGGBB" do SVG (sem a transparência).
+String _hex(Color cor) =>
+    '#${(cor.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
 
 const _branco = Color(0xFFFFFFFF);
 const _escuro = Color(0xFF121212);

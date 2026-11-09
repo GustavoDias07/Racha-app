@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/info_tile.dart';
+import '../../widgets/ilustracao.dart';
 import '../../providers/conta_controller.dart';
 import '../../providers/firebase_providers.dart';
 import '../../providers/tema_controller.dart';
@@ -270,7 +271,7 @@ class _RankingResumo extends ConsumerWidget {
                   label: 'MVPs',
                 ),
                 _EstatisticaResumo(
-                  icone: Icons.sports_soccer,
+                  desenho: DesenhoGols(cor: context.cores.destaque),
                   valor: '${ranking.totalGols}',
                   label: 'Gols',
                 ),
@@ -291,9 +292,12 @@ class _RankingResumo extends ConsumerWidget {
 }
 
 class _EstatisticaResumo extends StatelessWidget {
-  const _EstatisticaResumo({required this.icone, required this.valor, required this.label});
+  const _EstatisticaResumo({this.icone, this.desenho, required this.valor, required this.label});
 
-  final IconData icone;
+  final IconData? icone;
+
+  /// Desenho no lugar do ícone (ex: a bola em movimento de "Gols", T26).
+  final Widget? desenho;
   final String valor;
   final String label;
 
@@ -301,7 +305,7 @@ class _EstatisticaResumo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icone, color: context.cores.destaque),
+        desenho ?? Icon(icone, color: context.cores.destaque),
         const SizedBox(height: 4),
         Text(valor, style: Theme.of(context).textTheme.titleMedium),
         Text(label, style: TextStyle(fontSize: 12, color: context.cores.textoSecundario)),

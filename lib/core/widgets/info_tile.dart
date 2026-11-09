@@ -13,12 +13,18 @@ import '../theme/app_theme.dart';
 class InfoTile extends StatelessWidget {
   const InfoTile({
     super.key,
-    required this.icone,
+    this.icone,
+    this.desenho,
     required this.label,
     required this.valor,
-  });
+  }) : assert(icone != null || desenho != null, 'Passe um ícone ou um desenho');
 
-  final IconData icone;
+  final IconData? icone;
+
+  /// Desenho no lugar do ícone (ex: o campo em "Tipo de campo", T26). Fica
+  /// no mesmo quadrado de 18 px do ícone, para as linhas continuarem
+  /// alinhadas.
+  final Widget? desenho;
   final String label;
   final String valor;
 
@@ -31,7 +37,9 @@ class InfoTile extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Icon(icone, size: 18, color: context.cores.textoSecundario),
+            child: desenho != null
+                ? SizedBox.square(dimension: 18, child: desenho)
+                : Icon(icone, size: 18, color: context.cores.textoSecundario),
           ),
           const SizedBox(width: 12),
           Expanded(

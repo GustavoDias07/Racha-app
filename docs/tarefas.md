@@ -722,6 +722,9 @@ a combinação que faz o revisor marcar o app como "funcionalidade mínima".
   - "R" com bola (`MarcaRacha`): miniatura dos rachas e grupos sem foto;
     o "R" é `Text` em negrito e a bola é o `bola.svg`;
   - campo também no logo da barra de cima da Home (é a marca do app);
+  - ícones pequenos montados em código com as cores do tema (`DesenhoGols`,
+    bola em movimento, desenho 6, no "Gols" do Perfil; `DesenhoCampoPequeno`,
+    só o contorno do campo, em "Tipo de campo" no grupo e na rodada);
   - balança: aba Times antes de gerar os times;
   - duas camisas "1" e "2": topo do resultado dos times (`CamisasNumeradas`;
     os números são `Text` por cima, porque o flutter_svg não desenha `<text>`

@@ -9,6 +9,7 @@ import '../../models/enums.dart';
 import '../../models/grupo_model.dart';
 import '../../models/solicitacao_model.dart';
 import '../../models/user_model.dart';
+import '../../widgets/ilustracao.dart';
 import '../../providers/firebase_providers.dart';
 import '../../providers/grupo_controller.dart';
 import '../../providers/solicitacao_controller.dart';
@@ -127,7 +128,7 @@ class GrupoDetalheScreen extends ConsumerWidget {
                       valor: '${grupoAtual.diaSemana.label}, ${grupoAtual.horario}',
                     ),
                     InfoTile(
-                      icone: Icons.sports_soccer,
+                      desenho: const DesenhoCampoPequeno(),
                       label: 'Tipo de campo',
                       valor:
                           '${grupoAtual.tipoCampoPadrao.label} \u2022 ${grupoAtual.qtdJogadoresLinhaPadrao} jogadores de linha',
