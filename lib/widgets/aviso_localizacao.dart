@@ -23,7 +23,7 @@ Future<bool> explicarLocalizacaoSePreciso(BuildContext context, WidgetRef ref) a
   final resposta = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      icon: const Icon(Icons.location_on_outlined, color: AppColors.verde),
+      icon: Icon(Icons.location_on_outlined, color: context.cores.verdeTexto),
       title: const Text('Por que pedimos sua localização'),
       content: const Text(
         'O Racha App usa a sua localização aproximada só para duas coisas:\n\n'

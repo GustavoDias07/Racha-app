@@ -146,7 +146,7 @@ class _CampoEnderecoState extends ConsumerState<CampoEndereco> {
                   for (final s in _sugestoes)
                     ListTile(
                       dense: true,
-                      leading: const Icon(Icons.place, color: AppColors.verde),
+                      leading: Icon(Icons.place, color: context.cores.verdeTexto),
                       title: Text(s.descricao,
                           maxLines: 2, overflow: TextOverflow.ellipsis),
                       onTap: () => _escolher(s),

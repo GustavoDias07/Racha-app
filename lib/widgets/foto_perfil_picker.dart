@@ -60,11 +60,11 @@ class _FotoPerfilPickerState extends State<FotoPerfilPicker> {
       children: [
         CircleAvatar(
           radius: 56,
-          backgroundColor: AppColors.superficieAlta,
+          backgroundColor: context.cores.superficieAlta,
           backgroundImage: bytes != null ? MemoryImage(bytes) : null,
           child: bytes == null
-              ? const Icon(Icons.person,
-                  size: 56, color: AppColors.textoSecundario)
+              ? Icon(Icons.person,
+                  size: 56, color: context.cores.textoSecundario)
               : null,
         ),
         const SizedBox(height: 8),

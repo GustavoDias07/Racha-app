@@ -3,11 +3,13 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'providers/notification_controller.dart';
+import 'providers/tema_controller.dart';
 
 /// Mensagem chegou com o app em segundo plano ou fechado — o próprio
 /// Android já mostra a notificação sozinho (o payload tem `notification`),
@@ -23,7 +25,13 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_aoReceberEmSegundoPlano);
   await initializeDateFormatting('pt_BR');
-  runApp(const ProviderScope(child: RachaApp()));
+  // Abre a preferência de tema antes do app subir, para a primeira tela já
+  // nascer no tema escolhido (ver tema_controller.dart).
+  final prefs = await SharedPreferences.getInstance();
+  runApp(ProviderScope(
+    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    child: const RachaApp(),
+  ));
 }
 
 class RachaApp extends ConsumerWidget {
@@ -37,7 +45,11 @@ class RachaApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Racha App',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      // `theme` é usado no modo claro, `darkTheme` no escuro, e `themeMode`
+      // diz qual vale: claro, escuro ou o do celular (ThemeMode.system).
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ref.watch(temaProvider),
       routerConfig: router,
     );
   }

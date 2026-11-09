@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/info_tile.dart';
 import '../../providers/conta_controller.dart';
 import '../../providers/firebase_providers.dart';
+import '../../providers/tema_controller.dart';
 
 /// Tela de perfil do jogador logado: foto, dados pessoais e o resumo do seu
 /// Ranking (média de avaliação, MVPs, gols, assistências, rachas avaliados).
@@ -73,6 +74,10 @@ class PerfilScreen extends ConsumerWidget {
                 Text('Histórico e estatísticas', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 _RankingResumo(userId: user.id),
+                const SizedBox(height: 24),
+                Text('Aparência', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                const _SeletorAparencia(),
                 const SizedBox(height: 40),
                 Center(
                   child: TextButton.icon(
@@ -82,7 +87,7 @@ class PerfilScreen extends ConsumerWidget {
                     ),
                     icon: const Icon(Icons.delete_forever_outlined),
                     label: const Text('Excluir conta'),
-                    style: TextButton.styleFrom(foregroundColor: AppColors.recusado),
+                    style: TextButton.styleFrom(foregroundColor: context.cores.recusado),
                   ),
                 ),
               ],
@@ -91,6 +96,47 @@ class PerfilScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Erro ao carregar perfil: $e')),
         ),
+      ),
+    );
+  }
+}
+
+/// Escolha entre tema Claro, Escuro ou Seguir o celular (T35).
+///
+/// `SegmentedButton` e não uma lista de opções: são só três escolhas
+/// curtas, e assim as três ficam visíveis lado a lado, sem abrir diálogo.
+class _SeletorAparencia extends ConsumerWidget {
+  const _SeletorAparencia();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final modo = ref.watch(temaProvider);
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<ThemeMode>(
+        segments: const [
+          ButtonSegment(
+            value: ThemeMode.light,
+            icon: Icon(Icons.light_mode_outlined),
+            label: Text('Claro'),
+          ),
+          ButtonSegment(
+            value: ThemeMode.dark,
+            icon: Icon(Icons.dark_mode_outlined),
+            label: Text('Escuro'),
+          ),
+          ButtonSegment(
+            value: ThemeMode.system,
+            icon: Icon(Icons.phone_android),
+            label: Text('Celular'),
+            tooltip: 'Seguir o tema do celular',
+          ),
+        ],
+        selected: {modo},
+        // O SegmentedButton devolve um conjunto (ele também serve para
+        // múltipla escolha); aqui sempre vem exatamente um item.
+        onSelectionChanged: (escolha) =>
+            ref.read(temaProvider.notifier).escolher(escolha.first),
       ),
     );
   }
@@ -154,7 +200,7 @@ class _ExcluirContaDialogState extends ConsumerState<_ExcluirContaDialog> {
               const SizedBox(height: 8),
               Text(
                 estado.error.toString().replaceFirst('Exception: ', ''),
-                style: const TextStyle(color: AppColors.recusado),
+                style: TextStyle(color: context.cores.recusado),
               ),
             ],
           ],
@@ -168,8 +214,8 @@ class _ExcluirContaDialogState extends ConsumerState<_ExcluirContaDialog> {
         FilledButton(
           onPressed: estado.isLoading ? null : _excluir,
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.recusado,
-            foregroundColor: Colors.black,
+            backgroundColor: context.cores.recusado,
+            foregroundColor: context.cores.sobreRecusado,
           ),
           child: estado.isLoading
               ? const SizedBox(
@@ -196,12 +242,12 @@ class _RankingResumo extends ConsumerWidget {
     return rankingAsync.when(
       data: (ranking) {
         if (ranking == null || ranking.totalRachas == 0) {
-          return const Card(
+          return Card(
             child: Padding(
               padding: EdgeInsets.all(24),
               child: Text(
                 'Ainda sem avaliações registradas em nenhum racha.',
-                style: TextStyle(color: AppColors.textoSecundario),
+                style: TextStyle(color: context.cores.textoSecundario),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -255,10 +301,10 @@ class _EstatisticaResumo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icone, color: AppColors.destaque),
+        Icon(icone, color: context.cores.destaque),
         const SizedBox(height: 4),
         Text(valor, style: Theme.of(context).textTheme.titleMedium),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario)),
+        Text(label, style: TextStyle(fontSize: 12, color: context.cores.textoSecundario)),
       ],
     );
   }

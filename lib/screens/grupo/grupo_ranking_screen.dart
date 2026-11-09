@@ -87,17 +87,17 @@ class _RankingTile extends ConsumerWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: posicao == 1
-                      ? AppColors.destaque
-                      : AppColors.superficieAlta,
+                      ? context.cores.destaque
+                      : context.cores.superficieAlta,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.fundo, width: 2),
+                  border: Border.all(color: context.cores.fundo, width: 2),
                 ),
                 child: Text(
                   '$posicao',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: posicao == 1 ? Colors.black : AppColors.texto,
+                    color: posicao == 1 ? Colors.black : context.cores.texto,
                   ),
                 ),
               ),
@@ -120,8 +120,8 @@ class _RankingTile extends ConsumerWidget {
               Icon(
                 Icons.star,
                 color: ranking.mediaAvaliacoes > 0
-                    ? AppColors.destaque
-                    : AppColors.neutro,
+                    ? context.cores.destaque
+                    : context.cores.neutro,
                 size: 16,
               ),
               const SizedBox(width: 2),
@@ -137,7 +137,7 @@ class _RankingTile extends ConsumerWidget {
           if (ranking.totalMvps > 0)
             Text(
               '${ranking.totalMvps} MVP${ranking.totalMvps > 1 ? 's' : ''}',
-              style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+              style: TextStyle(fontSize: 12, color: context.cores.textoSecundario),
             ),
         ],
       ),

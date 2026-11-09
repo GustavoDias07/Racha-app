@@ -44,7 +44,7 @@ class AvatarJogador extends StatelessWidget {
     if (bytes != null) {
       return CircleAvatar(
         radius: raio,
-        backgroundColor: AppColors.superficieAlta,
+        backgroundColor: context.cores.superficieAlta,
         backgroundImage: MemoryImage(bytes),
       );
     }
@@ -52,14 +52,14 @@ class AvatarJogador extends StatelessWidget {
     return CircleAvatar(
       radius: raio,
       backgroundColor: convidado
-          ? AppColors.superficieAlta
-          : AppColors.verde.withValues(alpha: 0.18),
+          ? context.cores.superficieAlta
+          : context.cores.verde.withValues(alpha: 0.18),
       child: Text(
         _iniciais(nome),
         style: TextStyle(
           fontSize: raio * 0.72,
           fontWeight: FontWeight.w600,
-          color: convidado ? AppColors.textoSecundario : AppColors.verde,
+          color: convidado ? context.cores.textoSecundario : context.cores.verdeTexto,
         ),
       ),
     );

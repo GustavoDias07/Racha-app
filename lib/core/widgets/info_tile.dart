@@ -31,7 +31,7 @@ class InfoTile extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Icon(icone, size: 18, color: AppColors.textoSecundario),
+            child: Icon(icone, size: 18, color: context.cores.textoSecundario),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -40,18 +40,18 @@ class InfoTile extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11.5,
-                    color: AppColors.textoSecundario,
+                    color: context.cores.textoSecundario,
                     letterSpacing: 0.2,
                   ),
                 ),
                 const SizedBox(height: 1),
                 Text(
                   valor,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.texto,
+                    color: context.cores.texto,
                   ),
                 ),
               ],

@@ -50,7 +50,7 @@ class CampoDeToque extends StatelessWidget {
           valor ?? '--',
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: valor == null ? AppColors.neutro : AppColors.texto,
+            color: valor == null ? context.cores.neutro : context.cores.texto,
           ),
         ),
       ),

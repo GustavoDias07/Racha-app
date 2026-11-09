@@ -156,12 +156,12 @@ class GrupoDetalheScreen extends ConsumerWidget {
           return rachaAsync.when(
             data: (racha) {
               if (racha == null) {
-                return comCabecalho(const Padding(
+                return comCabecalho(Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
                     'Nenhuma rodada aberta no momento.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.textoSecundario),
+                    style: TextStyle(color: context.cores.textoSecundario),
                   ),
                 ));
               }
@@ -306,7 +306,7 @@ class _MembrosFixosSection extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.people_outline, size: 20, color: AppColors.textoSecundario),
+            Icon(Icons.people_outline, size: 20, color: context.cores.textoSecundario),
             const SizedBox(width: 12),
             const Expanded(
               child: Text('Membros fixos', style: TextStyle(fontWeight: FontWeight.w500)),
@@ -320,20 +320,20 @@ class _MembrosFixosSection extends ConsumerWidget {
           ],
         ),
         if (membrosFixos.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(left: 32, bottom: 4),
-            child: Text('Nenhum membro fixo ainda.', style: TextStyle(color: AppColors.textoSecundario)),
+            child: Text('Nenhum membro fixo ainda.', style: TextStyle(color: context.cores.textoSecundario)),
           )
         else ...[
           for (final userId in membrosFixos)
             _MembroFixoTile(grupo: grupo, userId: userId, isAdmin: isAdmin),
           if (isAdmin)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(left: 32, top: 4, bottom: 4),
               child: Text(
                 'O ícone de prancheta libera o jogador a fazer a chamada e conferir '
                 'as estatísticas do dia.',
-                style: TextStyle(fontSize: 11, color: AppColors.textoSecundario),
+                style: TextStyle(fontSize: 11, color: context.cores.textoSecundario),
               ),
             ),
         ],
@@ -374,7 +374,7 @@ class _MembroFixoTile extends ConsumerWidget {
               icon: Icon(
                 anotador ? Icons.fact_check : Icons.fact_check_outlined,
                 size: 18,
-                color: anotador ? AppColors.confirmado : AppColors.neutro,
+                color: anotador ? context.cores.confirmado : context.cores.neutro,
               ),
               tooltip: anotador
                   ? 'Tirar a permissão de chamada e conferência'
@@ -588,7 +588,7 @@ class _SolicitacoesSection extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.person_add_outlined, size: 20, color: AppColors.textoSecundario),
+              Icon(Icons.person_add_outlined, size: 20, color: context.cores.textoSecundario),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -643,14 +643,14 @@ class _SolicitacaoTile extends ConsumerWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.check, size: 18, color: AppColors.confirmado),
+            icon: Icon(Icons.check, size: 18, color: context.cores.confirmado),
             tooltip: 'Aprovar',
             onPressed: () => ref
                 .read(solicitacaoControllerProvider.notifier)
                 .aprovar(grupo, solicitacao),
           ),
           IconButton(
-            icon: const Icon(Icons.close, size: 18, color: AppColors.recusado),
+            icon: Icon(Icons.close, size: 18, color: context.cores.recusado),
             tooltip: 'Recusar',
             onPressed: () => ref
                 .read(solicitacaoControllerProvider.notifier)
@@ -674,9 +674,9 @@ class _ResumoDoJogador extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (ficha.semHistorico) {
-      return const Text(
+      return Text(
         'Jogador novo — sem avaliações ainda',
-        style: TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+        style: TextStyle(fontSize: 12, color: context.cores.textoSecundario),
       );
     }
 
@@ -686,14 +686,14 @@ class _ResumoDoJogador extends StatelessWidget {
       partes.add(Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.star, size: 13, color: AppColors.destaque),
+          Icon(Icons.star, size: 13, color: context.cores.destaque),
           const SizedBox(width: 2),
           Text(
             ficha.media!.toStringAsFixed(1).replaceAll('.', ','),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.texto,
+              color: context.cores.texto,
             ),
           ),
         ],
@@ -703,14 +703,14 @@ class _ResumoDoJogador extends StatelessWidget {
     if (ficha.posicao != null) {
       partes.add(Text(
         ficha.posicao!.posicao.label,
-        style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+        style: TextStyle(fontSize: 12, color: context.cores.textoSecundario),
       ));
     }
 
     if (ficha.totalRachas > 0) {
       partes.add(Text(
         '${ficha.totalRachas} ${ficha.totalRachas == 1 ? 'rodada' : 'rodadas'}',
-        style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+        style: TextStyle(fontSize: 12, color: context.cores.textoSecundario),
       ));
     }
 
@@ -718,11 +718,11 @@ class _ResumoDoJogador extends StatelessWidget {
       partes.add(Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.emoji_events, size: 13, color: AppColors.destaque),
+          Icon(Icons.emoji_events, size: 13, color: context.cores.destaque),
           const SizedBox(width: 2),
           Text(
             '${ficha.totalMvps}',
-            style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+            style: TextStyle(fontSize: 12, color: context.cores.textoSecundario),
           ),
         ],
       ));
@@ -759,7 +759,7 @@ class _RecusadasSection extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.person_off_outlined, size: 20, color: AppColors.textoSecundario),
+              Icon(Icons.person_off_outlined, size: 20, color: context.cores.textoSecundario),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -793,7 +793,7 @@ class _RecusadaTile extends ConsumerWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(nome, style: const TextStyle(color: AppColors.textoSecundario)),
+            child: Text(nome, style: TextStyle(color: context.cores.textoSecundario)),
           ),
           TextButton(
             onPressed: () async {

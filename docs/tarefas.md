@@ -798,6 +798,31 @@ histórico de rodadas que já foram finalizadas.
   fora da caixa. O tema passou a usar `UnderlineInputBorder` com cantos
   arredondados, e o rótulo fica dentro do campo em todas as telas.
 
+### [x] T35 — Modo claro e escuro
+
+**Feito em 09/11/2026 (pedido do Abreu):**
+- **Onde escolhe:** Perfil → seção **Aparência**, com três opções lado a lado
+  (`SegmentedButton`): Claro, Escuro e Celular (segue o tema do aparelho).
+  O padrão, para quem nunca escolheu, é seguir o celular.
+- **Onde fica salvo:** só no aparelho, com `shared_preferences`
+  (`providers/tema_controller.dart`). Não vai para o Firestore porque é
+  preferência de tela, não dado do jogador; por isso o provider não observa
+  `uidLogadoProvider`. O `SharedPreferences` é aberto no `main()` antes do
+  app subir, para a primeira tela já nascer no tema certo.
+- **Como as cores mudam:** `AppColors` (constantes) virou `AppCores`, um
+  `ThemeExtension` com duas versões, `AppCores.escuro` (as cores de sempre)
+  e `AppCores.claro`. As telas leem `context.cores.texto` etc. O
+  `MaterialApp` recebe `theme` (claro), `darkTheme` (escuro) e `themeMode`.
+  Os dois `ThemeData` saem do mesmo construtor (`AppTheme._construir`), então
+  ajuste de forma vale para os dois.
+- **Contraste no claro:** o verde #1DB954 continua em botões e preenchimentos
+  (com texto preto). Para **texto e ícones** verdes existe o `verdeTexto`,
+  mais escuro no claro (#117A37). As cores semânticas (pendente, recusado,
+  destaque, info) também ficaram mais fechadas no claro, e o texto de botão
+  vermelho é branco no claro (`sobreRecusado`).
+- Testes novos em `test/widget_test.dart` (os dois temas e a conversão da
+  preferência salva).
+
 ---
 
 ## Fora do escopo por enquanto

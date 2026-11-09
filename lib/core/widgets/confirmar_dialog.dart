@@ -37,8 +37,8 @@ Future<bool> confirmar(
           onPressed: () => Navigator.pop(dialogContext, true),
           style: destrutivo
               ? FilledButton.styleFrom(
-                  backgroundColor: AppColors.recusado,
-                  foregroundColor: Colors.black,
+                  backgroundColor: context.cores.recusado,
+                  foregroundColor: context.cores.sobreRecusado,
                 )
               : null,
           child: Text(rotuloConfirmar),

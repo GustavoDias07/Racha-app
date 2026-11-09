@@ -241,7 +241,7 @@ class _CriarGrupoScreenState extends ConsumerState<CriarGrupoScreen> {
                 // despercebida.
                 Container(
                   decoration: BoxDecoration(
-                    color: AppColors.superficie,
+                    color: context.cores.superficie,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   padding: const EdgeInsets.fromLTRB(14, 4, 6, 4),

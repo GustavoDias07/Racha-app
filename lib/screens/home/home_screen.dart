@@ -47,8 +47,8 @@ class HomeScreen extends ConsumerWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                color: AppColors.verde,
+              decoration: BoxDecoration(
+                color: context.cores.verde,
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.sports_soccer, size: 18, color: Colors.black),
@@ -258,7 +258,7 @@ class _RachaTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Material(
-        color: AppColors.superficie,
+        color: context.cores.superficie,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
@@ -275,18 +275,18 @@ class _RachaTile extends StatelessWidget {
                     children: [
                       Text(
                         nome,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
-                          color: AppColors.texto,
+                          color: context.cores.texto,
                         ),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         detalhe,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
-                          color: AppColors.textoSecundario,
+                          color: context.cores.textoSecundario,
                         ),
                       ),
                     ],
@@ -297,14 +297,14 @@ class _RachaTile extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.superficieAlta,
+                    color: context.cores.superficieAlta,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     etiqueta,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.textoSecundario,
+                      color: context.cores.textoSecundario,
                     ),
                   ),
                 ),
@@ -488,7 +488,7 @@ void _mostrarDialogoEntrarComCodigo(BuildContext context, WidgetRef ref) {
               if (erro != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text(erro!, style: const TextStyle(color: AppColors.recusado)),
+                  child: Text(erro!, style: TextStyle(color: context.cores.recusado)),
                 ),
             ],
           ),
@@ -527,15 +527,15 @@ class _RodadaTile extends StatelessWidget {
     final status = rodada.participacao.statusConfirmacao;
 
     final (rotulo, cor) = switch (status) {
-      StatusConfirmacao.confirmado => ('Confirmado', AppColors.confirmado),
-      StatusConfirmacao.recusado => ('Recusado', AppColors.recusado),
-      StatusConfirmacao.pendente => ('Responder', AppColors.pendente),
+      StatusConfirmacao.confirmado => ('Confirmado', context.cores.confirmado),
+      StatusConfirmacao.recusado => ('Recusado', context.cores.recusado),
+      StatusConfirmacao.pendente => ('Responder', context.cores.pendente),
     };
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Material(
-        color: AppColors.superficie,
+        color: context.cores.superficie,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: () => context.push('/rachas/${racha.id}'),
@@ -566,19 +566,19 @@ class _RodadaTile extends StatelessWidget {
                     children: [
                       Text(
                         racha.nome,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
-                          color: AppColors.texto,
+                          color: context.cores.texto,
                         ),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         '${racha.local} \u2022 '
                         '${DateFormat("dd/MM 'a\u0300s' HH:mm", 'pt_BR').format(racha.dataHora)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
-                          color: AppColors.textoSecundario,
+                          color: context.cores.textoSecundario,
                         ),
                       ),
                     ],

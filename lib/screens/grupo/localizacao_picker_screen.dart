@@ -239,7 +239,7 @@ class _LocalizacaoPickerScreenState extends ConsumerState<LocalizacaoPickerScree
               right: 16,
               top: 16,
               child: Card(
-                color: AppColors.superficieAlta,
+                color: context.cores.superficieAlta,
                 child: ConstrainedBox(
                   // Teto de altura: com cinco resultados longos a lista
                   // cobriria o mapa inteiro, e a pessoa não veria para onde
@@ -272,13 +272,13 @@ class _LocalizacaoPickerScreenState extends ConsumerState<LocalizacaoPickerScree
               right: 16,
               top: 16,
               child: Card(
-                color: AppColors.superficieAlta,
+                color: context.cores.superficieAlta,
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      const Icon(Icons.search_off,
-                          size: 20, color: AppColors.pendente),
+                      Icon(Icons.search_off,
+                          size: 20, color: context.cores.pendente),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -297,13 +297,13 @@ class _LocalizacaoPickerScreenState extends ConsumerState<LocalizacaoPickerScree
               right: 16,
               top: 16,
               child: Card(
-                color: AppColors.superficieAlta,
+                color: context.cores.superficieAlta,
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      const Icon(Icons.location_off_outlined,
-                          size: 20, color: AppColors.pendente),
+                      Icon(Icons.location_off_outlined,
+                          size: 20, color: context.cores.pendente),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -323,7 +323,7 @@ class _LocalizacaoPickerScreenState extends ConsumerState<LocalizacaoPickerScree
             right: 16,
             bottom: 16,
             child: Card(
-              color: AppColors.superficieAlta,
+              color: context.cores.superficieAlta,
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Text(

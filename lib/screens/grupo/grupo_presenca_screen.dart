@@ -56,7 +56,7 @@ class _ExplicacaoRegra extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Card(
+    return Card(
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Text(
@@ -66,7 +66,7 @@ class _ExplicacaoRegra extends StatelessWidget {
           'convidado, a partir de $minimoRodadasParaValer. Quando confirma mais '
           'gente do que cabe nos dois times, quem tem menos pontos fica no '
           'banco. Quem atrasou vai para o fim da fila só naquela rodada.',
-          style: TextStyle(color: AppColors.textoSecundario),
+          style: TextStyle(color: context.cores.textoSecundario),
         ),
       ),
     );

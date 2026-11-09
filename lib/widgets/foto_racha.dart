@@ -54,10 +54,10 @@ Future<FotoEscolhida?> escolherFotoDoRacha(
           ),
           if (temFoto)
             ListTile(
-              leading: const Icon(Icons.delete_outline,
-                  color: AppColors.recusado),
-              title: const Text('Remover foto',
-                  style: TextStyle(color: AppColors.recusado)),
+              leading: Icon(Icons.delete_outline,
+                  color: context.cores.recusado),
+              title: Text('Remover foto',
+                  style: TextStyle(color: context.cores.recusado)),
               onTap: () => Navigator.pop(sheetContext, 'remover'),
             ),
         ],
@@ -134,11 +134,11 @@ class MiniaturaDoRacha extends StatelessWidget {
       width: tamanho,
       height: tamanho,
       decoration: BoxDecoration(
-        color: AppColors.verde.withValues(alpha: 0.15),
+        color: context.cores.verde.withValues(alpha: 0.15),
         borderRadius: raio,
       ),
       child: Icon(Icons.sports_soccer,
-          size: tamanho * 0.53, color: AppColors.verde),
+          size: tamanho * 0.53, color: context.cores.verdeTexto),
     );
   }
 }
@@ -176,22 +176,22 @@ class CapaDoRacha extends StatelessWidget {
       return Padding(
         padding: margem,
         child: Material(
-          color: AppColors.superficie,
+          color: context.cores.superficie,
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             onTap: onEditar,
             borderRadius: BorderRadius.circular(12),
-            child: const SizedBox(
+            child: SizedBox(
               height: 72,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.add_photo_alternate_outlined,
-                      color: AppColors.textoSecundario),
+                      color: context.cores.textoSecundario),
                   SizedBox(width: 8),
                   Text(
                     'Adicionar foto do racha',
-                    style: TextStyle(color: AppColors.textoSecundario),
+                    style: TextStyle(color: context.cores.textoSecundario),
                   ),
                 ],
               ),

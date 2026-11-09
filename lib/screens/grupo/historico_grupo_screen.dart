@@ -78,7 +78,7 @@ class _MvpChip extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.emoji_events, color: AppColors.destaque, size: 18),
+        Icon(Icons.emoji_events, color: context.cores.destaque, size: 18),
         const SizedBox(width: 4),
         Text(nome, style: const TextStyle(fontSize: 12)),
       ],

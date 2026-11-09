@@ -267,7 +267,7 @@ class _NotaSelector extends StatelessWidget {
             constraints: const BoxConstraints(),
             icon: Icon(
               (nota ?? 0) >= i ? Icons.star : Icons.star_border,
-              color: AppColors.destaque,
+              color: context.cores.destaque,
             ),
             onPressed: () => onChanged(i.toDouble()),
           ),

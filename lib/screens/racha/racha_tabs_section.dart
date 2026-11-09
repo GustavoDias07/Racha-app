@@ -100,7 +100,7 @@ class _AbasFixas extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return ColoredBox(color: AppColors.fundo, child: abas);
+    return ColoredBox(color: context.cores.fundo, child: abas);
   }
 
   @override
@@ -322,7 +322,7 @@ class _TimesTab extends ConsumerWidget {
                       : 'Faltam confirmados: $totalElegiveis de $minimo necessários '
                           'pra fechar os dois times (formação ${racha.tipoCampo.label}).',
                   style: TextStyle(
-                    color: suficiente ? AppColors.texto : AppColors.pendente,
+                    color: suficiente ? context.cores.texto : context.cores.pendente,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -349,7 +349,7 @@ class _TimesTab extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       'Erro: ${timesState.error}',
-                      style: const TextStyle(color: AppColors.recusado),
+                      style: TextStyle(color: context.cores.recusado),
                     ),
                   ),
                 const SizedBox(height: 24),
@@ -388,7 +388,7 @@ class _TimesTab extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       'Erro: ${rankingState.error}',
-                      style: const TextStyle(color: AppColors.recusado),
+                      style: TextStyle(color: context.cores.recusado),
                     ),
                   ),
                 if (racha.mvpUserId != null) ...[
@@ -452,9 +452,9 @@ class _FinalizarRachaSection extends ConsumerWidget {
         0;
 
     if (racha.status == RachaStatus.finalizado) {
-      return const Row(
+      return Row(
         children: [
-          Icon(Icons.check_circle, color: AppColors.confirmado),
+          Icon(Icons.check_circle, color: context.cores.confirmado),
           SizedBox(width: 8),
           Text('Racha finalizado', style: TextStyle(fontWeight: FontWeight.w600)),
         ],
@@ -470,7 +470,7 @@ class _FinalizarRachaSection extends ConsumerWidget {
             child: Text(
               '$pendentes estatística(s) aguardando conferência. Confira na aba '
               'Estatísticas para poder finalizar.',
-              style: const TextStyle(color: AppColors.pendente),
+              style: TextStyle(color: context.cores.pendente),
             ),
           ),
         OutlinedButton.icon(
@@ -512,7 +512,7 @@ class _FinalizarRachaSection extends ConsumerWidget {
         if (state.hasError)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text('Erro: ${state.error}', style: const TextStyle(color: AppColors.recusado)),
+            child: Text('Erro: ${state.error}', style: TextStyle(color: context.cores.recusado)),
           ),
       ],
     );
@@ -529,7 +529,7 @@ class _MvpBanner extends ConsumerWidget {
     final userAsync = ref.watch(userPorIdProvider(userId));
     return Row(
       children: [
-        const Icon(Icons.emoji_events, color: AppColors.destaque),
+        Icon(Icons.emoji_events, color: context.cores.destaque),
         const SizedBox(width: 8),
         Text(
           'MVP da rodada: ${userAsync.valueOrNull?.nome ?? '...'}',
@@ -612,10 +612,10 @@ class _BancoSection extends StatelessWidget {
           children: [
             Text('Banco', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Confirmaram, mas não couberam nos dois times. Em ordem: o '
               'primeiro entra se abrir uma vaga.',
-              style: TextStyle(color: AppColors.textoSecundario),
+              style: TextStyle(color: context.cores.textoSecundario),
             ),
             const Divider(),
             for (final (ordem, tile) in fila)
@@ -785,7 +785,7 @@ class _ResumoConferencia extends ConsumerWidget {
                 Icon(
                   pendentes == 0 ? Icons.verified_outlined : Icons.hourglass_top,
                   size: 18,
-                  color: pendentes == 0 ? AppColors.confirmado : AppColors.pendente,
+                  color: pendentes == 0 ? context.cores.confirmado : context.cores.pendente,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -806,7 +806,7 @@ class _ResumoConferencia extends ConsumerWidget {
                       'conferido.'
                   : 'Lance seus números pelo lápis. Eles só contam no ranking '
                       'depois que o admin ou quem faz a chamada conferir.',
-              style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+              style: TextStyle(fontSize: 12, color: context.cores.textoSecundario),
             ),
             if (aConferir.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -825,7 +825,7 @@ class _ResumoConferencia extends ConsumerWidget {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   'Erro: ${state.error}',
-                  style: const TextStyle(color: AppColors.recusado),
+                  style: TextStyle(color: context.cores.recusado),
                 ),
               ),
           ],
@@ -950,9 +950,9 @@ class _EstatisticaTile extends StatelessWidget {
     final (String? status, Color? corStatus) = switch (estatistica) {
       null => (null, null),
       EstatisticaModel(confirmada: false) =>
-        ('Aguardando conferência', AppColors.pendente),
+        ('Aguardando conferência', context.cores.pendente),
       EstatisticaModel(conferidaPor: null) => (null, null),
-      _ => ('Conferido', AppColors.confirmado),
+      _ => ('Conferido', context.cores.confirmado),
     };
 
     return ListTile(
@@ -976,8 +976,8 @@ class _EstatisticaTile extends StatelessWidget {
         children: [
           if (onConfirmar != null)
             IconButton(
-              icon: const Icon(Icons.check_circle_outline,
-                  color: AppColors.confirmado),
+              icon: Icon(Icons.check_circle_outline,
+                  color: context.cores.confirmado),
               tooltip: 'Confirmar',
               onPressed: onConfirmar,
             ),
@@ -1068,10 +1068,10 @@ Future<void> _mostrarDialogoEstatistica(
           ),
           if (vaiFicarPendente) ...[
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Fica aguardando conferência até o admin ou quem faz a chamada '
               'confirmar. Editar depois de conferido volta para pendente.',
-              style: TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+              style: TextStyle(fontSize: 12, color: context.cores.textoSecundario),
             ),
           ],
         ],
@@ -1300,7 +1300,7 @@ class _ParticipanteTile extends ConsumerWidget {
             const SizedBox(width: 8),
             Text(
               '• Sem posição',
-              style: TextStyle(color: AppColors.pendente),
+              style: TextStyle(color: context.cores.pendente),
             ),
           ],
           if (participante.presenca != null) ...[
@@ -1309,9 +1309,9 @@ class _ParticipanteTile extends ConsumerWidget {
               '• ${participante.presenca!.label}',
               style: TextStyle(
                 color: switch (participante.presenca!) {
-                  PresencaFinal.compareceu => AppColors.confirmado,
-                  PresencaFinal.atrasou => AppColors.pendente,
-                  PresencaFinal.faltou => AppColors.recusado,
+                  PresencaFinal.compareceu => context.cores.confirmado,
+                  PresencaFinal.atrasou => context.cores.pendente,
+                  PresencaFinal.faltou => context.cores.recusado,
                 },
                 fontWeight: FontWeight.w500,
               ),
@@ -1334,7 +1334,7 @@ class _ParticipanteTile extends ConsumerWidget {
                   ),
                 if (souEu && pendente) ...[
                   IconButton(
-                    icon: const Icon(Icons.check_circle, color: AppColors.confirmado),
+                    icon: Icon(Icons.check_circle, color: context.cores.confirmado),
                     tooltip: 'Confirmar presença',
                     // Confirmar e escolher posição viraram um passo só: quem
                     // entra no racha já diz onde joga, senão o balanceamento
@@ -1357,7 +1357,7 @@ class _ParticipanteTile extends ConsumerWidget {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.cancel, color: AppColors.recusado),
+                    icon: Icon(Icons.cancel, color: context.cores.recusado),
                     tooltip: 'Recusar',
                     onPressed: () async {
                       await ref
@@ -1466,7 +1466,7 @@ void _mostrarChamada(BuildContext context, RachaModel racha) {
                       faltaRegistrar == 0
                           ? 'Todo mundo registrado.'
                           : 'Faltam $faltaRegistrar de ${confirmados.length}.',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+                      style: TextStyle(fontSize: 12, color: context.cores.textoSecundario),
                     ),
                   ],
                 ),
@@ -1560,9 +1560,9 @@ class _AvisoEscalacao extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.pendente.withValues(alpha: 0.08),
+        color: context.cores.pendente.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.pendente.withValues(alpha: 0.4)),
+        border: Border.all(color: context.cores.pendente.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1573,7 +1573,7 @@ class _AvisoEscalacao extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: AppColors.pendente),
+                  Icon(Icons.info_outline, size: 16, color: context.cores.pendente),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(aviso, style: const TextStyle(fontSize: 13)),
@@ -1703,7 +1703,7 @@ class _ConvidadoTile extends ConsumerWidget {
       leading: AvatarJogador(nome: convidado.nome, convidado: true),
       title: Text(convidado.nome),
       subtitle: convidado.oficializado
-          ? const Text('Oficializado', style: TextStyle(color: AppColors.info, fontWeight: FontWeight.w600))
+          ? Text('Oficializado', style: TextStyle(color: context.cores.info, fontWeight: FontWeight.w600))
           : _StatusChip(statusAprovacao: convidado.statusAprovacao),
       trailing: isAdmin
           ? Row(
@@ -1711,7 +1711,7 @@ class _ConvidadoTile extends ConsumerWidget {
               children: [
                 if (pendente) ...[
                   IconButton(
-                    icon: const Icon(Icons.check_circle, color: AppColors.confirmado),
+                    icon: Icon(Icons.check_circle, color: context.cores.confirmado),
                     tooltip: 'Aprovar',
                     onPressed: () => ref
                         .read(convidadoControllerProvider.notifier)
@@ -1722,7 +1722,7 @@ class _ConvidadoTile extends ConsumerWidget {
                         ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.cancel, color: AppColors.recusado),
+                    icon: Icon(Icons.cancel, color: context.cores.recusado),
                     tooltip: 'Recusar',
                     onPressed: () => ref
                         .read(convidadoControllerProvider.notifier)
@@ -1891,13 +1891,13 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (texto, cor) = switch ((status, statusAprovacao)) {
-      (StatusConfirmacao.confirmado, _) => ('Confirmado', AppColors.confirmado),
-      (StatusConfirmacao.recusado, _) => ('Recusado', AppColors.recusado),
-      (StatusConfirmacao.pendente, _) => ('Pendente', AppColors.pendente),
-      (_, StatusAprovacao.aprovado) => ('Aprovado', AppColors.confirmado),
-      (_, StatusAprovacao.recusado) => ('Recusado', AppColors.recusado),
-      (_, StatusAprovacao.pendente) => ('Pendente', AppColors.pendente),
-      _ => ('', AppColors.neutro),
+      (StatusConfirmacao.confirmado, _) => ('Confirmado', context.cores.confirmado),
+      (StatusConfirmacao.recusado, _) => ('Recusado', context.cores.recusado),
+      (StatusConfirmacao.pendente, _) => ('Pendente', context.cores.pendente),
+      (_, StatusAprovacao.aprovado) => ('Aprovado', context.cores.confirmado),
+      (_, StatusAprovacao.recusado) => ('Recusado', context.cores.recusado),
+      (_, StatusAprovacao.pendente) => ('Pendente', context.cores.pendente),
+      _ => ('', context.cores.neutro),
     };
     return Text(texto, style: TextStyle(color: cor, fontWeight: FontWeight.w600));
   }

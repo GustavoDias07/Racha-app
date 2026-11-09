@@ -108,15 +108,15 @@ class _RachasProximosScreenState extends ConsumerState<RachasProximosScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Card(
-              color: AppColors.superficieAlta,
+              color: context.cores.superficieAlta,
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.my_location,
                       size: 20,
-                      color: AppColors.pendente,
+                      color: context.cores.pendente,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -277,7 +277,7 @@ class _Vazio extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icone, size: 48, color: AppColors.neutro),
+            Icon(icone, size: 48, color: context.cores.neutro),
             const SizedBox(height: 16),
             Text(
               titulo,
@@ -289,7 +289,7 @@ class _Vazio extends StatelessWidget {
             Text(
               detalhe,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textoSecundario),
+              style: TextStyle(color: context.cores.textoSecundario),
             ),
           ],
         ),
@@ -389,11 +389,11 @@ class _RachaProximoTile extends ConsumerWidget {
                   '${grupo.tipoCampoPadrao.label} • ${grupo.qtdJogadoresLinhaPadrao} de linha',
                 ),
                 if (status == StatusAprovacao.recusado)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 8),
                     child: Text(
                       'Pedido recusado — fale com o organizador se quiser tentar de novo.',
-                      style: TextStyle(color: AppColors.recusado, fontSize: 12),
+                      style: TextStyle(color: context.cores.recusado, fontSize: 12),
                     ),
                   ),
                 const SizedBox(height: 12),

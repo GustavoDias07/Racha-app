@@ -30,11 +30,11 @@ class TituloSecao extends StatelessWidget {
           Expanded(
             child: Text(
               texto.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.1,
-                color: AppColors.textoSecundario,
+                color: context.cores.textoSecundario,
               ),
             ),
           ),

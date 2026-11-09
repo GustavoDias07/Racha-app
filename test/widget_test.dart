@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:racha_app/core/theme/app_theme.dart';
+import 'package:racha_app/providers/tema_controller.dart';
 
 void main() {
   test('AppTheme.dark monta um ThemeData válido e escuro', () {
@@ -17,17 +18,55 @@ void main() {
     expect(tema.brightness, Brightness.dark);
   });
 
-  // O app não tem versão clara: se alguém trocar a cor de fundo por engano,
-  // o contraste do texto some e nenhuma tela avisa. Estes dois travam isso.
-  test('o fundo é escuro e a cor do app é o verde da marca', () {
-    final cores = AppTheme.dark.colorScheme;
-    expect(cores.surface, AppColors.fundo);
-    expect(cores.primary, AppColors.verde);
+  test('AppTheme.light monta um ThemeData válido e claro', () {
+    final tema = AppTheme.light;
+    expect(tema.useMaterial3, isTrue);
+    expect(tema.brightness, Brightness.light);
   });
 
-  test('texto sobre o verde é preto, não branco', () {
+  // Se alguém trocar a cor de fundo por engano, o contraste do texto some e
+  // nenhuma tela avisa. Estes testes travam isso nos dois temas.
+  test('cada tema pendura o seu conjunto de cores', () {
+    expect(AppTheme.dark.extension<AppCores>(), AppCores.escuro);
+    expect(AppTheme.light.extension<AppCores>(), AppCores.claro);
+  });
+
+  test('o fundo e o verde da marca chegam ao colorScheme', () {
+    expect(AppTheme.dark.colorScheme.surface, AppCores.escuro.fundo);
+    expect(AppTheme.light.colorScheme.surface, AppCores.claro.fundo);
+    // O verde de preencher é o mesmo nos dois: é a identidade do app.
+    expect(AppTheme.dark.colorScheme.primary, const Color(0xFF1DB954));
+    expect(AppTheme.light.colorScheme.primary, const Color(0xFF1DB954));
+  });
+
+  test('texto sobre o verde é preto, não branco, nos dois temas', () {
     // Branco sobre o verde vibrante fica ilegível; o contraste alto é o que
     // define esse estilo visual.
     expect(AppTheme.dark.colorScheme.onPrimary, const Color(0xFF000000));
+    expect(AppTheme.light.colorScheme.onPrimary, const Color(0xFF000000));
+  });
+
+  test('no claro, o verde de texto é mais escuro que o de preencher', () {
+    // Letra #1DB954 em fundo claro tem contraste baixo; por isso existe o
+    // verdeTexto. Luminância menor = cor mais escura = mais contraste.
+    expect(
+      AppCores.claro.verdeTexto.computeLuminance(),
+      lessThan(AppCores.claro.verde.computeLuminance()),
+    );
+    // E o texto comum do claro tem contraste alto com o fundo.
+    expect(AppCores.claro.texto.computeLuminance(), lessThan(0.05));
+  });
+
+  group('preferência de tema salva no aparelho', () {
+    test('ida e volta: cada opção vira texto e volta igual', () {
+      for (final modo in ThemeMode.values) {
+        expect(modoDoTexto(textoDoModo(modo)), modo);
+      }
+    });
+
+    test('sem nada salvo (ou valor estranho), segue o celular', () {
+      expect(modoDoTexto(null), ThemeMode.system);
+      expect(modoDoTexto('qualquer-coisa'), ThemeMode.system);
+    });
   });
 }
