@@ -719,6 +719,9 @@ a combinação que faz o revisor marcar o app como "funcionalidade mínima".
   mostradas por `IlustracaoSvg` (`widgets/ilustracao.dart`):
   - campo: topo do Login e do Cadastro;
   - bola: Home sem nenhum racha;
+  - "R" com bola (`MarcaRacha`): miniatura dos rachas e grupos sem foto;
+    o "R" é `Text` em negrito e a bola é o `bola.svg`;
+  - campo também no logo da barra de cima da Home (é a marca do app);
   - balança: aba Times antes de gerar os times;
   - duas camisas "1" e "2": topo do resultado dos times (`CamisasNumeradas`;
     os números são `Text` por cima, porque o flutter_svg não desenha `<text>`

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../core/theme/app_theme.dart';
 import '../core/utils/imagem_base64.dart';
+import 'ilustracao.dart';
 
 /// O que a pessoa decidiu no seletor de foto do racha.
 ///
@@ -101,8 +102,8 @@ Future<FotoEscolhida?> escolherFotoDoRacha(
 
 /// Miniatura quadrada do racha, para cards de lista.
 ///
-/// Sem foto, mostra a bola sobre verde diluído — o mesmo visual que os cards
-/// tinham antes, então rachas sem foto continuam com cara de racha.
+/// Sem foto, mostra a marca do racha (o "R" com a bola, ver `MarcaRacha`),
+/// então rachas sem foto continuam com cara de racha.
 class MiniaturaDoRacha extends StatelessWidget {
   const MiniaturaDoRacha({super.key, this.fotoBase64, this.tamanho = 38});
 
@@ -130,16 +131,7 @@ class MiniaturaDoRacha extends StatelessWidget {
       );
     }
 
-    return Container(
-      width: tamanho,
-      height: tamanho,
-      decoration: BoxDecoration(
-        color: context.cores.verde.withValues(alpha: 0.15),
-        borderRadius: raio,
-      ),
-      child: Icon(Icons.sports_soccer,
-          size: tamanho * 0.53, color: context.cores.verdeTexto),
-    );
+    return MarcaRacha(tamanho: tamanho, raio: raio);
   }
 }
 

@@ -32,17 +32,22 @@ enum Ilustracao {
 
 /// Mostra uma [Ilustracao] com a altura pedida, nas cores do tema atual.
 class IlustracaoSvg extends StatelessWidget {
-  const IlustracaoSvg(this.ilustracao, {super.key, this.altura = 120});
+  const IlustracaoSvg(this.ilustracao, {super.key, this.altura = 120, this.trocarCores});
 
   final Ilustracao ilustracao;
   final double altura;
 
+  /// Força ligar/desligar a troca de cores do tema claro. Nulo = usa o
+  /// padrão da ilustração ([Ilustracao.adaptaAoTema]).
+  final bool? trocarCores;
+
   @override
   Widget build(BuildContext context) {
+    final trocar = trocarCores ?? ilustracao.adaptaAoTema;
     return SvgPicture(
       SvgAssetLoader(
         ilustracao.caminho,
-        colorMapper: ilustracao.adaptaAoTema ? _TrocaDeCores.doTema(context) : null,
+        colorMapper: trocar ? _TrocaDeCores.doTema(context) : null,
       ),
       height: altura,
       // Leitores de tela pulam a imagem: ela é enfeite, o texto ao lado é
@@ -94,6 +99,74 @@ class CamisasNumeradas extends StatelessWidget {
             // Camisa 2 é verde nos dois temas: número sempre preto, como o
             // texto dos botões verdes.
             child: Text('2', style: estilo(_escuro)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Marca de racha sem foto: um "R" verde bem grosso com uma bola no canto
+/// de baixo, sobre a perna do R (desenho 3, escolhido pelo Abreu).
+///
+/// O desenho original é de 512 x 512. Tudo aqui é calculado em cima dele e
+/// multiplicado por `k` (tamanho / 512), para ficar igual em qualquer tamanho.
+///
+/// O "R" é um `Text`, e não parte do SVG, pelo mesmo motivo dos números das
+/// camisas: o flutter_svg não desenha `<text>` de forma confiável. A bola
+/// reaproveita `bola.svg`, que tem a mesma proporção de linha.
+///
+/// Cores: no escuro, fundo #121212 e R #1DB954. No claro, o fundo é o verde
+/// diluído que o card já usava e o R vira o verde de texto (#117A37), que
+/// tem contraste em fundo claro. A bola fica branca nos dois.
+class MarcaRacha extends StatelessWidget {
+  const MarcaRacha({super.key, required this.tamanho, required this.raio});
+
+  final double tamanho;
+  final BorderRadius raio;
+
+  @override
+  Widget build(BuildContext context) {
+    final cores = context.cores;
+    final claro = Theme.of(context).brightness == Brightness.light;
+    final k = tamanho / 512;
+    // No bola.svg a bola tem raio 150 dentro de uma área de 512. Para ela
+    // sair com raio 62 aqui, a área do SVG tem que ser 512 * 62/150 maior.
+    final ladoBola = 512 * 62 / 150 * k;
+
+    return Container(
+      width: tamanho,
+      height: tamanho,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: claro ? cores.verde.withValues(alpha: 0.15) : _escuro,
+        borderRadius: raio,
+      ),
+      child: Stack(
+        children: [
+          // No desenho, o R está centrado em x=236 e vai de y=140 a y=380
+          // (meio em y=260). Alignment vai de -1 a 1: 236/256 - 1 ≈ -0.08.
+          // O y fica um pouco abaixo do meio porque a caixa do texto reserva
+          // espaço embaixo para letras como "g" e "p", que o R não usa.
+          Align(
+            alignment: const Alignment(-0.08, 0.12),
+            child: Text(
+              'R',
+              style: TextStyle(
+                color: cores.verdeTexto,
+                fontWeight: FontWeight.w900,
+                fontSize: 330 * k,
+                height: 1,
+              ),
+            ),
+          ),
+          // Bola com centro em (372, 370) e raio 62 no desenho.
+          Positioned(
+            left: 372 * k - ladoBola / 2,
+            top: 370 * k - ladoBola / 2,
+            width: ladoBola,
+            height: ladoBola,
+            child: IlustracaoSvg(Ilustracao.bola, altura: ladoBola, trocarCores: false),
           ),
         ],
       ),

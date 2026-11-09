@@ -46,13 +46,11 @@ class HomeScreen extends ConsumerWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: context.cores.verde,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.sports_soccer, size: 18, color: Colors.black),
+            // O mesmo desenho do ícone do app (T26), para a barra de cima
+            // "assinar" o app igual ao ícone na tela do celular.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: const IlustracaoSvg(Ilustracao.campo, altura: 32),
             ),
             const SizedBox(width: 10),
             const Text('Racha App'),
