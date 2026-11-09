@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../widgets/ilustracao.dart';
 import '../../core/utils/string_utils.dart';
 import '../../providers/auth_controller.dart';
 import '../../widgets/foto_perfil_picker.dart';
@@ -69,6 +70,14 @@ class _CadastroScreenState extends ConsumerState<CadastroScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Mesmo desenho do ícone do app (T26), como no Login.
+                Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: const IlustracaoSvg(Ilustracao.campo, altura: 96),
+                  ),
+                ),
+                const SizedBox(height: 24),
                 FotoPerfilPicker(
                   onFotoSelecionada: (bytes) => _fotoPerfil = bytes,
                 ),

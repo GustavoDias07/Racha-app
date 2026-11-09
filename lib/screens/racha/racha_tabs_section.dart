@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../widgets/ilustracao.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/avatar_jogador.dart';
 import '../../core/widgets/info_tile.dart';
@@ -355,11 +356,21 @@ class _TimesTab extends ConsumerWidget {
                 const SizedBox(height: 24),
               ],
               if (!jaGerado)
+                // A balança lembra o que o "Gerar times" faz: equilibrar
+                // os dois lados (T26).
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text('Os times ainda não foram gerados.'),
+                  child: Column(
+                    children: [
+                      IlustracaoSvg(Ilustracao.balanca, altura: 140),
+                      SizedBox(height: 8),
+                      Text('Os times ainda não foram gerados.'),
+                    ],
+                  ),
                 )
               else ...[
+                const Center(child: CamisasNumeradas()),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(

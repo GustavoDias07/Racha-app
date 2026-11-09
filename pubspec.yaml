@@ -52,6 +52,7 @@ dependencies:
   latlong2: ^0.10.1
   http: ^1.6.0
   shared_preferences: ^2.5.6
+  flutter_svg: ^2.3.2
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +64,25 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+# Ícone do app (T26). Para gerar de novo depois de mudar o desenho:
+#   dart run flutter_launcher_icons
+# No Android 8+ o ícone é "adaptativo": o sistema recorta o desenho em
+# círculo, gota ou quadrado conforme o celular. Por isso o desenho do
+# primeiro plano é reduzido (~66%) e fica no centro, longe das bordas que
+# podem ser cortadas; o verde de fundo é uma camada separada.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/icone.png"
+  adaptive_icon_background: "#1DB954"
+  adaptive_icon_foreground: "assets/icon/icone_foreground.png"
+  web:
+    generate: true
+    image_path: "assets/icon/icone.png"
+    background_color: "#1DB954"
+    theme_color: "#1DB954"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -74,6 +94,12 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Ilustrações do app (desenhadas em SVG, lidas pelo flutter_svg). Os
+  # arquivos de assets/icon/ não entram aqui: são só a matéria-prima do
+  # flutter_launcher_icons, que gera os ícones do Android e da web.
+  assets:
+    - assets/ilustracoes/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

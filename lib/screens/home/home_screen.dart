@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../widgets/ilustracao.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/avatar_jogador.dart';
 import '../../core/widgets/confirmar_dialog.dart';
@@ -194,10 +195,17 @@ class HomeScreen extends ConsumerWidget {
                 (gruposQueParticipo.valueOrNull?.isEmpty ?? true))
               Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(
-                  userModel.valueOrNull?.nome == null
-                      ? 'Nenhum racha ainda.'
-                      : 'Olá, ${userModel.valueOrNull!.nome}! Nenhum racha ainda.',
+                child: Column(
+                  children: [
+                    const IlustracaoSvg(Ilustracao.bola, altura: 120),
+                    const SizedBox(height: 16),
+                    Text(
+                      userModel.valueOrNull?.nome == null
+                          ? 'Nenhum racha ainda.'
+                          : 'Olá, ${userModel.valueOrNull!.nome}! Nenhum racha ainda.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
             proximasRodadas.maybeWhen(

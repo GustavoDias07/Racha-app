@@ -642,11 +642,38 @@ localização e o que é feito com ela. Vale avaliar junto trocar
 trabalha em escala de quilômetros e a permissão grossa reduz o atrito na
 revisão.
 
-### [ ] T26 — Ícone do app
+### [x] T26 — Ícone do app
 
 Os `ic_launcher.png` ainda são o ícone padrão do Flutter. Além de a Play pedir
 um ícone de 512×512 para a ficha da loja, pacote de template + ícone padrão é
 a combinação que faz o revisor marcar o app como "funcionalidade mínima".
+
+**Feito em 09/11/2026 (pedido do Abreu), junto com ilustrações:**
+- **Ícone = CAMPO** (campo de futebol branco sobre verde #1DB954, bola no
+  meio). Fontes em `assets/icon/`: `icone.svg`/`icone.png` (1024×1024, fundo
+  verde) e `icone_foreground.svg`/`.png` (sem fundo, desenho a 66% no centro,
+  para a zona segura do ícone adaptativo). Os PNGs foram gerados a partir do
+  SVG com o Chrome em modo headless (`--screenshot`).
+- **flutter_launcher_icons** (dev_dependency, configurado no `pubspec.yaml`)
+  gerou os ícones do Android (normal + adaptativo com fundo #1DB954) e da web
+  (favicon, `web/icons/`, cores do `manifest.json`). iOS desligado. Para
+  regerar: `dart run flutter_launcher_icons`. Foi preciso subir os pacotes
+  `archive`/`image` (`flutter pub upgrade archive image`): as versões antigas
+  do lock eram incompatíveis entre si e o gerador nem compilava.
+- **Ilustrações** em `assets/ilustracoes/` (SVG, lidos pelo `flutter_svg`),
+  mostradas por `IlustracaoSvg` (`widgets/ilustracao.dart`):
+  - campo: topo do Login e do Cadastro;
+  - bola: Home sem nenhum racha;
+  - balança: aba Times antes de gerar os times;
+  - duas camisas "1" e "2": topo do resultado dos times (`CamisasNumeradas`;
+    os números são `Text` por cima, porque o flutter_svg não desenha `<text>`
+    de forma confiável).
+- **Cores acompanham o tema:** os SVGs são desenhados para o escuro; no claro
+  um `ColorMapper` troca o branco por `cores.texto` e o #121212 por
+  `cores.fundo`. O verde nunca muda. O campo tem fundo verde próprio e não
+  troca.
+- Teste novo `test/ilustracao_test.dart`: carrega todas as ilustrações nos
+  dois temas.
 
 ### [ ] T27 — Crashlytics, R8 e App Check
 

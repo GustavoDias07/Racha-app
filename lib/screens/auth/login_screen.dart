@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../widgets/ilustracao.dart';
 import '../../providers/auth_controller.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -118,8 +119,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.sports_soccer,
-                      size: 64, color: Theme.of(context).colorScheme.primary),
+                  // Mesmo desenho do ícone do app (T26), com os cantos
+                  // arredondados como o ícone aparece no celular.
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: const IlustracaoSvg(Ilustracao.campo, altura: 128),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text('Racha App',
                       textAlign: TextAlign.center,
